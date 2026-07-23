@@ -8,7 +8,7 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Open
 
-_None._
+- [ ] (lane B) Replace `Pet`'s `AgentStub.gd` with `res://scripts/Pet.gd` in `Main.tscn`; keep the existing `Body` mesh and `NavigationAgent3D`. Default sibling/node paths resolve `Player`, `Body`, and `NavigationAgent3D`.
 
 ## Done
 

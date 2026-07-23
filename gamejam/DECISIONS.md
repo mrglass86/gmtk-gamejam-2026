@@ -167,3 +167,21 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** Level geometry changes after startup (not in current scope).
 - **Evidence / handoff:** `gamejam/handoffs/2026-07-23-cp1-review.md`,
   `aa4fbf4`.
+
+## 2026-07-23 — Parent FOUND chase precedes carry
+
+- **Decision:** At maximum suspicion, the parent carries only when the player is
+  within the 1.1 m grab distance; otherwise the parent enters a FOUND chase at
+  3.2 m/s toward the player's live position. FOUND uses the locked 90-degree
+  red cone, exits after 5 seconds without line of sight to INVESTIGATE at the
+  last-known position with suspicion 60, and cannot be downgraded by noise.
+  Parent routine timing follows `GameClock.run_length` unless an explicit
+  positive routine-duration override is configured.
+- **Why:** A visible chase makes detection legible and prevents a full suspicion
+  meter from causing a remote, teleport-like catch. Using the shared clock keeps
+  authored routine timing synchronized with run-length tuning.
+- **Rejected / cut:** Immediate carry at maximum suspicion regardless of
+  distance; an independent default routine clock.
+- **Owner:** Noah (design), lane B (implementation)
+- **Revisit when:** CP4 shows the chase is unavoidable or too easy.
+- **Evidence / handoff:** B3 review and commit `946cd11`.
