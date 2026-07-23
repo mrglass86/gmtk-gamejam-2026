@@ -78,8 +78,8 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if (state == State.WON or state == State.LOST) and event.is_action_pressed(&"restart"):
-		_request_restart()
 		get_viewport().set_input_as_handled()
+		_request_restart()
 
 
 func qualifies_for_expiry_win(in_crib: bool, has_snack: bool) -> bool:

@@ -435,6 +435,21 @@ func _verify_a6_game_flow() -> void:
 	var camera: Camera3D = $CameraRig/OrthoCamera as Camera3D
 	var brightness_readout: CanvasLayer = $BrightnessReadout as CanvasLayer
 
+	if GameClock.has_meta(&"a6_restart_verification"):
+		GameClock.remove_meta(&"a6_restart_verification")
+		assert(flow.state == DinnerGameFlow.State.TITLE)
+		assert(title_card.visible and not result_card.visible)
+		assert(not GameClock.running and player.input_locked and get_tree().paused)
+		print(
+			"A6/A6.1 verification passed: camera, title, clock, immediate/expiry outcomes, "
+			+ "real scene reload, and release HUD gate."
+		)
+		get_tree().paused = false
+		await get_tree().physics_frame
+		await get_tree().process_frame
+		get_tree().quit()
+		return
+
 	assert(flow.state == DinnerGameFlow.State.TITLE)
 	assert(camera.keep_aspect == Camera3D.KEEP_WIDTH)
 	assert(is_equal_approx(camera.size, 31.0))
@@ -459,6 +474,8 @@ func _verify_a6_game_flow() -> void:
 	assert(flow.qualifies_for_expiry_win(true, true))
 	assert(not flow.qualifies_for_expiry_win(true, false))
 	assert(not flow.qualifies_for_expiry_win(false, true))
+	await get_tree().process_frame
+	await get_tree().physics_frame
 
 	player.global_position = Vector3(-8.7, 0.6, -2.75)
 	player.set_carrying_snack(true)
@@ -474,12 +491,13 @@ func _verify_a6_game_flow() -> void:
 	assert(result_card.visible and not GameClock.running and player.input_locked)
 	assert(($GameFlow/ResultCard/Panel/ResultHeading as Label).text == "BACK IN BED")
 
-	flow.reload_scene_on_restart = false
-	var restart_event: InputEventAction = InputEventAction.new()
-	restart_event.action = &"restart"
-	restart_event.pressed = true
-	flow.call("_input", restart_event)
-	assert(flow.restart_was_requested)
+	flow.prepare_verification_case()
+	flow.call("_input", start_event)
+	player.global_position = Vector3(-8.7, 0.6, -2.75)
+	player.set_carrying_snack(true)
+	GameClock.time_expired.emit()
+	assert(flow.state == DinnerGameFlow.State.WON)
+	assert(($GameFlow/ResultCard/Panel/ResultHeading as Label).text == "BACK IN BED")
 
 	flow.prepare_verification_case()
 	flow.call("_input", start_event)
@@ -488,12 +506,14 @@ func _verify_a6_game_flow() -> void:
 	GameClock.time_expired.emit()
 	assert(flow.state == DinnerGameFlow.State.LOST)
 	assert(($GameFlow/ResultCard/Panel/ResultHeading as Label).text == "BEDTIME")
-	print("A6/A6.1 verification passed: camera, title, clock, outcomes, restart, and release HUD gate.")
-	get_tree().paused = false
+
+	var restart_event: InputEventAction = InputEventAction.new()
+	restart_event.action = &"restart"
+	restart_event.pressed = true
+	flow.reload_scene_on_restart = true
+	GameClock.set_meta(&"a6_restart_verification", true)
 	start_event = null
-	restart_event = null
-	await get_tree().process_frame
-	get_tree().quit()
+	flow.call("_input", restart_event)
 
 
 func _verify_primary_floor_coverage() -> void:
