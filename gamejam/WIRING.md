@@ -9,7 +9,7 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 ## Open
 
 - [ ] (lane B / B11) Keep the A11 dog visual's snout pointing along Pet-local
-  `+X`; `Pet.gd` now smoothly yaws that authored forward axis into every travel
+  `-Z`; `Pet.gd` smoothly yaws that authored forward axis into every travel
   direction (patrol, investigate, and bowl).
 
 ## Done

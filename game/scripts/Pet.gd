@@ -420,7 +420,7 @@ func _face_direction(direction: Vector3, delta: float) -> void:
 	flat_direction.y = 0.0
 	if flat_direction.length_squared() <= 0.0:
 		return
-	var target_yaw: float = atan2(-flat_direction.z, flat_direction.x)
+	var target_yaw: float = atan2(-flat_direction.x, -flat_direction.z)
 	rotation.y = lerp_angle(rotation.y, target_yaw, clampf(facing_turn_speed * delta, 0.0, 1.0))
 
 
