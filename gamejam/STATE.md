@@ -14,13 +14,13 @@ a journal.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A5 plus A4.1 are in `game/`
+- Godot version: 4.7.1-stable — A0.2 through A5 plus A4.1/A5.1 are in `game/`
   (Compatibility renderer). The approved director layout bakes a connected
   156-polygon navmesh; input, lighting, noise, indicator, route, ambient-mask,
-  first-walk regression, and countdown-phase checks pass.
+  first/second-walk regressions, and countdown-phase checks pass.
 - Entry scene: `res://scenes/Main.tscn`
-- Run/build status: `1ade35d` fixes A4.1 and clears scene wiring; `7d301fc`
-  implements A5. A 600-frame normal run is clean. CP3 still requires Noah's
+- Run/build status: `003e714` fixes A5.1 floor safety, fridge hinge, and Parent
+  timing. A 600-frame normal run is clean. CP3 still requires Noah's
   replay/scrub and the S11 browser export proof.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
