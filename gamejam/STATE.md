@@ -9,8 +9,8 @@ a journal.
 - Direction: Shoulda Eaten Dinner (toddler stealth; the countdown is the
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Friday — director-run behavior and presentation fixpacks
-- Next playable checkpoint: CP4 replay — exercise B7's catch/deposit epilogue
-  and bark alarm alongside the concurrent A8 snack/mask polish.
+- Next playable checkpoint: CP4 replay — exercise B8's catch-time snack drop,
+  immediate noise investigation, and capture epilogue v2 alongside A9 lighting.
 
 ## Working build
 
@@ -37,6 +37,10 @@ a journal.
   preserving capsule/HUD brightness tracking. A real Web canvas click starts
   audio with zero console warnings/errors; labeled renderer captures prove
   snack, fridge spill, practical-light hierarchy, and dark-floor readability.
+  `29d4a57` adds B8: capture drops and pickup-locks the snack without winning,
+  25+ received noise immediately investigates, decay is 5/s, and the parent
+  performs the exit/close/hall/reopen/peek/reclose/kitchen epilogue. Its live
+  SceneTree gate and the B6/B7/A5.1/A6/A7/A8/audio regressions pass.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -46,9 +50,9 @@ a journal.
 
 ## Current focus
 
-- Friday/CP4 replay: Noah plays the authoritative route, catch/chase/deposit
-  epilogue, dog alarm, snack round trip, and listening/readability pass against
-  S7/S8/S9/S10.
+- Friday/CP4 replay: Noah plays the authoritative route, catch-time snack drop,
+  capture epilogue v2, dog/toy alarm, snack round trip, and
+  listening/readability pass against S7/S8/S9/S10.
 
 ## Known blockers or risks
 
@@ -59,8 +63,9 @@ a journal.
   quiet route misses the 1.4–1.6× target.
 - The dog's exported bed-egress point works in the live verifier; CP5 still
   needs a visual verdict that the rise-off-bed motion reads naturally.
-- B7's post-deposit sequence is live-verified but needs a director verdict that
-  the close, 3.5 s hall watch, and peek read clearly at gameplay camera scale.
+- B8's post-deposit sequence is live-verified but needs a director verdict that
+  the immediate close, hall walk, slow crack-open peek, and reclose read clearly
+  at gameplay camera scale.
 - Godot MCP for lane A: 30-minute hard abort rule (brief 9.2).
 - This Claude instance has no shell — validation runs through the web build in
   the browser pane plus Noah's terminal.
