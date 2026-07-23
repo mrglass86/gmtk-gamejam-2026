@@ -289,7 +289,7 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-b7"):
 		_run_b7_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--verify-b8"):
-		_run_b8_verification.call_deferred()
+		_run_b8_live_verification.call_deferred()
 
 
 func _physics_process(delta: float) -> void:
@@ -1222,7 +1222,7 @@ func _run_b7_verification() -> void:
 	print("B7 live SceneTree verification passed.")
 
 
-func _run_b8_verification() -> void:
+func _run_b8_live_verification() -> void:
 	var pet: DinnerPet = get_parent().get_node_or_null("Pet") as DinnerPet
 	var flow: DinnerGameFlow = get_parent().get_node_or_null("GameFlow") as DinnerGameFlow
 	var snack_visual: Node3D = (
