@@ -88,6 +88,8 @@ func _build_props() -> void:
 	_add_prop("HallShelf", Vector3(10.1, 0.55, 4.35), Vector3(1.4, 1.1, 3.5), prop_color)
 	_add_prop("AdultDoorPanel", Vector3(-12.75, 0.6, 1.5), Vector3(2.3, 1.2, 0.12), wall_color)
 	_add_prop("KitchenSpeaker", Vector3(8.5, 1.15, -5.3), Vector3(0.5, 0.5, 0.5), Color("#6f7882"))
+	_add_visual_prop("FrontDoor", Vector3(8.0, 0.575, 6.3), Vector3(2.4, 1.15, 0.15), Color("#59616b"))
+	_add_visual_prop("DoorMat", Vector3(8.0, 0.01, 5.85), Vector3(1.6, 0.02, 0.9), carpet_color)
 
 
 func _build_lights() -> void:
@@ -173,6 +175,14 @@ func _add_prop(node_name: String, center: Vector3, dimensions: Vector3, color: C
 	prop.add_to_group("nav_source")
 	_add_box_visual(prop, dimensions, color)
 	_add_box_collision(prop, dimensions)
+	add_child(prop)
+
+
+func _add_visual_prop(node_name: String, center: Vector3, dimensions: Vector3, color: Color) -> void:
+	var prop: Node3D = Node3D.new()
+	prop.name = node_name
+	prop.position = center
+	_add_box_visual(prop, dimensions, color)
 	add_child(prop)
 
 
