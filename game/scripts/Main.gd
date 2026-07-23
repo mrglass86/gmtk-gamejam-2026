@@ -1162,34 +1162,50 @@ func _configure_a10_fridge_capture(is_open: bool) -> void:
 	fridge.call("_apply_visual")
 	var camera_target: Vector3 = Vector3(12.3, 0.8, -5.1)
 	var camera_rig: Node3D = $CameraRig as Node3D
-	camera_rig.global_position = camera_target + Vector3(0.0, 13.5, 7.2)
+	camera_rig.global_position = camera_target + Vector3(0.0, 16.0, 6.0)
 	camera_rig.look_at(camera_target, Vector3.UP)
-	($CameraRig/OrthoCamera as Camera3D).size = 7.0
+	($CameraRig/OrthoCamera as Camera3D).size = 9.0
 
-	var state_label: Label3D = Label3D.new()
-	state_label.name = "A10FridgeStateLabel"
+	var state_layer: CanvasLayer = CanvasLayer.new()
+	state_layer.name = "A10FridgeStateLayer"
+	state_layer.layer = 30
+	add_child(state_layer)
+	var state_label: Label = Label.new()
+	state_label.name = "State"
 	state_label.text = (
 		"FRIDGE OPEN — OUTWARD SWEEP / NORTH-WALL REST"
 		if is_open
 		else "FRIDGE CLOSED — WALL-SIDE HINGE"
 	)
-	state_label.position = Vector3(12.1, 2.6, -4.0)
-	state_label.font_size = 42
-	state_label.outline_size = 8
-	state_label.pixel_size = 0.006
-	state_label.modulate = Color("#f2f5f9")
-	state_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	state_label.no_depth_test = true
-	add_child(state_label)
+	state_label.position = Vector2(32.0, 82.0)
+	state_label.add_theme_font_size_override("font_size", 30)
+	state_label.add_theme_color_override("font_color", Color("#f2f5f9"))
+	state_label.add_theme_color_override("font_outline_color", Color("#111820"))
+	state_label.add_theme_constant_override("outline_size", 7)
+	state_layer.add_child(state_label)
 
 	var wall_label: Label3D = Label3D.new()
 	wall_label.name = "A10NorthWallLabel"
 	wall_label.text = "NORTH WALL"
-	wall_label.position = Vector3(10.8, 1.5, -6.15)
-	wall_label.font_size = 34
+	wall_label.position = Vector3(10.8, 0.5, -6.15)
+	wall_label.font_size = 30
 	wall_label.outline_size = 7
-	wall_label.pixel_size = 0.006
+	wall_label.pixel_size = 0.003
 	wall_label.modulate = Color("#c9d8eb")
 	wall_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	wall_label.no_depth_test = true
 	add_child(wall_label)
+
+	var hinge_label: Label3D = Label3D.new()
+	hinge_label.name = "A10HingeLabel"
+	hinge_label.text = "HINGE"
+	hinge_label.global_position = (
+		$Fridge/DoorVisual as Node3D
+	).global_position + Vector3.UP * 1.65
+	hinge_label.font_size = 28
+	hinge_label.outline_size = 7
+	hinge_label.pixel_size = 0.003
+	hinge_label.modulate = Color("#dce9ff")
+	hinge_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	hinge_label.no_depth_test = true
+	add_child(hinge_label)
