@@ -23,5 +23,6 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 	var previous_time: float = _last_event_time.get(source_id, -INF)
 	_last_event_time[source_id] = now
 	var indicator: Node3D = INDICATOR_SCENE.instantiate() as Node3D
+	indicator.top_level = true
 	indicator.call("configure", pos, loudness, now - previous_time <= sustained_event_gap)
 	add_child(indicator)

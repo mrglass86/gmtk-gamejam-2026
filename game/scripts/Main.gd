@@ -43,6 +43,9 @@ func _ready() -> void:
 		_verify_ambient_masks()
 		get_tree().quit()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a41"):
+		_verify_a41_playtest_fixes()
+		return
 	var capture_path: String = _capture_path_from_args()
 	if not capture_path.is_empty():
 		_capture_layout(capture_path)
@@ -166,6 +169,102 @@ func _verify_ambient_masks() -> void:
 	NoiseSystem.set_ambient_source_enabled("kitchen_speaker", true)
 	assert(is_equal_approx(NoiseSystem.get_mask_at(speaker_position), speaker_mask))
 	print("A4 verification passed: TV/speaker masks register and vanish when disabled.")
+
+
+func _verify_a41_playtest_fixes() -> void:
+	for settle_frame: int in range(12):
+		await get_tree().physics_frame
+
+	var player: CharacterBody3D = get_tree().get_first_node_in_group("player") as CharacterBody3D
+	assert(player != null, "Brightness/player lookup group is not wired.")
+
+	var hazard_names: PackedStringArray = [
+		"CreakTeacher",
+		"CreakKitchen",
+		"CreakAdult",
+		"ToyHallRug",
+		"ToyDining",
+		"ToyCarpet",
+	]
+	for hazard_name: String in hazard_names:
+		var hazard: NoiseSurface = get_node("Level/%s" % hazard_name) as NoiseSurface
+		assert(hazard.surface_height <= 0.03, "%s is too tall to walk over." % hazard_name)
+		var collisions: Array[Node] = hazard.find_children("*", "CollisionShape3D", true, false)
+		assert(collisions.size() == 1, "%s needs exactly one overlay collider." % hazard_name)
+		var collision: CollisionShape3D = collisions[0] as CollisionShape3D
+		assert(collision.position.y >= 0.0, "%s collision is not floor-flush." % hazard_name)
+
+	var bathroom_door: Node3D = get_node("Level/BathroomDoor") as Node3D
+	assert(
+		bathroom_door.find_children("*", "CollisionObject3D", true, false).is_empty(),
+		"Bathroom door dressing added collision to the walkway."
+	)
+	_verify_wall_junctions()
+
+	var indicator_manager: Node3D = $NoiseIndicatorManager
+	assert(indicator_manager.get_child_count() == 0)
+	assert(is_equal_approx(float(player.get("_current_surface_multiplier")), 0.2))
+	Input.action_press("move_right")
+	await get_tree().create_timer(0.5).timeout
+	Input.action_release("move_right")
+	await get_tree().process_frame
+	assert(
+		indicator_manager.get_child_count() == 0,
+		"Sneaking on kid-room carpet rendered a noise indicator."
+	)
+
+	NoiseSystem.emit_noise(player.global_position, 0.24, player)
+	await get_tree().process_frame
+	assert(indicator_manager.get_child_count() == 0, "Sub-threshold noise rendered.")
+	NoiseSystem.emit_noise(player.global_position, 0.4, player)
+	await get_tree().process_frame
+	assert(indicator_manager.get_child_count() == 1, "Audible noise did not render one ring.")
+	var indicator: Node3D = indicator_manager.get_child(0) as Node3D
+	var anchored_position: Vector3 = indicator.global_position
+	player.global_position += Vector3(0.5, 0.0, 0.0)
+	await get_tree().process_frame
+	assert(
+		indicator.global_position.is_equal_approx(anchored_position),
+		"Noise indicator followed the player instead of staying world-anchored."
+	)
+	await get_tree().create_timer(1.3).timeout
+	assert(indicator_manager.get_child_count() == 0, "Noise indicator did not expire.")
+	print("A4.1 verification passed: seams, overlays, set dressing, brightness lookup, and rings.")
+	get_tree().quit()
+
+
+func _verify_wall_junctions() -> void:
+	var junctions: Array[PackedStringArray] = [
+		PackedStringArray(["NorthWall", "WestWall"]),
+		PackedStringArray(["NorthWall", "EastWall"]),
+		PackedStringArray(["SouthWall", "WestWall"]),
+		PackedStringArray(["SouthWall", "EastWall"]),
+		PackedStringArray(["KidSouthA", "WestWall"]),
+		PackedStringArray(["KidSouthB", "KidBathDivider"]),
+		PackedStringArray(["KidBathDivider", "NorthWall"]),
+		PackedStringArray(["BathLivingDivider", "NorthWall"]),
+		PackedStringArray(["BathLivingDivider", "LivingSouth"]),
+		PackedStringArray(["DogKitchenDivider", "NorthWall"]),
+		PackedStringArray(["AdultNorthA", "WestWall"]),
+		PackedStringArray(["AdultNorthB", "AdultEast"]),
+		PackedStringArray(["AdultEast", "SouthWall"]),
+		PackedStringArray(["LVertical", "LHorizontal"]),
+		PackedStringArray(["PantryWest", "SouthWall"]),
+	]
+	var minimum_overlap: float = 0.249
+	for junction: PackedStringArray in junctions:
+		var first_aabb: AABB = _wall_world_aabb(get_node("Level/%s" % junction[0]) as Node3D)
+		var second_aabb: AABB = _wall_world_aabb(get_node("Level/%s" % junction[1]) as Node3D)
+		var overlap: Vector3 = first_aabb.intersection(second_aabb).size
+		assert(
+			overlap.x >= minimum_overlap and overlap.z >= minimum_overlap,
+			"Wall seam at %s/%s has only %s overlap." % [junction[0], junction[1], overlap]
+		)
+
+
+func _wall_world_aabb(wall: Node3D) -> AABB:
+	var mesh_instance: MeshInstance3D = wall.get_child(0) as MeshInstance3D
+	return mesh_instance.global_transform * mesh_instance.get_aabb()
 
 
 func _capture_path_from_args() -> String:

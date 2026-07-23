@@ -56,22 +56,24 @@ func _build_floors() -> void:
 
 
 func _build_walls() -> void:
-	_add_wall("NorthWall", Vector3(0.0, wall_height * 0.5, -6.4), Vector3(30.5, wall_height, wall_thickness))
-	_add_wall("SouthWall", Vector3(0.0, wall_height * 0.5, 6.4), Vector3(30.5, wall_height, wall_thickness))
+	_add_wall("NorthWall", Vector3(0.0, wall_height * 0.5, -6.4), Vector3(30.25, wall_height, wall_thickness))
+	_add_wall("SouthWall", Vector3(0.0, wall_height * 0.5, 6.4), Vector3(30.25, wall_height, wall_thickness))
 	_add_wall("WestWall", Vector3(-15.0, wall_height * 0.5, 0.0), Vector3(wall_thickness, wall_height, 13.05))
 	_add_wall("EastWall", Vector3(15.0, wall_height * 0.5, 0.0), Vector3(wall_thickness, wall_height, 13.05))
-	_add_wall("KidSouthA", Vector3(-14.45, wall_height * 0.5, -1.5), Vector3(1.1, wall_height, wall_thickness))
-	_add_wall("KidSouthB", Vector3(-9.55, wall_height * 0.5, -1.5), Vector3(4.1, wall_height, wall_thickness))
-	_add_wall("KidBathDivider", Vector3(-7.25, wall_height * 0.5, -3.95), Vector3(wall_thickness, wall_height, 4.9))
-	_add_wall("BathLivingDivider", Vector3(-4.3, wall_height * 0.5, -3.95), Vector3(wall_thickness, wall_height, 4.9))
-	_add_wall("LivingSouth", Vector3(-1.95, wall_height * 0.5, -1.7), Vector3(4.7, wall_height, wall_thickness))
-	_add_wall("DogKitchenDivider", Vector3(6.8, wall_height * 0.5, -3.9), Vector3(wall_thickness, wall_height, 5.0))
-	_add_wall("AdultNorthA", Vector3(-14.45, wall_height * 0.5, 1.5), Vector3(1.1, wall_height, wall_thickness))
-	_add_wall("AdultNorthB", Vector3(-9.55, wall_height * 0.5, 1.5), Vector3(4.1, wall_height, wall_thickness))
-	_add_wall("AdultEast", Vector3(-7.3, wall_height * 0.5, 3.95), Vector3(wall_thickness, wall_height, 4.9))
-	_add_wall("LVertical", Vector3(-4.25, wall_height * 0.5, 2.55), Vector3(wall_thickness, wall_height, 2.3))
-	_add_wall("LHorizontal", Vector3(0.25, wall_height * 0.5, 3.45), Vector3(9.5, wall_height, wall_thickness))
-	_add_wall("PantryWest", Vector3(11.2, wall_height * 0.5, 4.3), Vector3(wall_thickness, wall_height, 4.2))
+	# Junction ends cover the adjoining wall's full thickness without protruding
+	# past its far face. Doorway/open-route ends retain their authored bounds.
+	_add_wall("KidSouthA", Vector3(-14.5125, wall_height * 0.5, -1.5), Vector3(1.225, wall_height, wall_thickness))
+	_add_wall("KidSouthB", Vector3(-9.3625, wall_height * 0.5, -1.5), Vector3(4.475, wall_height, wall_thickness))
+	_add_wall("KidBathDivider", Vector3(-7.25, wall_height * 0.5, -3.95), Vector3(wall_thickness, wall_height, 5.15))
+	_add_wall("BathLivingDivider", Vector3(-4.3, wall_height * 0.5, -4.05), Vector3(wall_thickness, wall_height, 4.95))
+	_add_wall("LivingSouth", Vector3(-2.0125, wall_height * 0.5, -1.7), Vector3(4.825, wall_height, wall_thickness))
+	_add_wall("DogKitchenDivider", Vector3(6.8, wall_height * 0.5, -3.9625), Vector3(wall_thickness, wall_height, 5.125))
+	_add_wall("AdultNorthA", Vector3(-14.5125, wall_height * 0.5, 1.5), Vector3(1.225, wall_height, wall_thickness))
+	_add_wall("AdultNorthB", Vector3(-9.3875, wall_height * 0.5, 1.5), Vector3(4.425, wall_height, wall_thickness))
+	_add_wall("AdultEast", Vector3(-7.3, wall_height * 0.5, 3.95), Vector3(wall_thickness, wall_height, 5.15))
+	_add_wall("LVertical", Vector3(-4.25, wall_height * 0.5, 2.4875), Vector3(wall_thickness, wall_height, 2.175))
+	_add_wall("LHorizontal", Vector3(0.3125, wall_height * 0.5, 3.45), Vector3(9.375, wall_height, wall_thickness))
+	_add_wall("PantryWest", Vector3(11.2, wall_height * 0.5, 4.3625), Vector3(wall_thickness, wall_height, 4.325))
 
 
 func _build_props() -> void:
@@ -90,6 +92,7 @@ func _build_props() -> void:
 	_add_prop("KitchenSpeaker", Vector3(8.5, 1.15, -5.3), Vector3(0.5, 0.5, 0.5), Color("#6f7882"))
 	_add_visual_prop("FrontDoor", Vector3(8.0, 0.575, 6.3), Vector3(2.4, 1.15, 0.15), Color("#59616b"))
 	_add_visual_prop("DoorMat", Vector3(8.0, 0.01, 5.85), Vector3(1.6, 0.02, 0.9), carpet_color)
+	_add_ajar_bathroom_door()
 
 
 func _build_lights() -> void:
@@ -184,6 +187,18 @@ func _add_visual_prop(node_name: String, center: Vector3, dimensions: Vector3, c
 	prop.position = center
 	_add_box_visual(prop, dimensions, color)
 	add_child(prop)
+
+
+func _add_ajar_bathroom_door() -> void:
+	var hinge: Node3D = Node3D.new()
+	hinge.name = "BathroomDoor"
+	hinge.position = Vector3(-7.0, 0.0, -1.5)
+	hinge.rotation_degrees.y = 70.0
+	var panel: Node3D = Node3D.new()
+	panel.position = Vector3(1.15, 0.575, 0.0)
+	_add_box_visual(panel, Vector3(2.3, 1.15, 0.12), Color("#59616b"))
+	hinge.add_child(panel)
+	add_child(hinge)
 
 
 func _add_omni(node_name: String, zone: String, position_value: Vector3, energy_scale: float) -> void:

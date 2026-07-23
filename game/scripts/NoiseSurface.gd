@@ -7,12 +7,13 @@ class_name NoiseSurface
 @export var loudness_multiplier: float = 3.0
 @export var radius: float = 0.7
 @export var surface_size: Vector2 = Vector2.ZERO
-@export var surface_height: float = 0.12
+@export_range(0.005, 0.03, 0.005) var surface_height: float = 0.02
 @export var surface_group: StringName = &"surface_creaky"
 @export var surface_color: Color = Color("#9BA0A5")
 
 
 func _ready() -> void:
+	surface_height = clampf(surface_height, 0.005, 0.03)
 	add_to_group(surface_group)
 	add_to_group("nav_source")
 	_build_surface()
@@ -45,8 +46,10 @@ func _build_surface() -> void:
 	material.roughness = 1.0
 	mesh_instance.mesh = mesh
 	mesh_instance.material_override = material
+	mesh_instance.position.y = surface_height * 0.5
 	add_child(mesh_instance)
 
 	var collision: CollisionShape3D = CollisionShape3D.new()
 	collision.shape = shape
+	collision.position.y = surface_height * 0.5
 	add_child(collision)

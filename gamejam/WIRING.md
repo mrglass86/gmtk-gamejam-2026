@@ -8,7 +8,7 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Open
 
-- [ ] (lane B) Replace `Pet`'s `AgentStub.gd` with `res://scripts/Pet.gd` in `Main.tscn`; keep the existing `Body` mesh and `NavigationAgent3D`. Default sibling/node paths resolve `Player`, `Body`, and `NavigationAgent3D`.
+_None._
 
 ## Done
 
@@ -20,3 +20,7 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 - [x] (lane B) Replaced Parent's AgentStub with `Parent.gd`, added
   `VisionCone`, retained its NavigationAgent3D, and set the routine rows to the
   A0.2 couch, kitchen, and kid-door coordinates. Default sibling paths resolve.
+- [x] (lane B) Replaced Pet's AgentStub with `Pet.gd`; retained `Body` and
+  `NavigationAgent3D`, and verified its default sibling paths resolve.
+- [x] (lane B) Removed legacy `CollisionShape3D` children from all three
+  `DoorVisual` nodes; `Door.gd` now owns the runtime doorway blockers.
