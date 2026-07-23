@@ -66,7 +66,12 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       formally verified; title verified live in Chrome.
 - [x] A6.1 Web follow-up — `KEEP_WIDTH` camera at 31 m, placeholder generator
       removed, and brightness debug HUD release-gated (`e26ce9c`).
-- [ ] Snack round trip wired end to end — lanes A+B. Accept: S9 full.
+- [x] A7 presentation fixpack — 1920×1080 expand stretch, visible rate-driven
+      fridge spill, subtle TV flicker, rate-driven held-door creak, actual dog
+      cues, and snack pickup/drop plus reveal clearance (`3def8f8`,
+      `--verify-a7`).
+- [ ] Snack round trip wired end to end — lanes A+B. Pickup/drop feedback and
+      reveal clearance are verified; accept the complete interaction in S9.
 - [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.
 - [ ] Route timing measured from Noah's runs, tuned to 1.4–1.6x — lane A adjusts. Accept: S10.
 - [ ] 19:00 freeze: Noah pastes the tag ritual, lane A exports, Claude validates, Noah uploads the itch draft (walkthrough supplied).

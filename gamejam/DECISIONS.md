@@ -296,3 +296,23 @@ Record decisions another session or tool would otherwise have to rediscover.
   masking bed misleading; tune exported direct volumes before replacing clips.
 - **Evidence / handoff:** `d34f4a8`, `CREDITS.md`, `--verify-audio`, clean
   release Web canvas-click proof.
+
+## 2026-07-23 — A7 presentation mirrors analytic state
+
+- **Decision:** Use a resizable 1920×1080 viewport with `canvas_items`/`expand`
+  stretch while leaving the Web canvas preset unchanged. A real fridge
+  `OmniLight3D` mirrors the analytic openness rate and clears at zero; the TV
+  AreaLight flickers subtly until phase 2; held-door creak volume mirrors
+  openness rate and stops when motion stops. Pet cues are actual CC0 dog clips.
+  Scene-side snack feedback observes existing signals, and its reveal visual
+  clears either goal-door panel.
+- **Why:** The director's audio walk found that fridge risk, TV shutoff, door
+  effort, pet identity, and snack interaction needed matching visible or
+  audible presentation.
+- **Rejected / cut:** Constant fridge light; timer-driven creak; bus effects;
+  non-dog or non-CC0 pet clips; changes to lane B actor scripts.
+- **Owner:** Noah (director), lane A (implementation)
+- **Revisit when:** The next director listening pass finds a tell or masking
+  bed misleading.
+- **Evidence / handoff:** `3def8f8`, `--verify-a7`, clean release Web
+  canvas-click proof, renderer captures, and `CREDITS.md`.
