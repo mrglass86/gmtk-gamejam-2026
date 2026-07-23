@@ -86,6 +86,11 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 ## Could — only if everything above is green by Saturday 15:00
 
 - [ ] Dithering post-process per brief 11 (band edge at brightness 0.35, actors excluded).
+- [ ] OR 2D sprite actors (director stretch, competes with dithering — pick one):
+      flat-tinted silhouette sprites at the fixed camera angle, capsule kept as
+      invisible collider + shadow-caster, tip-toe frames synced to the footstep
+      timer, existing hue/brightness language preserved. Rigged 3D GLBs stay
+      parked post-jam (brief scope lock).
 - [ ] Extra hazard placement and routine rows beyond the minimums — from Noah's play notes.
 
 ## Cut / parked — invoke via PLAN.md section 4 trip-wires, in this order

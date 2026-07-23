@@ -130,6 +130,25 @@ Record decisions another session or tool would otherwise have to rediscover.
   costs a block.
 - **Evidence / handoff:** `gamejam/PLAN.md` sections 1, 1.1, 6; lane briefs
 
+## 2026-07-23 — Character-art stretch ruling: sprites maybe, rigs never (this jam)
+
+- **Decision:** Rigged 3D characters (the parked `assets/*.glb`) are out for
+  the jam regardless of schedule — brief scope lock plus they fight the
+  load-bearing colour/readability language. 2D animated sprite actors are an
+  accepted Saturday stretch goal behind the same gate as dithering (everything
+  green by 15:00, playtest and audio done) and COMPETING with dithering — one
+  look upgrade, not two. Cheap-path spec: capsule stays as invisible collider
+  and shadow-caster; visible mesh swaps to a flat-tinted silhouette Sprite3D
+  drawn for the fixed camera angle; frames sync to the existing footstep
+  timer; hue and brightness modulation carry over unchanged.
+- **Why:** Fixed ortho camera removes billboard artifacts, making sprites
+  cheap; rigging is a days-class rabbit hole named "Out" by the brief.
+- **Rejected / cut:** Rigged GLBs in the jam build; any texture/detail pass
+  that breaks hue-belongs-to-actors.
+- **Owner:** Noah (look), Claude (gate enforcement)
+- **Revisit when:** Saturday 15:00 gate, or post-jam.
+- **Evidence / handoff:** BACKLOG Could section; `assets/` GLBs parked.
+
 ## 2026-07-23 — Risk-check alignment (docs/BRIEF_RISK_CHECK.md adopted)
 
 - **Decision:** The workspace's researched risk check governs four technical
