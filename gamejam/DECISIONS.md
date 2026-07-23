@@ -413,3 +413,25 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** Never during the jam; a later CI gate may automate it.
 - **Evidence / handoff:** Director's B8 parse report; reconciliation commit
   `556aa4c`; clean-HEAD Godot 4.7.1 editor startup and `--verify-b8`.
+
+## 2026-07-23 — A10 practical presentation uses honest physical silhouettes
+
+- **Decision:** The bathroom quiet-zone entrance is a scripted
+  `Level/BathroomDoor` with a stationary doorway blocker and collisionless
+  panel. The fridge door occupies the kitchen-facing west side, hinges at its
+  north/wall edge, sweeps outward through open kitchen space, and rests along
+  the north wall. Static ambient energy is 0.05. Trial lamps are debug-only
+  L/K placements whose scroll-adjusted radii print as `_add_omni` rows.
+  Carpet footsteps sit 15 dB below hardwood.
+- **Why:** Run five needed readable furniture and pet silhouettes, a usable
+  quiet-zone door, a physically honest fridge swing, stronger countdown light
+  cues, darker unlit floor, and rapid director-controlled light placement.
+- **Rejected / cut:** The visual-only ajar bathroom panel; the inward fridge
+  sweep through its body; collision on a moving door panel; release-build
+  placement tools; bus effects or dynamic mix processing.
+- **Owner:** Noah (art direction), lane A (scene/presentation implementation),
+  lane B (Parent/Pet routine consumers).
+- **Revisit when:** Director run six finds the fridge orientation, TV pulse,
+  bathroom passage, or 0.05 ambient floor unreadable in live play.
+- **Evidence / handoff:** `6436fdd`–`606a627`, combined head `a9efbae`,
+  `--verify-a10`, `--verify-b9`, and the three A10 labeled renderer captures.

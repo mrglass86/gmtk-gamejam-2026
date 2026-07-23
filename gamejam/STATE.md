@@ -9,8 +9,9 @@ a journal.
 - Direction: Shoulda Eaten Dinner (toddler stealth; the countdown is the
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Friday — director-run behavior and presentation fixpacks
-- Next playable checkpoint: CP4 replay — exercise B8's catch-time snack drop,
-  immediate noise investigation, and capture epilogue v2 alongside A9 lighting.
+- Next playable checkpoint: director run six after B10 — exercise the combined
+  B8/B9 catch, ring-true hearing, bathroom staging, dog bowl visit, A10 fridge,
+  darker lighting, and full win/lose loop.
 
 ## Working build
 
@@ -41,6 +42,13 @@ a journal.
   25+ received noise immediately investigates, decay is 5/s, and the parent
   performs the exit/close/hall/reopen/peek/reclose/kitchen epilogue. Its live
   SceneTree gate and the B6/B7/A5.1/A6/A7/A8/audio regressions pass.
+  `6436fdd` through `606a627` add A10: a scripted bathroom quiet-zone door,
+  composite crib/couch/dog silhouettes, reachable kitchen bowl, collisionless
+  outward fridge swing, couch-aimed stronger TV pulse, 0.05 ambient energy,
+  debug trial-lamp placement, and a 15 dB carpet/hardwood step gap.
+  `a9efbae` adds B9 on top with ring-true hearing, bathroom routine staging,
+  cone smoothing, endgame hall patrol, and dog bowl visits. Clean committed-tree
+  startup plus A10/B9/A4.1/A7/A8/A9/audio gates pass on the combined head.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -50,14 +58,15 @@ a journal.
 
 ## Current focus
 
-- Friday/CP4 replay: Noah plays the authoritative route, catch-time snack drop,
-  capture epilogue v2, dog/toy alarm, snack round trip, and
-  listening/readability pass against S7/S8/S9/S10.
+- Lane B lands B10, then Noah runs the authoritative CP4/CP5 route: catch-time
+  snack drop, capture epilogue, dog/toy alarm, bathroom staging, snack round
+  trip, fridge swing, and lighting/listening verdicts against S7/S8/S9/S10.
 
 ## Known blockers or risks
 
-- A9 is functionally and renderer verified but awaits the director's lighting
-  verdict; the darkest adult/pantry pockets remain intentionally readable.
+- A10 is functionally and Compatibility-renderer verified but awaits the
+  director's run-six lighting/fridge verdict; the darkest adult/pantry pockets
+  remain intentionally readable.
 - The scaffolded input map was hand-serialized — lane A verifies it in A0.
 - Route timing remains unmeasured in play; tune furniture/entrances only if the
   quiet route misses the 1.4–1.6× target.

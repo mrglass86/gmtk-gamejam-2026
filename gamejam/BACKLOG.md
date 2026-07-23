@@ -83,9 +83,19 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       emissive, pulsing, carried, louder on pickup, camera-clear at the pantry,
       with a 0.3 s player pop (`33b7832`–`ed2c253`, `--verify-a8`).
 - [x] A9 practical-lighting pass — five cool emissive fixture sources, 5.8 m
-      Omni pools, 0.08 ambient contrast, live capsule/HUD tracking, and labeled
+      Omni pools, 0.05 ambient contrast after A10, live capsule/HUD tracking, and labeled
       Compatibility capture (`8812b29`, `89187fe`, `9435c0a`,
       `--verify-a9`).
+- [x] A10 run-five presentation — scripted bathroom quiet-zone door, composite
+      crib/couch/dog silhouettes, reachable bowl, outward collisionless fridge
+      swing, couch-aimed stronger TV pulse, 0.05 ambient, debug L/K trial-lamp
+      tool, and whisper-quiet carpet steps (`6436fdd`–`606a627`,
+      `--verify-a10`).
+- [x] B9 run-five behavior — ring-true hearing, smoothed honest cone, bathroom
+      close/dwell/open staging, endgame carpet-to-kid-door patrol, and dog bowl
+      visits (`a9efbae`, `--verify-b9`).
+- [ ] B10 sprint-bot follow-up — couch glances, HUNT at 75 suspicion, and 1.2
+      run multiplier; gate director run six.
 - [ ] Snack round trip wired end to end — lanes A+B. Pickup/drop feedback and
       reveal clearance are verified; accept the complete interaction in S9.
 - [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.
