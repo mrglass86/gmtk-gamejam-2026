@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3]
+[gd_scene load_steps=30 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/LevelBuilder.gd" id="2_level"]
@@ -80,10 +80,6 @@ roughness = 0.8
 [sub_resource type="BoxShape3D" id="BoxShape_crib_goal"]
 size = Vector3(3.2, 1.6, 3.8)
 
-[sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_first_input"]
-mix_rate = 22050.0
-buffer_length = 0.2
-
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
 
@@ -102,7 +98,8 @@ script = ExtResource("3_camera")
 [node name="OrthoCamera" type="Camera3D" parent="CameraRig"]
 current = true
 projection = 1
-size = 17.5
+keep_aspect = 0
+size = 31.0
 near = 0.1
 far = 100.0
 
@@ -318,10 +315,6 @@ text = "Brightness: --"
 layer = 20
 process_mode = 3
 script = ExtResource("15_game_flow")
-
-[node name="FirstInputAudio" type="AudioStreamPlayer" parent="GameFlow"]
-stream = SubResource("AudioStreamGenerator_first_input")
-volume_db = -18.0
 
 [node name="TitleCard" type="Control" parent="GameFlow"]
 layout_mode = 3

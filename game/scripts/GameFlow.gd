@@ -2,8 +2,8 @@ extends CanvasLayer
 class_name DinnerGameFlow
 
 ## Owns the only three presentation beats in the jam build: title, play, and
-## result. It also gates the clock and the first audio playback behind the same
-## user gesture for Web autoplay compliance.
+## result. The same first-input transition is where the Saturday audio pass
+## must start imported audio for Web autoplay compliance.
 
 signal game_started()
 signal game_ended(did_win: bool)
@@ -27,14 +27,7 @@ enum State {
 @export_node_path("Label") var result_detail_path: NodePath = NodePath(
 	"ResultCard/Panel/ResultDetail"
 )
-@export_node_path("AudioStreamPlayer") var first_input_audio_path: NodePath = NodePath(
-	"FirstInputAudio"
-)
 
-@export_group("First-input Audio")
-@export var start_tone_frequency_hz: float = 440.0
-@export var start_tone_duration: float = 0.12
-@export_range(0.0, 1.0) var start_tone_amplitude: float = 0.06
 @export_group("Crib Goal")
 @export var goal_body_margin: float = 0.4
 
@@ -48,8 +41,6 @@ var _title_card: Control
 var _result_card: Control
 var _result_heading: Label
 var _result_detail: Label
-var _first_input_audio: AudioStreamPlayer
-var _first_input_stream: AudioStream
 var _verification_mode: bool = false
 
 
@@ -60,9 +51,6 @@ func _ready() -> void:
 	_result_card = get_node_or_null(result_card_path) as Control
 	_result_heading = get_node_or_null(result_heading_path) as Label
 	_result_detail = get_node_or_null(result_detail_path) as Label
-	_first_input_audio = get_node_or_null(first_input_audio_path) as AudioStreamPlayer
-	if _first_input_audio != null:
-		_first_input_stream = _first_input_audio.stream
 	_verification_mode = OS.get_cmdline_user_args().has("--verify-a6")
 
 	if _should_bypass_presentation():
@@ -128,7 +116,6 @@ func _start_game() -> void:
 	_result_card.visible = false
 	get_tree().paused = false
 	_player.set_input_locked(false)
-	_start_first_input_audio()
 	GameClock.start()
 	game_started.emit()
 
@@ -139,9 +126,6 @@ func _finish_game(did_win: bool) -> void:
 	state = State.WON if did_win else State.LOST
 	GameClock.running = false
 	_player.set_input_locked(true)
-	if _first_input_audio != null:
-		_first_input_audio.stop()
-		_first_input_audio.stream = null
 	_title_card.visible = false
 	_result_card.visible = true
 	if did_win:
@@ -194,31 +178,6 @@ func _is_player_in_crib() -> bool:
 		and absf(local_player_position.y) <= half_size.y
 		and absf(local_player_position.z) <= half_size.z + goal_body_margin
 	)
-
-
-func _start_first_input_audio() -> void:
-	if _first_input_audio == null:
-		return
-	if _first_input_audio.stream == null:
-		_first_input_audio.stream = _first_input_stream
-	var generator: AudioStreamGenerator = _first_input_audio.stream as AudioStreamGenerator
-	if generator == null:
-		return
-	_first_input_audio.play()
-	var playback: AudioStreamGeneratorPlayback = (
-		_first_input_audio.get_stream_playback() as AudioStreamGeneratorPlayback
-	)
-	if playback == null:
-		return
-	var requested_frames: int = ceili(generator.mix_rate * start_tone_duration)
-	var frame_count: int = mini(requested_frames, playback.get_frames_available())
-	var phase: float = 0.0
-	var phase_increment: float = start_tone_frequency_hz / generator.mix_rate
-	for frame_index: int in range(frame_count):
-		var fade: float = 1.0 - float(frame_index) / maxf(float(frame_count), 1.0)
-		var sample: float = sin(phase * TAU) * start_tone_amplitude * fade
-		playback.push_frame(Vector2(sample, sample))
-		phase = fmod(phase + phase_increment, 1.0)
 
 
 func _is_first_input(event: InputEvent) -> bool:

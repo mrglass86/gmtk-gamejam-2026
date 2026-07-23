@@ -10,6 +10,11 @@ extends CanvasLayer
 var _elapsed: float = 0.0
 
 
+func _ready() -> void:
+	visible = OS.is_debug_build()
+	set_process(visible)
+
+
 func _process(delta: float) -> void:
 	_elapsed += delta
 	if _elapsed < update_interval:

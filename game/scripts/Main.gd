@@ -432,9 +432,14 @@ func _verify_a6_game_flow() -> void:
 	var player: DinnerPlayer = $Player as DinnerPlayer
 	var title_card: Control = $GameFlow/TitleCard as Control
 	var result_card: Control = $GameFlow/ResultCard as Control
-	var start_audio: AudioStreamPlayer = $GameFlow/FirstInputAudio as AudioStreamPlayer
+	var camera: Camera3D = $CameraRig/OrthoCamera as Camera3D
+	var brightness_readout: CanvasLayer = $BrightnessReadout as CanvasLayer
 
 	assert(flow.state == DinnerGameFlow.State.TITLE)
+	assert(camera.keep_aspect == Camera3D.KEEP_WIDTH)
+	assert(is_equal_approx(camera.size, 31.0))
+	assert(brightness_readout.visible == OS.is_debug_build())
+	assert($GameFlow.find_children("*", "AudioStreamPlayer", true, false).is_empty())
 	assert(title_card.visible and not result_card.visible)
 	assert(not GameClock.running and is_equal_approx(GameClock.time_remaining, 300.0))
 	assert(player.input_locked and get_tree().paused)
@@ -450,11 +455,10 @@ func _verify_a6_game_flow() -> void:
 	flow.call("_input", start_event)
 	assert(flow.state == DinnerGameFlow.State.PLAYING)
 	assert(GameClock.running and not player.input_locked and not get_tree().paused)
-	assert(not title_card.visible and start_audio.playing)
+	assert(not title_card.visible)
 	assert(flow.qualifies_for_expiry_win(true, true))
 	assert(not flow.qualifies_for_expiry_win(true, false))
 	assert(not flow.qualifies_for_expiry_win(false, true))
-	await get_tree().create_timer(0.25).timeout
 
 	player.global_position = Vector3(-8.7, 0.6, -2.75)
 	player.set_carrying_snack(true)
@@ -479,13 +483,12 @@ func _verify_a6_game_flow() -> void:
 
 	flow.prepare_verification_case()
 	flow.call("_input", start_event)
-	await get_tree().create_timer(0.25).timeout
 	player.global_position = Vector3(-12.4, 0.6, -4.0)
 	player.set_carrying_snack(false)
 	GameClock.time_expired.emit()
 	assert(flow.state == DinnerGameFlow.State.LOST)
 	assert(($GameFlow/ResultCard/Panel/ResultHeading as Label).text == "BEDTIME")
-	print("A6 verification passed: title gesture, clock/audio gate, outcomes, and restart.")
+	print("A6/A6.1 verification passed: camera, title, clock, outcomes, restart, and release HUD gate.")
 	get_tree().paused = false
 	start_event = null
 	restart_event = null
