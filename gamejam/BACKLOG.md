@@ -33,12 +33,15 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [x] B3.1+B3.2 first-walk parent/door fixpack — FOUND chase, clipped cone,
       movement-only sweep, script-owned blockers, snack reveal position, and
       speed retune — lane B (`946cd11`, `351f268`). Accept: S7/S9 at CP4.
+- [x] B5 pulled forward — bathroom trip plus phase-4 dining-band lights-off
+      route at 1.388–1.421 m/s implied travel — lane B (`dcd5e1e`).
+- [ ] B5 scene integration — lane A removes the Parent routine override so the
+      script table is authoritative. Accept: S10 route-contest row.
 - [ ] CP4 catch-loop gate — Claude validates, Noah plays the catch and the chase.
 - [x] B4 Pet.gd — lane B (`bd77d16`). Accept: S8 at CP5.
 - [ ] A6 win/lose/title/restart + export preset — lane A. Accept: S9 UI rows.
 - [ ] Snack round trip wired end to end — lanes A+B. Accept: S9 full.
 - [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.
-- [ ] B5 routine rows (drink run promoted, bathroom, lights-off walk) — lane B. Accept: S10.
 - [ ] Route timing measured from Noah's runs, tuned to 1.4–1.6x — lane A adjusts. Accept: S10.
 - [ ] 19:00 freeze: Noah pastes the tag ritual, lane A exports, Claude validates, Noah uploads the itch draft (walkthrough supplied).
 
