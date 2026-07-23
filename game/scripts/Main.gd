@@ -55,6 +55,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a6"):
 		_verify_a6_game_flow()
 		return
+	if OS.get_cmdline_user_args().has("--verify-audio"):
+		_verify_audio_pass()
+		return
 	var capture_path: String = _capture_path_from_args()
 	if not capture_path.is_empty():
 		_capture_layout(capture_path)
@@ -509,6 +512,26 @@ func _verify_a6_game_flow() -> void:
 	GameClock.set_meta(&"a6_restart_verification", true)
 	start_event = null
 	flow.call("_input", restart_event)
+
+
+func _verify_audio_pass() -> void:
+	var audio_director: DinnerAudioDirector = $AudioDirector as DinnerAudioDirector
+	audio_director.verify_configuration()
+	audio_director.begin_audio_verification()
+	await get_tree().process_frame
+	assert(
+		$AudioDirector/TVClickOff is AudioStreamPlayer3D
+		and $AudioDirector/PlayerFootsteps is AudioStreamPlayer
+		and $AudioDirector/TVBed is AudioStreamPlayer3D
+	)
+	print(
+		"Audio verification passed: first-input beds, countdown tells, footsteps, "
+		+ "pet/result cues, positional sources, and zero bus effects."
+	)
+	audio_director.end_audio_verification()
+	for settle_frame: int in range(8):
+		await get_tree().process_frame
+	get_tree().quit()
 
 
 func _verify_primary_floor_coverage() -> void:

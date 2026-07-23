@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3]
+[gd_scene load_steps=31 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/LevelBuilder.gd" id="2_level"]
@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://scripts/NightstandClock.gd" id="13_clock"]
 [ext_resource type="Script" path="res://scripts/DebugTools.gd" id="14_debug"]
 [ext_resource type="Script" path="res://scripts/GameFlow.gd" id="15_game_flow"]
+[ext_resource type="Script" path="res://scripts/AudioDirector.gd" id="16_audio"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -163,6 +164,9 @@ material_override = SubResource("PlayerMaterial")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
 shape = SubResource("CapsuleShape_player")
 
+[node name="AudioListener3D" type="AudioListener3D" parent="Player"]
+position = Vector3(0, 0.4, 0)
+
 [node name="Parent" type="Node3D" parent="."]
 position = Vector3(-0.2, 0.7, -4.6)
 script = ExtResource("11_parent")
@@ -268,6 +272,40 @@ billboard = 1
 no_depth_test = true
 text = "5:00"
 script = ExtResource("13_clock")
+
+[node name="AudioDirector" type="Node" parent="."]
+process_mode = 3
+script = ExtResource("16_audio")
+
+[node name="TVClickOff" type="AudioStreamPlayer3D" parent="AudioDirector"]
+
+[node name="LightSwitch" type="AudioStreamPlayer3D" parent="AudioDirector"]
+
+[node name="PlayerFootsteps" type="AudioStreamPlayer" parent="AudioDirector"]
+
+[node name="ParentFootsteps" type="AudioStreamPlayer3D" parent="AudioDirector"]
+
+[node name="WinSting" type="AudioStreamPlayer" parent="AudioDirector"]
+
+[node name="CaughtSting" type="AudioStreamPlayer" parent="AudioDirector"]
+
+[node name="PetChirp" type="AudioStreamPlayer3D" parent="AudioDirector"]
+
+[node name="PetBark" type="AudioStreamPlayer3D" parent="AudioDirector"]
+
+[node name="TVBed" type="AudioStreamPlayer3D" parent="AudioDirector"]
+position = Vector3(-2.75, 1, -4.1)
+
+[node name="SpeakerBed" type="AudioStreamPlayer3D" parent="AudioDirector"]
+position = Vector3(8.5, 1.15, -5.3)
+
+[node name="FridgeHum" type="AudioStreamPlayer3D" parent="AudioDirector"]
+position = Vector3(13.75, 1.1, -5.3)
+
+[node name="ClockTick" type="AudioStreamPlayer3D" parent="AudioDirector"]
+position = Vector3(-10.2, 1, -5.6)
+
+[node name="DoorCreak" type="AudioStreamPlayer3D" parent="AudioDirector"]
 
 [node name="BrightnessReadout" type="CanvasLayer" parent="."]
 script = ExtResource("5_readout")
