@@ -36,6 +36,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a3"):
 		_verify_noise_indicators()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a02"):
+		_verify_a02_navigation()
+		return
 	var capture_path: String = _capture_path_from_args()
 	if not capture_path.is_empty():
 		_capture_layout(capture_path)
@@ -105,6 +108,39 @@ func _verify_noise_indicators() -> void:
 	var loudest_indicator: Node = manager.get_child(3)
 	assert(is_equal_approx(float(loudest_indicator.get("max_radius")), 20.0))
 	print("A3 verification passed: absolute 0.25 gate and 20 m audibility cap.")
+	get_tree().quit()
+
+
+func _verify_a02_navigation() -> void:
+	var navigation_map: RID = get_world_3d().navigation_map
+	for sync_frame: int in range(12):
+		await get_tree().physics_frame
+	assert(
+		NavigationServer3D.map_get_iteration_id(navigation_map) > 0,
+		"Navigation map did not complete its first synchronization."
+	)
+	var l_wall_path: PackedVector3Array = NavigationServer3D.map_get_path(
+		navigation_map, Vector3(0.0, 0.0, 5.4), Vector3(0.0, 0.0, 2.5), true
+	)
+	assert(l_wall_path.size() > 2, "L-wall path did not detour.")
+	var l_wall_detour: bool = false
+	for point: Vector3 in l_wall_path:
+		if point.x < -4.7 or point.x > 5.2:
+			l_wall_detour = true
+			break
+	assert(l_wall_detour, "Navigation path crossed the L-wall instead of routing around it.")
+
+	var pantry_path: PackedVector3Array = NavigationServer3D.map_get_path(
+		navigation_map, Vector3(8.0, 0.0, 5.8), Vector3(13.2, 0.0, 4.4), true
+	)
+	assert(pantry_path.size() > 2, "Pantry-wall path did not detour.")
+	var used_pantry_door: bool = false
+	for point: Vector3 in pantry_path:
+		if point.z < 2.6:
+			used_pantry_door = true
+			break
+	assert(used_pantry_door, "Navigation path crossed PantryWest instead of using the north opening.")
+	print("A0.2 navigation verification passed: L-wall and pantry-wall detours.")
 	get_tree().quit()
 
 

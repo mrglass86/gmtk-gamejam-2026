@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=27 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/LevelBuilder.gd" id="2_level"]
@@ -8,6 +8,8 @@
 [ext_resource type="Script" path="res://scripts/Player.gd" id="6_player"]
 [ext_resource type="Script" path="res://scripts/NoiseIndicatorManager.gd" id="7_indicator_manager"]
 [ext_resource type="PackedScene" path="res://scenes/NoiseSurface.tscn" id="8_noise_surface"]
+[ext_resource type="Script" path="res://scripts/Door.gd" id="9_door"]
+[ext_resource type="Script" path="res://scripts/Snack.gd" id="10_snack"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -55,6 +57,30 @@ height = 0.84
 albedo_color = Color(0.63, 0.56, 0.82, 1)
 roughness = 0.85
 
+[sub_resource type="BoxMesh" id="DoorPanelMesh"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="DoorPanelMaterial"]
+albedo_color = Color(0.44, 0.47, 0.51, 1)
+roughness = 0.9
+
+[sub_resource type="BoxShape3D" id="BedroomDoorShape"]
+size = Vector3(2.3, 1.2, 0.12)
+
+[sub_resource type="BoxShape3D" id="FridgeDoorShape"]
+size = Vector3(2.4, 2.1, 0.12)
+
+[sub_resource type="BoxShape3D" id="PantryDoorShape"]
+size = Vector3(3.4, 2.0, 0.12)
+
+[sub_resource type="SphereMesh" id="SnackMesh"]
+radius = 0.25
+height = 0.5
+
+[sub_resource type="StandardMaterial3D" id="SnackMaterial"]
+albedo_color = Color(0.82, 0.87, 0.92, 1)
+roughness = 0.8
+
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
 
@@ -73,7 +99,7 @@ script = ExtResource("3_camera")
 [node name="OrthoCamera" type="Camera3D" parent="CameraRig"]
 current = true
 projection = 1
-size = 29.0
+size = 17.5
 near = 0.1
 far = 100.0
 
@@ -84,29 +110,50 @@ script = ExtResource("2_level")
 navigation_mesh = SubResource("NavigationMesh_static")
 enabled = true
 
-[node name="CreakyTeacher" parent="Level" instance=ExtResource("8_noise_surface")]
-position = Vector3(-7.0, 0.06, 4.7)
+[node name="CreakTeacher" parent="Level" instance=ExtResource("8_noise_surface")]
+position = Vector3(-11.8, 0.06, -0.05)
 loudness_multiplier = 3.0
-radius = 0.7
+surface_size = Vector2(1.8, 0.9)
 surface_group = &"surface_creaky"
 surface_color = Color(0.607843, 0.627451, 0.647059, 1)
 
-[node name="DiningCreak" parent="Level" instance=ExtResource("8_noise_surface")]
-position = Vector3(-2.0, 0.06, -2.0)
+[node name="CreakKitchen" parent="Level" instance=ExtResource("8_noise_surface")]
+position = Vector3(6.2, 0.06, 0.0)
 loudness_multiplier = 3.0
-radius = 0.7
+surface_size = Vector2(1.8, 0.8)
 surface_group = &"surface_creaky"
 surface_color = Color(0.607843, 0.627451, 0.647059, 1)
 
-[node name="ToyTeacher" parent="Level" instance=ExtResource("8_noise_surface")]
-position = Vector3(2.0, 0.06, -2.5)
+[node name="CreakAdult" parent="Level" instance=ExtResource("8_noise_surface")]
+position = Vector3(-5.7, 0.06, 3.5)
+loudness_multiplier = 3.0
+surface_size = Vector2(1.8, 0.8)
+surface_group = &"surface_creaky"
+surface_color = Color(0.607843, 0.627451, 0.647059, 1)
+
+[node name="ToyHallRug" parent="Level" instance=ExtResource("8_noise_surface")]
+position = Vector3(-5.6, 0.06, 0.0)
 loudness_multiplier = 4.0
-radius = 0.9
+surface_size = Vector2(1.8, 0.9)
+surface_group = &"surface_toys"
+surface_color = Color(0.768627, 0.788235, 0.807843, 1)
+
+[node name="ToyDining" parent="Level" instance=ExtResource("8_noise_surface")]
+position = Vector3(-2.6, 0.06, 2.4)
+loudness_multiplier = 4.0
+surface_size = Vector2(1.8, 0.9)
+surface_group = &"surface_toys"
+surface_color = Color(0.768627, 0.788235, 0.807843, 1)
+
+[node name="ToyCarpet" parent="Level" instance=ExtResource("8_noise_surface")]
+position = Vector3(-2.2, 0.06, 4.8)
+loudness_multiplier = 4.0
+surface_size = Vector2(1.8, 1.0)
 surface_group = &"surface_toys"
 surface_color = Color(0.768627, 0.788235, 0.807843, 1)
 
 [node name="Player" type="CharacterBody3D" parent="."]
-position = Vector3(-11, 0.6, 1.5)
+position = Vector3(-12.4, 0.6, -4.0)
 groups = ["player"]
 script = ExtResource("6_player")
 
@@ -118,7 +165,7 @@ material_override = SubResource("PlayerMaterial")
 shape = SubResource("CapsuleShape_player")
 
 [node name="Parent" type="Node3D" parent="."]
-position = Vector3(1.5, 0.7, -7.0)
+position = Vector3(-0.2, 0.7, -4.6)
 script = ExtResource("4_agent")
 
 [node name="Capsule" type="MeshInstance3D" parent="Parent"]
@@ -131,7 +178,7 @@ path_desired_distance = 0.2
 target_desired_distance = 0.3
 
 [node name="Pet" type="Node3D" parent="."]
-position = Vector3(3.5, 0.42, -6.8)
+position = Vector3(5.5, 0.42, -4.2)
 script = ExtResource("4_agent")
 
 [node name="Body" type="MeshInstance3D" parent="Pet"]
@@ -144,22 +191,74 @@ path_desired_distance = 0.2
 target_desired_distance = 0.3
 
 [node name="Crib" type="Node3D" parent="."]
-position = Vector3(-12.5, 0.45, 2.2)
-
-[node name="Frame" type="MeshInstance3D" parent="Crib"]
-mesh = SubResource("CapsuleMesh_parent")
+position = Vector3(-8.7, 0.45, -4.7)
 
 [node name="Fridge" type="Node3D" parent="."]
-position = Vector3(13.2, 0.0, -2.3)
+position = Vector3(13.75, 0.0, -4.1)
+script = ExtResource("9_door")
+door_kind = 2
+provides_snack = true
+
+[node name="DoorVisual" type="StaticBody3D" parent="Fridge"]
+position = Vector3(-1.2, 0, 0)
+
+[node name="Panel" type="MeshInstance3D" parent="Fridge/DoorVisual"]
+position = Vector3(1.2, 1.05, 0)
+scale = Vector3(2.4, 2.1, 0.12)
+mesh = SubResource("DoorPanelMesh")
+material_override = SubResource("DoorPanelMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Fridge/DoorVisual"]
+position = Vector3(1.2, 1.05, 0)
+shape = SubResource("FridgeDoorShape")
 
 [node name="Pantry" type="Node3D" parent="."]
-position = Vector3(9.2, 0.0, 2.8)
+position = Vector3(13.2, 0.0, 2.5)
+script = ExtResource("9_door")
+door_kind = 1
+provides_snack = true
+
+[node name="DoorVisual" type="StaticBody3D" parent="Pantry"]
+position = Vector3(-1.7, 0, 0)
+
+[node name="Panel" type="MeshInstance3D" parent="Pantry/DoorVisual"]
+position = Vector3(1.7, 1.0, 0)
+scale = Vector3(3.4, 2.0, 0.12)
+mesh = SubResource("DoorPanelMesh")
+material_override = SubResource("DoorPanelMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Pantry/DoorVisual"]
+position = Vector3(1.7, 1.0, 0)
+shape = SubResource("PantryDoorShape")
 
 [node name="BedroomDoor" type="Node3D" parent="."]
-position = Vector3(-7.35, 0.0, 3.9)
+position = Vector3(-12.75, 0.0, -1.5)
+script = ExtResource("9_door")
+door_kind = 0
+
+[node name="DoorVisual" type="StaticBody3D" parent="BedroomDoor"]
+position = Vector3(-1.15, 0, 0)
+
+[node name="Panel" type="MeshInstance3D" parent="BedroomDoor/DoorVisual"]
+position = Vector3(1.15, 0.6, 0)
+scale = Vector3(2.3, 1.2, 0.12)
+mesh = SubResource("DoorPanelMesh")
+material_override = SubResource("DoorPanelMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BedroomDoor/DoorVisual"]
+position = Vector3(1.15, 0.6, 0)
+shape = SubResource("BedroomDoorShape")
+
+[node name="Snack" type="Node3D" parent="."]
+position = Vector3(13.5, 0.3, 0.0)
+script = ExtResource("10_snack")
+
+[node name="Visual" type="MeshInstance3D" parent="Snack"]
+mesh = SubResource("SnackMesh")
+material_override = SubResource("SnackMaterial")
 
 [node name="NightstandClock" type="Node3D" parent="."]
-position = Vector3(-9.0, 0.85, -2.0)
+position = Vector3(-10.2, 0.85, -5.6)
 
 [node name="BrightnessReadout" type="CanvasLayer" parent="."]
 script = ExtResource("5_readout")
