@@ -11,8 +11,8 @@ class_name PhaseDirector
 )
 
 @export_group("TV Flicker")
-@export_range(0.0, 0.2) var tv_flicker_amount: float = 0.055
-@export var tv_flicker_speed: float = 15.0
+@export_range(0.0, 0.25) var tv_flicker_amount: float = 0.16
+@export var tv_flicker_speed: float = 12.0
 
 var _level: Node3D
 var _fridge: DinnerDoor

@@ -46,6 +46,9 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 	"../BedroomDoor"
 )
 @export_node_path("DinnerDoor") var pantry_door_path: NodePath = NodePath("../Pantry")
+@export_node_path("DinnerDoor") var bathroom_door_path: NodePath = NodePath(
+	"../Level/BathroomDoor"
+)
 
 @export_group("Countdown Tells")
 @export var tv_click_position: Vector3 = Vector3(-2.75, 1.0, -4.1)
@@ -56,7 +59,7 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 @export var tell_max_distance: float = 18.0
 
 @export_group("Footsteps")
-@export var carpet_step_volume_db: float = -17.0
+@export var carpet_step_volume_db: float = -25.0
 @export var hardwood_step_volume_db: float = -10.0
 @export var creak_step_volume_db: float = -5.0
 @export var toy_squeak_volume_db: float = -3.0
@@ -266,7 +269,11 @@ func _wire_streams_and_tuning() -> void:
 
 
 func _collect_doors() -> void:
-	for door_path: NodePath in [bedroom_door_path, pantry_door_path]:
+	for door_path: NodePath in [
+		bedroom_door_path,
+		pantry_door_path,
+		bathroom_door_path,
+	]:
 		var door: DinnerDoor = get_node_or_null(door_path) as DinnerDoor
 		if door == null:
 			continue

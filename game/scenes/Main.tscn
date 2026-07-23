@@ -23,7 +23,7 @@ background_mode = 1
 background_color = Color(0.045, 0.055, 0.07, 1)
 ambient_light_source = 3
 ambient_light_color = Color(0.38, 0.42, 0.5, 1)
-ambient_light_energy = 0.08
+ambient_light_energy = 0.05
 tonemap_mode = 2
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_static"]
@@ -56,9 +56,13 @@ height = 1.4
 albedo_color = Color(0.63, 0.56, 0.82, 1)
 roughness = 0.85
 
-[sub_resource type="SphereMesh" id="SphereMesh_pet"]
-radius = 0.42
-height = 0.84
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_pet"]
+radius = 0.24
+height = 0.75
+
+[sub_resource type="SphereMesh" id="SphereMesh_pet_snout"]
+radius = 0.15
+height = 0.22
 
 [sub_resource type="StandardMaterial3D" id="PetMaterial"]
 albedo_color = Color(0.63, 0.56, 0.82, 1)
@@ -195,7 +199,14 @@ position = Vector3(5.5, 0.42, -4.2)
 script = ExtResource("4_pet")
 
 [node name="Body" type="MeshInstance3D" parent="Pet"]
-mesh = SubResource("SphereMesh_pet")
+rotation_degrees = Vector3(0, 0, 90)
+mesh = SubResource("CapsuleMesh_pet")
+material_override = SubResource("PetMaterial")
+
+[node name="Snout" type="MeshInstance3D" parent="Pet"]
+position = Vector3(0.43, 0.02, 0)
+scale = Vector3(1.15, 0.8, 0.8)
+mesh = SubResource("SphereMesh_pet_snout")
 material_override = SubResource("PetMaterial")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="Pet"]
@@ -216,23 +227,24 @@ monitorable = false
 shape = SubResource("BoxShape_crib_goal")
 
 [node name="Fridge" type="Node3D" parent="."]
-position = Vector3(13.75, 0.0, -4.1)
+position = Vector3(12.48, 0.0, -5.2)
 script = ExtResource("9_door")
 door_kind = 2
 provides_snack = true
 open_rotation_degrees = Vector3(0, -90, 0)
+fridge_blocker_size = Vector3(0.12, 2.1, 2.2)
 
 [node name="DoorVisual" type="StaticBody3D" parent="Fridge"]
-position = Vector3(1.2, 0, 0)
+position = Vector3(0, 0, -1.1)
 
 [node name="Panel" type="MeshInstance3D" parent="Fridge/DoorVisual"]
-position = Vector3(-1.2, 1.05, 0)
-scale = Vector3(2.4, 2.1, 0.12)
+position = Vector3(0, 1.05, 1.1)
+scale = Vector3(0.12, 2.1, 2.2)
 mesh = SubResource("DoorPanelMesh")
 material_override = SubResource("DoorPanelMaterial")
 
 [node name="SpillLight" type="OmniLight3D" parent="Fridge"]
-position = Vector3(0, 1.05, 0.15)
+position = Vector3(-0.15, 1.05, 0)
 light_color = Color(0.78, 0.88, 1, 1)
 light_energy = 0.0
 omni_range = 0.0
@@ -262,6 +274,22 @@ door_kind = 0
 position = Vector3(-1.15, 0, 0)
 
 [node name="Panel" type="MeshInstance3D" parent="BedroomDoor/DoorVisual"]
+position = Vector3(1.15, 0.6, 0)
+scale = Vector3(2.3, 1.2, 0.12)
+mesh = SubResource("DoorPanelMesh")
+material_override = SubResource("DoorPanelMaterial")
+
+[node name="BathroomDoor" type="Node3D" parent="Level"]
+position = Vector3(-5.85, 0.0, -1.5)
+script = ExtResource("9_door")
+player_path = NodePath("../../Player")
+snack_path = NodePath("../../Snack")
+open_rotation_degrees = Vector3(0, 90, 0)
+
+[node name="DoorVisual" type="StaticBody3D" parent="Level/BathroomDoor"]
+position = Vector3(-1.15, 0, 0)
+
+[node name="Panel" type="MeshInstance3D" parent="Level/BathroomDoor/DoorVisual"]
 position = Vector3(1.15, 0.6, 0)
 scale = Vector3(2.3, 1.2, 0.12)
 mesh = SubResource("DoorPanelMesh")

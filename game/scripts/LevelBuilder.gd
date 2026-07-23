@@ -90,14 +90,15 @@ func _build_walls() -> void:
 
 
 func _build_props() -> void:
-	_add_prop("CribBlock", Vector3(-8.7, 0.45, -4.7), Vector3(2.3, 0.9, 3.0), prop_color)
+	_add_crib()
 	_add_prop("Nightstand", Vector3(-10.2, 0.35, -5.6), Vector3(0.8, 0.7, 0.8), prop_color)
 	_add_prop("TVConsole", Vector3(-3.2, 0.75, -4.1), Vector3(0.8, 1.5, 4.0), Color("#627b92"))
-	_add_prop("Couch", Vector3(1.55, 0.4, -4.4), Vector3(2.3, 0.8, 3.0), prop_color)
+	_add_couch()
 	_add_prop("DogBed", Vector3(5.5, 0.15, -4.75), Vector3(1.8, 0.3, 2.7), prop_color)
 	_add_prop("KitchenCounter", Vector3(9.8, 0.45, -5.35), Vector3(5.4, 0.9, 2.1), prop_color)
 	_add_prop("FridgeBlock", Vector3(13.75, 1.1, -5.3), Vector3(2.4, 2.2, 2.2), Color("#9aa5b0"))
 	_add_prop("KitchenTable", Vector3(10.55, 0.4, -1.2), Vector3(2.5, 0.8, 2.6), prop_color)
+	_add_kitchen_bowl()
 	_add_prop("DiningTable", Vector3(0.95, 0.4, 0.9), Vector3(5.1, 0.8, 2.2), prop_color)
 	_add_prop("AdultBed", Vector3(-9.8, 0.4, 4.75), Vector3(4.6, 0.8, 3.1), prop_color)
 	_add_prop("HallShelf", Vector3(10.1, 0.55, 4.35), Vector3(1.4, 1.1, 3.5), prop_color)
@@ -105,7 +106,6 @@ func _build_props() -> void:
 	_add_prop("KitchenSpeaker", Vector3(8.5, 1.15, -5.3), Vector3(0.5, 0.5, 0.5), Color("#6f7882"))
 	_add_visual_prop("FrontDoor", Vector3(8.0, 0.575, 6.3), Vector3(2.4, 1.15, 0.15), Color("#59616b"))
 	_add_visual_prop("DoorMat", Vector3(8.0, 0.01, 5.85), Vector3(1.6, 0.02, 0.9), carpet_color)
-	_add_ajar_bathroom_door()
 
 
 func _build_lights() -> void:
@@ -144,7 +144,15 @@ func _build_lights() -> void:
 		0.85,
 		0.0
 	)
-	_add_area_glow("TVGlow", Vector3(-2.75, 1.25, -4.1), Vector3(0.0, -90.0, 0.0), Color("#7ea5d8"))
+	_add_area_glow(
+		"TVGlow",
+		Vector3(-2.75, 1.25, -4.1),
+		Vector3.ZERO,
+		Color("#7ea5d8"),
+		0.75
+	)
+	var tv_glow: AreaLight3D = $TVGlow as AreaLight3D
+	tv_glow.look_at(Vector3(1.55, 0.4, -4.4), Vector3.UP)
 	_add_area_glow("WindowGlow", Vector3(-14.75, 2.4, -4.0), Vector3(0.0, -90.0, 0.0), Color("#c7d5e7"))
 	_add_area_glow("DoorStripGlow", Vector3(-12.75, 0.2, 1.3), Vector3(-90.0, 0.0, 0.0), Color("#d5dce8"))
 
@@ -253,16 +261,81 @@ func _add_visual_prop(node_name: String, center: Vector3, dimensions: Vector3, c
 	add_child(prop)
 
 
-func _add_ajar_bathroom_door() -> void:
-	var hinge: Node3D = Node3D.new()
-	hinge.name = "BathroomDoor"
-	hinge.position = Vector3(-7.0, 0.0, -1.5)
-	hinge.rotation_degrees.y = 70.0
-	var panel: Node3D = Node3D.new()
-	panel.position = Vector3(1.15, 0.575, 0.0)
-	_add_box_visual(panel, Vector3(2.3, 1.15, 0.12), Color("#59616b"))
-	hinge.add_child(panel)
-	add_child(hinge)
+func _add_crib() -> void:
+	var crib: StaticBody3D = StaticBody3D.new()
+	crib.name = "CribBlock"
+	crib.position = Vector3(-8.7, 0.0, -4.7)
+	crib.add_to_group("nav_source")
+	_add_box_collision(crib, Vector3(2.3, 0.9, 3.0), Vector3(0.0, 0.45, 0.0))
+	for post_x: float in [-1.02, 1.02]:
+		for post_z: float in [-1.36, 1.36]:
+			_add_box_visual_part(
+				crib,
+				"Post",
+				Vector3(post_x, 0.55, post_z),
+				Vector3(0.18, 1.1, 0.18),
+				prop_color
+			)
+	for rail_x: float in [-1.02, 1.02]:
+		for rail_y: float in [0.38, 0.82]:
+			_add_box_visual_part(
+				crib,
+				"SideRail",
+				Vector3(rail_x, rail_y, 0.0),
+				Vector3(0.14, 0.12, 2.55),
+				prop_color
+			)
+	add_child(crib)
+
+
+func _add_couch() -> void:
+	var couch: StaticBody3D = StaticBody3D.new()
+	couch.name = "Couch"
+	couch.position = Vector3(1.55, 0.0, -4.4)
+	couch.add_to_group("nav_source")
+	_add_box_collision(couch, Vector3(2.3, 0.8, 3.0), Vector3(0.0, 0.4, 0.0))
+	_add_box_visual_part(
+		couch,
+		"Seat",
+		Vector3(-0.15, 0.28, 0.0),
+		Vector3(1.75, 0.38, 2.65),
+		prop_color
+	)
+	_add_box_visual_part(
+		couch,
+		"Back",
+		Vector3(0.96, 0.68, 0.0),
+		Vector3(0.32, 0.92, 3.0),
+		prop_color
+	)
+	for arm_z: float in [-1.37, 1.37]:
+		_add_box_visual_part(
+			couch,
+			"Arm",
+			Vector3(-0.08, 0.56, arm_z),
+			Vector3(1.78, 0.62, 0.26),
+			prop_color
+		)
+	add_child(couch)
+
+
+func _add_kitchen_bowl() -> void:
+	var bowl: Node3D = Node3D.new()
+	bowl.name = "KitchenBowl"
+	bowl.position = Vector3(8.0, 0.08, -1.8)
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	mesh_instance.name = "Bowl"
+	var mesh: CylinderMesh = CylinderMesh.new()
+	mesh.top_radius = 0.32
+	mesh.bottom_radius = 0.25
+	mesh.height = 0.12
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = Color("#7f8d9c")
+	material.roughness = 0.72
+	mesh_instance.mesh = mesh
+	mesh_instance.material_override = material
+	bowl.add_child(mesh_instance)
+	add_child(bowl)
 
 
 func _add_omni(
@@ -270,7 +343,8 @@ func _add_omni(
 	zone: String,
 	position_value: Vector3,
 	energy_scale: float,
-	fixture_base_height: float
+	fixture_base_height: float,
+	range_override: float = -1.0
 ) -> void:
 	var fixture: Node3D = Node3D.new()
 	fixture.name = node_name
@@ -282,7 +356,10 @@ func _add_omni(
 	light.position = Vector3(0.0, position_value.y, 0.0)
 	light.light_color = Color("#d6e1f2")
 	light.light_energy = lamp_energy * energy_scale
-	light.omni_range = lamp_range
+	var effective_range: float = (
+		range_override if range_override > 0.0 else lamp_range
+	)
+	light.omni_range = effective_range
 	light.shadow_enabled = true
 	fixture.add_child(light)
 	add_child(fixture)
@@ -290,7 +367,7 @@ func _add_omni(
 		node_name,
 		zone,
 		Vector3(position_value.x, 0.0, position_value.z),
-		lamp_range
+		effective_range
 	)
 
 
@@ -357,15 +434,41 @@ func _add_fixture_part(
 	parent.add_child(mesh_instance)
 
 
-func _add_area_glow(node_name: String, position_value: Vector3, rotation_degrees_value: Vector3, color: Color) -> void:
+func _add_area_glow(
+	node_name: String,
+	position_value: Vector3,
+	rotation_degrees_value: Vector3,
+	color: Color,
+	energy_scale: float = 0.45
+) -> void:
 	var glow: AreaLight3D = AreaLight3D.new()
 	glow.name = node_name
 	glow.position = position_value
 	glow.rotation_degrees = rotation_degrees_value
 	glow.light_color = color
-	glow.light_energy = lamp_energy * 0.45
+	glow.light_energy = lamp_energy * energy_scale
 	glow.shadow_enabled = false
 	add_child(glow)
+
+
+func _add_box_visual_part(
+	parent: Node3D,
+	part_name: String,
+	local_position: Vector3,
+	dimensions: Vector3,
+	color: Color
+) -> void:
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	mesh_instance.name = part_name
+	mesh_instance.position = local_position
+	var mesh: BoxMesh = BoxMesh.new()
+	mesh.size = dimensions
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 1.0
+	mesh_instance.mesh = mesh
+	mesh_instance.material_override = material
+	parent.add_child(mesh_instance)
 
 
 func _add_box_visual(parent: Node3D, dimensions: Vector3, color: Color) -> void:
@@ -380,11 +483,16 @@ func _add_box_visual(parent: Node3D, dimensions: Vector3, color: Color) -> void:
 	parent.add_child(mesh_instance)
 
 
-func _add_box_collision(parent: Node3D, dimensions: Vector3) -> void:
+func _add_box_collision(
+	parent: Node3D,
+	dimensions: Vector3,
+	local_position: Vector3 = Vector3.ZERO
+) -> void:
 	var collision: CollisionShape3D = CollisionShape3D.new()
 	var shape: BoxShape3D = BoxShape3D.new()
 	shape.size = dimensions
 	collision.shape = shape
+	collision.position = local_position
 	parent.add_child(collision)
 
 
