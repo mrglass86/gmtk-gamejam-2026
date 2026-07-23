@@ -60,9 +60,12 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       script table is authoritative. Accept: S10 route-contest row.
 - [ ] CP4 catch-loop gate — Claude validates, Noah plays the catch and the chase.
 - [x] B4 Pet.gd — lane B (`bd77d16`). Accept: S8 at CP5.
-- [x] A6 win/lose/title/restart — lane A (`d3a9d5d`). First title input starts
-      audio + clock, crib-with-snack wins, expiry otherwise loses, R reloads.
-      Accept: S9 UI rows automated; full-run play remains at CP5.
+- [x] A6 win/lose/title/restart — lane A (`d3a9d5d`, `0223b1b`). First title
+      input starts play + clock; crib-with-snack wins immediately or at expiry,
+      expiry otherwise loses, and R performs a real scene reload. S9 UI rows
+      formally verified; title verified live in Chrome.
+- [x] A6.1 Web follow-up — `KEEP_WIDTH` camera at 31 m, placeholder generator
+      removed, and brightness debug HUD release-gated (`e26ce9c`).
 - [ ] Snack round trip wired end to end — lanes A+B. Accept: S9 full.
 - [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.
 - [ ] Route timing measured from Noah's runs, tuned to 1.4–1.6x — lane A adjusts. Accept: S10.

@@ -244,10 +244,12 @@ Record decisions another session or tool would otherwise have to rediscover.
 
 - **Decision:** One `DinnerGameFlow` controller owns TITLE/PLAYING/WON/LOST.
   The first pressed keyboard, mouse, touch, or joypad event hides the title,
-  unlocks the player, starts a direct generated audio cue, and starts
-  `GameClock` in the same callback. A non-blocking crib goal volume wins when
-  occupied with the snack; expiry applies the same crib-plus-snack predicate.
-  Terminal states pause play, and R unpauses before reloading the scene.
+  unlocks the player, and starts `GameClock` in the same callback. The
+  warning-producing generator placeholder is removed; Saturday's first real
+  imported sound must hook this same transition. A non-blocking crib goal
+  volume wins when occupied with the snack; expiry applies the same
+  crib-plus-snack predicate. Terminal states pause play, and R unpauses before
+  reloading the scene.
 - **Why:** A single transition point satisfies Web autoplay rules and prevents
   actor/UI work from starting the clock or audio independently.
 - **Rejected / cut:** Auto-starting in `Main._ready`; separate title/audio/clock
@@ -255,5 +257,5 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Owner:** Noah (rules), lane A (implementation)
 - **Revisit when:** CP5 finds the crib goal too generous or the first-input cue
   conflicts with the Saturday audio pass.
-- **Evidence / handoff:** Commit `d3a9d5d`, `--verify-a6`, and
-  `gamejam/handoffs/2026-07-23-a6-title-card.png`.
+- **Evidence / handoff:** Commits `d3a9d5d`, `e26ce9c`, `0223b1b`,
+  `--verify-a6`, and `gamejam/handoffs/2026-07-23-a6-formal-report.md`.
