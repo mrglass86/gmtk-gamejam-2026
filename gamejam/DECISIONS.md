@@ -172,7 +172,7 @@ Record decisions another session or tool would otherwise have to rediscover.
 
 - **Decision:** At maximum suspicion, the parent carries only when the player is
   within the 1.1 m grab distance; otherwise the parent enters a FOUND chase at
-  3.2 m/s toward the player's live position. FOUND uses the locked 90-degree
+  3.8 m/s toward the player's live position. FOUND uses the locked 90-degree
   red cone, exits after 5 seconds without line of sight to INVESTIGATE at the
   last-known position with suspicion 60, and cannot be downgraded by noise.
   Parent routine timing follows `GameClock.run_length` unless an explicit
@@ -185,3 +185,20 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Owner:** Noah (design), lane B (implementation)
 - **Revisit when:** CP4 shows the chase is unavoidable or too easy.
 - **Evidence / handoff:** B3 review and commit `946cd11`.
+
+## 2026-07-23 — First-walk actor readability and door collision ruling
+
+- **Decision:** Render the parent's cone as an 11-ray, static-hit-clipped floor
+  fan rebuilt from its live transform. Routine sweep occurs only while the
+  parent is pathing; dwell uses the routine row's fixed facing. Door panels are
+  visual-only, while `Door.gd` owns a thin doorway blocker that disables at
+  openness 0.35. Goal doors reveal the shared snack at their own position.
+- **Why:** The first director walk exposed dishonest through-wall cone geometry,
+  a TV-watching parent who would not hold a gaze, and fridge-panel collision
+  that physically shoved the player.
+- **Rejected / cut:** An unclipped triangle cone; sweeping during dwell; using
+  the rotating visual panel as gameplay collision.
+- **Owner:** Noah (director), lane B (implementation), lane A (scene cleanup)
+- **Revisit when:** CP4 shows cone edges disagreeing with detection, or CP5
+  shows a blocker size does not match its doorway.
+- **Evidence / handoff:** Director's first-walk B3.1+B3.2 fixpack.

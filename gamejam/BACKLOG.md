@@ -29,9 +29,12 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 ## Must — Friday (actors, full loop, banked build)
 
-- [ ] B3 Parent.gd (routine, cone, suspicion, investigate, carry) — lane B. Accept: S7.
-- [ ] CP4 catch-loop gate — Claude validates, Noah plays the catch.
-- [ ] B4 Pet.gd — lane B. Accept: S8.
+- [x] B3 Parent.gd — lane B (`9f04c97`). Accept: S7 on review; runtime at CP4.
+- [x] B3.1+B3.2 first-walk parent/door fixpack — FOUND chase, clipped cone,
+      movement-only sweep, script-owned blockers, snack reveal position, and
+      speed retune — lane B (`946cd11`, `351f268`). Accept: S7/S9 at CP4.
+- [ ] CP4 catch-loop gate — Claude validates, Noah plays the catch and the chase.
+- [x] B4 Pet.gd — lane B (`bd77d16`). Accept: S8 at CP5.
 - [ ] A6 win/lose/title/restart + export preset — lane A. Accept: S9 UI rows.
 - [ ] Snack round trip wired end to end — lanes A+B. Accept: S9 full.
 - [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.
