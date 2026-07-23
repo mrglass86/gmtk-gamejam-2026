@@ -1158,6 +1158,7 @@ func _capture_layout(capture_path: String) -> void:
 
 func _configure_a10_fridge_capture(is_open: bool) -> void:
 	var fridge: DinnerDoor = $Fridge as DinnerDoor
+	fridge.provides_snack = false
 	fridge.openness = 1.0 if is_open else 0.0
 	fridge.call("_apply_visual")
 	var camera_target: Vector3 = Vector3(12.3, 0.8, -5.1)
