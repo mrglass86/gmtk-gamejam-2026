@@ -27,6 +27,7 @@ enum State {
 @export_node_path("Node3D") var crib_path: NodePath = NodePath("../Crib")
 @export_node_path("Node3D") var snack_path: NodePath = NodePath("../Snack")
 @export_node_path("DinnerDoor") var bedroom_door_path: NodePath = NodePath("../BedroomDoor")
+@export_node_path("DinnerDoor") var bathroom_door_path: NodePath = NodePath("../Level/BathroomDoor")
 
 @export_group("Routine")
 ## Zero follows GameClock.run_length. Set positive only to override/cap the routine timeline.
@@ -36,6 +37,8 @@ enum State {
 @export var navigation_path_desired_distance: float = 0.8
 @export var navigation_target_desired_distance: float = 0.02
 @export var facing_turn_speed: float = 5.0
+@export var routine_door_arrival_distance: float = 0.75
+@export_range(0.35, 1.0) var bathroom_door_open_openness: float = 0.7
 @export var routine_rows: Array[Dictionary] = [
 	{
 		"time": 0.0,
@@ -74,6 +77,7 @@ enum State {
 		"position": Vector3(-5.8, 0.7, -3.5),
 		"dwell": 15.0,
 		"facing": Vector3(1.0, 0.0, 0.0),
+		"door": &"bathroom",
 	},
 	{
 		"time": 206.3,
@@ -122,13 +126,37 @@ enum State {
 	{
 		"time": 268.9,
 		"position": Vector3(8.0, 0.7, 4.8),
-		"dwell": 5.0,
+		"dwell": 0.0,
 		"facing": Vector3(-1.0, 0.0, 0.0),
 	},
 	{
-		"time": 289.3,
-		"position": Vector3(-12.75, 0.7, -0.8),
-		"dwell": 10.7,
+		"time": 271.1,
+		"position": Vector3(5.0, 0.7, 4.8),
+		"dwell": 1.0,
+		"facing": Vector3(1.0, 0.0, 0.0),
+	},
+	{
+		"time": 273.5,
+		"position": Vector3(5.8, 0.7, 3.0),
+		"dwell": 0.0,
+		"facing": Vector3(0.0, 0.0, -1.0),
+	},
+	{
+		"time": 280.8,
+		"position": Vector3(-2.0, 0.7, 0.0),
+		"dwell": 0.0,
+		"facing": Vector3(-1.0, 0.0, 0.0),
+	},
+	{
+		"time": 283.5,
+		"position": Vector3(-5.75, 0.7, 0.0),
+		"dwell": 0.0,
+		"facing": Vector3(-1.0, 0.0, 0.0),
+	},
+	{
+		"time": 288.5,
+		"position": Vector3(-12.75, 0.7, 0.0),
+		"dwell": 11.5,
 		"facing": Vector3(0.0, 0.0, -1.0),
 	},
 ]
@@ -146,12 +174,14 @@ enum State {
 @export var cone_floor_offset: float = -0.65
 @export_range(10, 12, 1) var cone_raycast_count: int = 11
 @export_flags_3d_physics var vision_collision_mask: int = 1
+@export var cone_distance_smoothing_speed: float = 15.0
 
 @export_group("Suspicion")
 @export var suspicion_max: float = 100.0
 @export var investigate_threshold: float = 50.0
 @export var noise_suspicion_multiplier: float = 10.0
-@export var hearing_radius: float = 8.0
+@export var ring_radius_per_loudness: float = 8.0
+@export var ring_radius_cap: float = 20.0
 @export var seen_suspicion_per_second: float = 25.0
 @export var suspicion_decay_per_second: float = 5.0
 @export var event_alert_threshold: float = 25.0
@@ -242,6 +272,20 @@ enum State {
 @export var verify_decay_duration: float = 1.0
 @export var verify_decay_tolerance: float = 0.75
 
+@export_group("B9 Runtime Verification")
+@export var verify_b9_far_bark_distance: float = 14.0
+@export var verify_b9_far_run_distance: float = 10.0
+@export var verify_b9_endgame_start_time: float = 268.9
+@export var verify_b9_endgame_duration: float = 30.0
+@export var verify_b9_final_hall_position: Vector3 = Vector3(-12.75, 0.7, 0.0)
+@export var verify_b9_final_hall_tolerance: float = 1.5
+@export var verify_b9_final_time_target: float = 292.0
+@export var verify_b9_final_time_tolerance: float = 2.0
+@export var verify_b9_bowl_trigger_delay: float = 0.5
+@export var verify_b9_bowl_timeout: float = 12.0
+@export var verify_b9_cone_wall_position: Vector3 = Vector3(0.0, 0.7, -5.3)
+@export var verify_b9_cone_wall_honesty_tolerance: float = 0.02
+
 var suspicion: float = 0.0
 
 var _state: State = State.ROUTINE
@@ -251,7 +295,9 @@ var _vision_cone: MeshInstance3D
 var _crib: Node3D
 var _snack: DinnerSnack
 var _bedroom_door: DinnerDoor
+var _bathroom_door: DinnerDoor
 var _cone_material: StandardMaterial3D
+var _cone_ray_distances: Array[float] = []
 var _navigation_ready: bool = false
 var _last_navigation_target: Vector3
 var _has_navigation_target: bool = false
@@ -271,6 +317,9 @@ var _carry_path_started: bool = false
 var _post_deposit_elapsed: float = 0.0
 var _post_deposit_path_started: bool = false
 var _verify_b8_door_creak_heard: bool = false
+var _verify_b9_bowl_clatter_heard: bool = false
+var _routine_staged_door_row: int = -1
+var _routine_staged_door_opened: bool = false
 
 
 func _ready() -> void:
@@ -280,6 +329,7 @@ func _ready() -> void:
 	_crib = get_node_or_null(crib_path) as Node3D
 	_snack = get_node_or_null(snack_path) as DinnerSnack
 	_bedroom_door = get_node_or_null(bedroom_door_path) as DinnerDoor
+	_bathroom_door = get_node_or_null(bathroom_door_path) as DinnerDoor
 	_setup_cone()
 	if not NoiseSystem.noise_emitted.is_connected(_on_noise_emitted):
 		NoiseSystem.noise_emitted.connect(_on_noise_emitted)
@@ -290,6 +340,8 @@ func _ready() -> void:
 		_run_b7_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--verify-b8"):
 		_run_b8_live_verification.call_deferred()
+	if OS.get_cmdline_user_args().has("--verify-b9"):
+		_run_b9_live_verification.call_deferred()
 
 
 func _physics_process(delta: float) -> void:
@@ -395,10 +447,65 @@ func _finish_navigation_setup() -> void:
 
 func _update_routine(delta: float) -> void:
 	var routine_time: float = _get_routine_time()
+	_update_routine_door_staging(routine_time)
 	var target: Vector3 = get_base_target(routine_time)
 	_set_navigation_target(target)
 	if not _move_along_path(routine_speed, delta):
 		_face_direction(get_base_facing(routine_time), delta)
+
+
+func _update_routine_door_staging(routine_time: float) -> void:
+	for row_index in range(routine_rows.size()):
+		var row: Dictionary = routine_rows[row_index]
+		var door_key: StringName = _row_door(row)
+		if door_key == &"":
+			continue
+		var arrival_time: float = _row_time(row)
+		var departure_time: float = arrival_time + _row_dwell(row)
+		if routine_time < arrival_time:
+			if _routine_staged_door_row == row_index:
+				_routine_staged_door_row = -1
+				_routine_staged_door_opened = false
+			return
+		var routine_door: DinnerDoor = _get_routine_door(door_key)
+		if routine_door == null:
+			continue
+		if routine_time <= departure_time:
+			if (
+				_routine_staged_door_row != row_index
+				and _flat_distance(global_position, _row_position(row))
+				<= routine_door_arrival_distance
+			):
+				routine_door.close_immediately()
+				_routine_staged_door_row = row_index
+				_routine_staged_door_opened = false
+			return
+		var exit_window_end: float = departure_time + routine_door.sneak_open_duration
+		if row_index + 1 < routine_rows.size():
+			exit_window_end = maxf(
+				exit_window_end,
+				_row_time(routine_rows[row_index + 1])
+			)
+		if (
+			routine_time <= exit_window_end
+			and not _routine_staged_door_opened
+		):
+			routine_door.open_to(bathroom_door_open_openness)
+			_routine_staged_door_row = row_index
+			_routine_staged_door_opened = true
+		elif (
+			routine_time > exit_window_end
+			and _routine_staged_door_row == row_index
+		):
+			_routine_staged_door_row = -1
+			_routine_staged_door_opened = false
+		return
+
+
+func _get_routine_door(door_key: StringName) -> DinnerDoor:
+	if door_key == &"bathroom":
+		return _bathroom_door
+	return null
 
 
 func _update_investigate(delta: float) -> void:
@@ -674,10 +781,23 @@ func _has_clear_line_of_sight() -> bool:
 func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 	if source == self or _state == State.CARRY or _is_post_deposit_state():
 		return
-	var distance_to_noise: float = global_position.distance_to(pos)
-	if distance_to_noise >= hearing_radius:
+	if (
+		source == _bathroom_door
+		and _routine_staged_door_opened
+		and _bathroom_door != null
+		and _bathroom_door.is_opening_to_target()
+	):
 		return
-	var falloff: float = 1.0 - distance_to_noise / hearing_radius
+	var audible_radius: float = minf(
+		maxf(loudness, 0.0) * maxf(ring_radius_per_loudness, 0.0),
+		maxf(ring_radius_cap, 0.0)
+	)
+	if audible_radius <= 0.0:
+		return
+	var distance_to_noise: float = global_position.distance_to(pos)
+	if distance_to_noise >= audible_radius:
+		return
+	var falloff: float = 1.0 - distance_to_noise / audible_radius
 	var event_contribution: float = loudness * noise_suspicion_multiplier * falloff
 	if source is DinnerPet:
 		event_contribution = maxf(event_contribution, event_alert_threshold)
@@ -872,7 +992,15 @@ func _build_cone_mesh(cone_angle_degrees: float) -> void:
 	if _vision_cone == null or _cone_material == null:
 		return
 	var ray_count: int = maxi(cone_raycast_count, 2)
+	var reset_distances: bool = _cone_ray_distances.size() != ray_count
+	if reset_distances:
+		_cone_ray_distances.resize(ray_count)
 	var half_angle_radians: float = deg_to_rad(cone_angle_degrees * 0.5)
+	var smoothing_weight: float = clampf(
+		cone_distance_smoothing_speed * get_physics_process_delta_time(),
+		0.0,
+		1.0
+	)
 	var ray_points: Array[Vector3] = []
 	for ray_index in range(ray_count):
 		var ray_weight: float = float(ray_index) / float(ray_count - 1)
@@ -881,7 +1009,18 @@ func _build_cone_mesh(cone_angle_degrees: float) -> void:
 		var world_direction: Vector3 = _vision_cone.global_transform.basis * local_direction
 		world_direction.y = 0.0
 		world_direction = world_direction.normalized()
-		var clipped_distance: float = _get_static_hit_distance(world_direction)
+		var hit_distance: float = _get_static_hit_distance(world_direction)
+		var clipped_distance: float = hit_distance
+		if not reset_distances:
+			clipped_distance = minf(
+				hit_distance,
+				lerpf(
+					_cone_ray_distances[ray_index],
+					hit_distance,
+					smoothing_weight
+				)
+			)
+		_cone_ray_distances[ray_index] = clipped_distance
 		ray_points.append(local_direction * clipped_distance)
 
 	var cone_mesh: ImmediateMesh = ImmediateMesh.new()
@@ -1494,9 +1633,418 @@ func _run_b8_live_verification() -> void:
 	print("B8 live SceneTree verification passed.")
 
 
+func _run_b9_live_verification() -> void:
+	var pet: DinnerPet = get_parent().get_node_or_null("Pet") as DinnerPet
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var player_was_processing: bool = _player != null and _player.is_physics_processing()
+
+	Engine.time_scale = maxf(verify_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(verify_physics_ticks_per_second, 60)
+	if _player != null:
+		_player.set_physics_process(false)
+		_player.detach_from_carrier(verify_observer_parking_position)
+	for _frame_index in range(verify_warmup_frames):
+		await get_tree().physics_frame
+
+	var hearing_origin: Vector3 = Vector3(0.0, verify_carry_parent_position.y, 0.0)
+	global_position = hearing_origin
+	_state = State.ROUTINE
+	suspicion = 0.0
+	_has_checked_position = false
+	_repeat_cooldown_remaining = 0.0
+	_set_navigation_target(global_position, true)
+	var far_bark_position: Vector3 = (
+		hearing_origin + Vector3.RIGHT * verify_b9_far_bark_distance
+	)
+	if pet != null:
+		pet.global_position = far_bark_position
+		pet.bark()
+	await get_tree().physics_frame
+	var far_bark_suspicion: float = suspicion
+	var far_bark_investigated: bool = (
+		pet != null
+		and _state == State.INVESTIGATE
+		and _flat_distance(_last_known_position, far_bark_position)
+		<= routine_repath_distance
+	)
+
+	global_position = hearing_origin
+	_state = State.ROUTINE
+	suspicion = 0.0
+	_has_checked_position = false
+	_repeat_cooldown_remaining = 0.0
+	_set_navigation_target(global_position, true)
+	var far_run_position: Vector3 = (
+		hearing_origin + Vector3.RIGHT * verify_b9_far_run_distance
+	)
+	var far_run_loudness: float = 0.0
+	if _player != null:
+		far_run_loudness = (
+			_player.run_noise_multiplier
+			* _player.hardwood_surface_multiplier
+		)
+		NoiseSystem.emit_noise(far_run_position, far_run_loudness, _player)
+	await get_tree().physics_frame
+	var far_run_ignored: bool = _state == State.ROUTINE and is_zero_approx(suspicion)
+
+	var temporary_bathroom_door: DinnerDoor
+	if _bathroom_door == null:
+		temporary_bathroom_door = DinnerDoor.new()
+		temporary_bathroom_door.name = "B9VerifyBathroomDoor"
+		get_parent().add_child(temporary_bathroom_door)
+		_bathroom_door = temporary_bathroom_door
+	_bathroom_door.openness = bathroom_door_open_openness
+	_state = State.ROUTINE
+	suspicion = 0.0
+	_routine_staged_door_row = -1
+	_routine_staged_door_opened = false
+	var bathroom_row: Dictionary = {}
+	for row: Dictionary in routine_rows:
+		if _row_door(row) == &"bathroom":
+			bathroom_row = row
+			break
+	var bathroom_row_found: bool = not bathroom_row.is_empty()
+	var bathroom_closed_on_arrival: bool = false
+	var bathroom_opened_on_exit: bool = false
+	var bathroom_open_commanded: bool = false
+	var bathroom_routine_preserved: bool = false
+	var bathroom_closed_openness: float = _bathroom_door.openness
+	var bathroom_exit_openness: float = _bathroom_door.openness
+	var bathroom_staged_row: int = -1
+	var bathroom_exit_parent_state: StringName = &""
+	if bathroom_row_found:
+		global_position = _row_position(bathroom_row)
+		GameClock.start()
+		GameClock.time_remaining = (
+			GameClock.run_length - _row_time(bathroom_row) - 0.05
+		)
+		for _frame_index in range(4):
+			await get_tree().physics_frame
+		bathroom_closed_openness = _bathroom_door.openness
+		bathroom_closed_on_arrival = is_zero_approx(_bathroom_door.openness)
+		GameClock.time_remaining = (
+			GameClock.run_length
+			- _row_time(bathroom_row)
+			- _row_dwell(bathroom_row)
+			- 0.05
+		)
+		bathroom_exit_openness = _bathroom_door.openness
+		var bathroom_exit_start: float = (
+			GameClock.run_length - GameClock.time_remaining
+		)
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			bathroom_open_commanded = (
+				bathroom_open_commanded
+				or _routine_staged_door_opened
+				or _bathroom_door.is_opening_to_target()
+			)
+			bathroom_exit_openness = maxf(
+				bathroom_exit_openness,
+				_bathroom_door.openness
+			)
+			var exit_elapsed: float = (
+				GameClock.run_length - GameClock.time_remaining
+			) - bathroom_exit_start
+			if _bathroom_door.openness >= _bathroom_door.blocker_disable_openness:
+				bathroom_opened_on_exit = true
+				break
+			if exit_elapsed >= _bathroom_door.sneak_open_duration:
+				break
+		bathroom_staged_row = _routine_staged_door_row
+		bathroom_exit_parent_state = get_state_name()
+		bathroom_routine_preserved = _state == State.ROUTINE
+
+	global_position = verify_b9_cone_wall_position
+	rotation.y = 0.0
+	if _vision_cone != null:
+		_vision_cone.rotation.y = 0.0
+	_cone_ray_distances.clear()
+	_build_cone_mesh(routine_cone_angle_degrees)
+	var near_wall_distances: Array[float] = _cone_ray_distances.duplicate()
+	rotation.y = PI
+	var open_hit_distances: Array[float] = _get_live_cone_hit_distances(
+		routine_cone_angle_degrees
+	)
+	_build_cone_mesh(routine_cone_angle_degrees)
+	var cone_expansion_smoothed: bool = false
+	var cone_open_wall_honest: bool = true
+	var cone_largest_smoothing_gap: float = 0.0
+	for ray_index in range(_cone_ray_distances.size()):
+		var open_hit: float = open_hit_distances[ray_index]
+		var smoothed_distance: float = _cone_ray_distances[ray_index]
+		cone_largest_smoothing_gap = maxf(
+			cone_largest_smoothing_gap,
+			open_hit - smoothed_distance
+		)
+		cone_expansion_smoothed = (
+			cone_expansion_smoothed
+			or (
+				open_hit > near_wall_distances[ray_index] + 0.1
+				and smoothed_distance < open_hit - 0.05
+			)
+		)
+		cone_open_wall_honest = (
+			cone_open_wall_honest
+			and smoothed_distance
+			<= open_hit + verify_b9_cone_wall_honesty_tolerance
+		)
+	rotation.y = 0.0
+	var near_hit_distances: Array[float] = _get_live_cone_hit_distances(
+		routine_cone_angle_degrees
+	)
+	_build_cone_mesh(routine_cone_angle_degrees)
+	var cone_contraction_wall_honest: bool = true
+	for ray_index in range(_cone_ray_distances.size()):
+		cone_contraction_wall_honest = (
+			cone_contraction_wall_honest
+			and _cone_ray_distances[ray_index]
+			<= (
+				near_hit_distances[ray_index]
+				+ verify_b9_cone_wall_honesty_tolerance
+			)
+		)
+
+	_state = State.ROUTINE
+	suspicion = 0.0
+	_routine_staged_door_row = -1
+	_routine_staged_door_opened = false
+	global_position = get_base_target(verify_b9_endgame_start_time)
+	_set_navigation_target(global_position, true)
+	GameClock.start()
+	GameClock.time_remaining = GameClock.run_length - verify_b9_endgame_start_time
+	var final_hall_closest: float = INF
+	var final_hall_first_reach_time: float = INF
+	var carpet_corner_closest: float = INF
+	var carpet_nav_point: Vector3 = NavigationServer3D.map_get_closest_point(
+		get_world_3d().navigation_map,
+		Vector3(5.0, 0.7, 4.8)
+	)
+	var carpet_band_entered: bool = false
+	var hall_turn_closest: float = INF
+	var endgame_reached_duration: bool = false
+	for _frame_index in range(verify_max_physics_frames):
+		await get_tree().physics_frame
+		var endgame_elapsed: float = (
+			GameClock.run_length
+			- GameClock.time_remaining
+			- verify_b9_endgame_start_time
+		)
+		carpet_corner_closest = minf(
+			carpet_corner_closest,
+			_flat_distance(global_position, Vector3(5.0, 0.7, 4.8))
+		)
+		carpet_band_entered = (
+			carpet_band_entered
+			or carpet_corner_closest <= 1.0
+		)
+		hall_turn_closest = minf(
+			hall_turn_closest,
+			_flat_distance(global_position, Vector3(-5.75, 0.7, 0.0))
+		)
+		final_hall_closest = minf(
+			final_hall_closest,
+			_flat_distance(global_position, verify_b9_final_hall_position)
+		)
+		if (
+			final_hall_first_reach_time == INF
+			and final_hall_closest <= verify_b9_final_hall_tolerance
+		):
+			final_hall_first_reach_time = (
+				GameClock.run_length - GameClock.time_remaining
+			)
+		if endgame_elapsed >= verify_b9_endgame_duration:
+			endgame_reached_duration = true
+			break
+	var final_facing: Vector3 = -global_transform.basis.z
+	final_facing.y = 0.0
+	var final_facing_dot: float = final_facing.normalized().dot(Vector3.FORWARD)
+	var final_faces_kid_door: bool = (
+		final_facing_dot >= 0.9
+	)
+	var endgame_route_completed: bool = (
+		endgame_reached_duration
+		and carpet_band_entered
+		and hall_turn_closest <= verify_b9_final_hall_tolerance
+		and final_hall_closest <= verify_b9_final_hall_tolerance
+		and absf(
+			final_hall_first_reach_time - verify_b9_final_time_target
+		) <= verify_b9_final_time_tolerance
+		and final_faces_kid_door
+	)
+
+	var temporary_bowl: Node3D
+	var bowl_visit_started: bool = false
+	var bowl_eating_observed: bool = false
+	var bowl_head_bob_observed: bool = false
+	var bowl_visit_completed: bool = false
+	var bowl_visit_elapsed: float = 0.0
+	if pet != null:
+		if pet._kitchen_bowl == null:
+			temporary_bowl = Node3D.new()
+			temporary_bowl.name = "B9VerifyKitchenBowl"
+			temporary_bowl.global_position = Vector3(7.4, 0.42, -1.5)
+			get_parent().add_child(temporary_bowl)
+			pet._kitchen_bowl = temporary_bowl
+		pet.global_position = Vector3(4.2, 0.42, -3.8)
+		pet._has_left_bed = true
+		pet._resume_base()
+		GameClock.start()
+		GameClock.time_remaining = GameClock.run_length - 100.0
+		pet.schedule_bowl_visit_after(verify_b9_bowl_trigger_delay)
+		_verify_b9_bowl_clatter_heard = false
+		if not NoiseSystem.noise_emitted.is_connected(_capture_b9_noise):
+			NoiseSystem.noise_emitted.connect(_capture_b9_noise)
+		var bowl_start_elapsed: float = GameClock.run_length - GameClock.time_remaining
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			bowl_visit_elapsed = (
+				GameClock.run_length - GameClock.time_remaining - bowl_start_elapsed
+			)
+			bowl_visit_started = bowl_visit_started or pet.is_visiting_bowl()
+			bowl_eating_observed = bowl_eating_observed or pet.is_eating_at_bowl()
+			if pet.is_eating_at_bowl() and pet._body != null:
+				bowl_head_bob_observed = (
+					bowl_head_bob_observed
+					or pet._body.position.distance_to(pet._body_base_position)
+					>= pet.bowl_head_bob_height * 0.25
+				)
+			if (
+				bowl_eating_observed
+				and not pet.is_visiting_bowl()
+				and pet.get_state_name() == &"BASE"
+			):
+				bowl_visit_completed = true
+				break
+			if bowl_visit_elapsed >= verify_b9_bowl_timeout:
+				break
+	if NoiseSystem.noise_emitted.is_connected(_capture_b9_noise):
+		NoiseSystem.noise_emitted.disconnect(_capture_b9_noise)
+
+	GameClock.running = false
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+	if _player != null:
+		_player.set_physics_process(player_was_processing)
+	if temporary_bathroom_door != null:
+		_bathroom_door = null
+		temporary_bathroom_door.queue_free()
+	if temporary_bowl != null and pet != null:
+		pet._kitchen_bowl = null
+		temporary_bowl.queue_free()
+
+	var verification_passed: bool = (
+		far_bark_investigated
+		and far_run_ignored
+		and bathroom_row_found
+		and bathroom_closed_on_arrival
+		and bathroom_opened_on_exit
+		and bathroom_routine_preserved
+		and cone_expansion_smoothed
+		and cone_open_wall_honest
+		and cone_contraction_wall_honest
+		and endgame_route_completed
+		and bowl_visit_started
+		and bowl_eating_observed
+		and bowl_head_bob_observed
+		and _verify_b9_bowl_clatter_heard
+		and bowl_visit_completed
+	)
+	print(
+		(
+			"B9 live metrics: far bark %.1f m -> %.1f suspicion, "
+			+ "run %.1f at %.1f m -> %.1f suspicion, cone gap=%.2f m, "
+			+ "bath door=%.2f->%.2f (command=%s,row=%d,state=%s), "
+			+ "route corners=%.2f/%.2f m (carpet nav %.1f,%.1f), "
+			+ "end hall=%.2f m at %.2f s (face=%.2f,band=%s,duration=%s), "
+			+ "bowl visit=%.2f s."
+		)
+		% [
+			verify_b9_far_bark_distance,
+			far_bark_suspicion,
+			far_run_loudness,
+			verify_b9_far_run_distance,
+			0.0 if far_run_ignored else suspicion,
+			cone_largest_smoothing_gap,
+			bathroom_closed_openness,
+			bathroom_exit_openness,
+			bathroom_open_commanded,
+			bathroom_staged_row,
+			bathroom_exit_parent_state,
+			carpet_corner_closest,
+			hall_turn_closest,
+			carpet_nav_point.x,
+			carpet_nav_point.z,
+			final_hall_closest,
+			final_hall_first_reach_time,
+			final_facing_dot,
+			carpet_band_entered,
+			endgame_reached_duration,
+			bowl_visit_elapsed,
+		]
+	)
+	get_tree().quit(0 if verification_passed else 1)
+	assert(far_bark_investigated, "B9 14 m dog bark did not investigate.")
+	assert(far_run_ignored, "B9 10 m run-hardwood event reached the parent.")
+	assert(bathroom_row_found, "B9 routine has no bathroom door row.")
+	assert(bathroom_closed_on_arrival, "B9 bathroom door did not close on arrival.")
+	assert(bathroom_opened_on_exit, "B9 bathroom door did not open on exit.")
+	assert(bathroom_routine_preserved, "B9 parent investigated its own bathroom door.")
+	assert(
+		cone_expansion_smoothed,
+		"B9 cone rays jumped to their unclipped distance without smoothing."
+	)
+	assert(
+		cone_open_wall_honest and cone_contraction_wall_honest,
+		"B9 smoothed cone rendered beyond a live static hit."
+	)
+	assert(endgame_route_completed, "B9 parent missed the carpet-to-kid-door finale.")
+	assert(
+		bowl_visit_started
+		and bowl_eating_observed
+		and bowl_head_bob_observed
+		and _verify_b9_bowl_clatter_heard
+		and bowl_visit_completed,
+		"B9 dog bowl visit skipped path, clatter, eating bob, or patrol resume."
+	)
+	print("B9 live SceneTree verification passed.")
+
+
+func _get_live_cone_hit_distances(cone_angle_degrees: float) -> Array[float]:
+	var hit_distances: Array[float] = []
+	if _vision_cone == null:
+		return hit_distances
+	var ray_count: int = maxi(cone_raycast_count, 2)
+	var half_angle_radians: float = deg_to_rad(cone_angle_degrees * 0.5)
+	for ray_index in range(ray_count):
+		var ray_weight: float = float(ray_index) / float(ray_count - 1)
+		var ray_angle: float = lerpf(
+			-half_angle_radians,
+			half_angle_radians,
+			ray_weight
+		)
+		var local_direction: Vector3 = Vector3.FORWARD.rotated(
+			Vector3.UP,
+			ray_angle
+		)
+		var world_direction: Vector3 = (
+			_vision_cone.global_transform.basis * local_direction
+		)
+		world_direction.y = 0.0
+		world_direction = world_direction.normalized()
+		hit_distances.append(_get_static_hit_distance(world_direction))
+	return hit_distances
+
+
 func _capture_b8_noise(_pos: Vector3, loudness: float, source: Node) -> void:
 	if source == _bedroom_door and loudness > 0.0:
 		_verify_b8_door_creak_heard = true
+
+
+func _capture_b9_noise(_pos: Vector3, loudness: float, source: Node) -> void:
+	if source is DinnerPet and is_equal_approx(loudness, source.bowl_clatter_loudness):
+		_verify_b9_bowl_clatter_heard = true
 
 
 func _flat_distance(first: Vector3, second: Vector3) -> float:
@@ -1543,3 +2091,7 @@ func _row_facing(row: Dictionary) -> Vector3:
 	var facing: Vector3 = row.get("facing", Vector3.FORWARD) as Vector3
 	facing.y = 0.0
 	return facing.normalized() if facing.length_squared() > 0.0 else Vector3.FORWARD
+
+
+func _row_door(row: Dictionary) -> StringName:
+	return row.get("door", &"") as StringName

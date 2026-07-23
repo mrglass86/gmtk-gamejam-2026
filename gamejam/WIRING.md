@@ -10,6 +10,11 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Done
 
+- [x] (lane B / B9) Added scripted `Level/BathroomDoor` with the exact
+  `../Level/BathroomDoor` Parent path, quiet-zone blocker, collision-free
+  panel, and explicit Player/Snack paths from under `Level`.
+- [x] (lane B / B9) Added collision-free `Level/KitchenBowl` at
+  `(8.0, 0.08, -1.8)` on reachable kitchen nav for Pet bowl visits.
 - [x] (lane B) Removed `Parent.routine_rows` override from `Main.tscn`; B5's
   15-row bathroom/dining route in `Parent.gd` is authoritative (`--verify-a51`).
 - [x] (lane B) Attached `res://scripts/Player.gd` to `Player` in `Main.tscn`.

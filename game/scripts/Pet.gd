@@ -9,6 +9,8 @@ signal bark_started()
 
 enum State {
 	BASE,
+	BOWL_MOVE,
+	BOWL_EAT,
 	ALERT,
 	INVESTIGATE,
 	BARK,
@@ -18,6 +20,7 @@ enum State {
 @export_node_path("Node3D") var player_path: NodePath = NodePath("../Player")
 @export_node_path("NavigationAgent3D") var navigation_agent_path: NodePath = NodePath("NavigationAgent3D")
 @export_node_path("MeshInstance3D") var body_path: NodePath = NodePath("Body")
+@export_node_path("Node3D") var kitchen_bowl_path: NodePath = NodePath("../Level/KitchenBowl")
 
 @export_group("Patrol")
 @export var patrol_speed: float = 1.5
@@ -57,6 +60,17 @@ enum State {
 	},
 ]
 
+@export_group("Bowl Visit")
+@export var bowl_visit_interval_min: float = 45.0
+@export var bowl_visit_interval_max: float = 90.0
+@export var bowl_visit_speed: float = 1.5
+@export var bowl_arrival_distance: float = 0.65
+@export var bowl_eat_duration: float = 4.0
+@export var bowl_clatter_loudness: float = 1.0
+@export var bowl_head_bob_height: float = 0.08
+@export var bowl_head_bob_frequency: float = 2.5
+@export var bowl_random_seed: int = 260723
+
 @export_group("Alert")
 @export var alert_radius: float = 6.0
 @export var alert_duration: float = 1.0
@@ -83,8 +97,10 @@ var _state: State = State.BASE
 var _player: DinnerPlayer
 var _navigation_agent: NavigationAgent3D
 var _body: MeshInstance3D
+var _kitchen_bowl: Node3D
 var _body_material: StandardMaterial3D
 var _body_base_scale: Vector3 = Vector3.ONE
+var _body_base_position: Vector3
 var _navigation_ready: bool = false
 var _last_navigation_target: Vector3
 var _has_navigation_target: bool = false
@@ -97,12 +113,19 @@ var _repeat_cooldown_remaining: float = 0.0
 var _last_checked_position: Vector3
 var _has_checked_position: bool = false
 var _has_left_bed: bool = false
+var _bowl_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _next_bowl_visit_elapsed: float = INF
+var _bowl_eat_elapsed: float = 0.0
+var _bowl_path_started: bool = false
 
 
 func _ready() -> void:
 	_player = get_node_or_null(player_path) as DinnerPlayer
 	_navigation_agent = get_node_or_null(navigation_agent_path) as NavigationAgent3D
 	_body = get_node_or_null(body_path) as MeshInstance3D
+	_kitchen_bowl = get_node_or_null(kitchen_bowl_path) as Node3D
+	_bowl_rng.seed = bowl_random_seed
+	_schedule_next_bowl_visit()
 	_setup_body_material()
 	if not NoiseSystem.noise_emitted.is_connected(_on_noise_emitted):
 		NoiseSystem.noise_emitted.connect(_on_noise_emitted)
@@ -114,6 +137,10 @@ func _physics_process(delta: float) -> void:
 	match _state:
 		State.BASE:
 			_update_base(delta)
+		State.BOWL_MOVE:
+			_update_bowl_move(delta)
+		State.BOWL_EAT:
+			_update_bowl_eat(delta)
 		State.ALERT:
 			_update_alert(delta)
 		State.INVESTIGATE:
@@ -156,6 +183,18 @@ func bark() -> void:
 	_begin_bark()
 
 
+func schedule_bowl_visit_after(delay: float) -> void:
+	_next_bowl_visit_elapsed = _get_clock_elapsed() + maxf(delay, 0.0)
+
+
+func is_visiting_bowl() -> bool:
+	return _state == State.BOWL_MOVE or _state == State.BOWL_EAT
+
+
+func is_eating_at_bowl() -> bool:
+	return _state == State.BOWL_EAT
+
+
 func _finish_navigation_setup() -> void:
 	await get_tree().physics_frame
 	if _navigation_agent != null:
@@ -177,7 +216,59 @@ func _update_base(delta: float) -> void:
 	_set_navigation_target(target)
 	if _is_initially_sleeping():
 		return
+	if _kitchen_bowl != null and _get_clock_elapsed() >= _next_bowl_visit_elapsed:
+		_begin_bowl_visit()
+		return
 	_move_along_path(patrol_speed, delta)
+
+
+func _begin_bowl_visit() -> void:
+	if _kitchen_bowl == null:
+		_schedule_next_bowl_visit()
+		return
+	_bowl_path_started = false
+	_set_state(State.BOWL_MOVE)
+	_set_navigation_target(_kitchen_bowl.global_position, true)
+
+
+func _update_bowl_move(delta: float) -> void:
+	if _kitchen_bowl == null:
+		_schedule_next_bowl_visit()
+		_resume_base()
+		return
+	_set_navigation_target(_kitchen_bowl.global_position)
+	if _can_query_navigation() and not _navigation_agent.is_navigation_finished():
+		_bowl_path_started = true
+	_move_along_path(bowl_visit_speed, delta)
+	var bowl_distance: float = _flat_distance(
+		global_position,
+		_kitchen_bowl.global_position
+	)
+	if (
+		bowl_distance <= bowl_arrival_distance
+		or (
+			_bowl_path_started
+			and _navigation_agent != null
+			and _navigation_agent.is_navigation_finished()
+		)
+	):
+		_begin_bowl_eat()
+
+
+func _begin_bowl_eat() -> void:
+	_bowl_eat_elapsed = 0.0
+	_set_state(State.BOWL_EAT)
+	NoiseSystem.emit_noise(global_position, bowl_clatter_loudness, self)
+
+
+func _update_bowl_eat(delta: float) -> void:
+	_bowl_eat_elapsed += delta
+	_apply_bowl_head_bob()
+	if _bowl_eat_elapsed < bowl_eat_duration:
+		return
+	_reset_bowl_visual()
+	_schedule_next_bowl_visit()
+	_resume_base()
 
 
 func _update_alert(delta: float) -> void:
@@ -229,6 +320,12 @@ func _on_noise_emitted(pos: Vector3, _loudness: float, source: Node) -> void:
 	_noise_target = pos
 	match _state:
 		State.BASE:
+			_alert_elapsed = 0.0
+			_set_state(State.ALERT)
+			alert_started.emit()
+		State.BOWL_MOVE, State.BOWL_EAT:
+			_reset_bowl_visual()
+			_schedule_next_bowl_visit()
 			_alert_elapsed = 0.0
 			_set_state(State.ALERT)
 			alert_started.emit()
@@ -339,6 +436,7 @@ func _setup_body_material() -> void:
 	if _body == null:
 		return
 	_body_base_scale = _body.scale
+	_body_base_position = _body.position
 	var source_material: Material = _body.material_override
 	if source_material == null and _body.mesh != null and _body.mesh.get_surface_count() > 0:
 		source_material = _body.mesh.surface_get_material(0)
@@ -356,6 +454,8 @@ func _apply_state_visual() -> void:
 	_body.scale = _body_base_scale
 	match _state:
 		State.BASE:
+			_body_material.albedo_color = base_color
+		State.BOWL_MOVE, State.BOWL_EAT:
 			_body_material.albedo_color = base_color
 		State.ALERT:
 			_body.scale = _body_base_scale * alert_scale
@@ -380,6 +480,36 @@ func _get_live_base_target() -> Vector3:
 
 func _is_initially_sleeping() -> bool:
 	return _get_clock_elapsed() < initial_sleep_duration
+
+
+func _schedule_next_bowl_visit() -> void:
+	var interval_min: float = maxf(bowl_visit_interval_min, 0.0)
+	var interval_max: float = maxf(bowl_visit_interval_max, interval_min)
+	_next_bowl_visit_elapsed = (
+		_get_clock_elapsed()
+		+ _bowl_rng.randf_range(interval_min, interval_max)
+	)
+
+
+func _apply_bowl_head_bob() -> void:
+	if _body == null:
+		return
+	var bob_phase: float = _bowl_eat_elapsed * bowl_head_bob_frequency * TAU
+	_body.position = (
+		_body_base_position
+		- Vector3.UP * absf(sin(bob_phase)) * bowl_head_bob_height
+	)
+
+
+func _reset_bowl_visual() -> void:
+	if _body != null:
+		_body.position = _body_base_position
+
+
+func _flat_distance(first: Vector3, second: Vector3) -> float:
+	var difference: Vector3 = first - second
+	difference.y = 0.0
+	return difference.length()
 
 
 func _row_time(row: Dictionary) -> float:
