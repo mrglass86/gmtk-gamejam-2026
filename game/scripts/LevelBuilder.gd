@@ -17,7 +17,7 @@ extends Node3D
 @export_group("Practical Light Fixtures")
 @export var fixture_stand_color: Color = Color("#3c4654")
 @export var fixture_glow_color: Color = Color("#dce9ff")
-@export var fixture_emission_energy: float = 1.35
+@export var fixture_emission_energy: float = 1.0
 @export var fixture_base_size: Vector3 = Vector3(0.34, 0.08, 0.34)
 @export var fixture_pole_width: float = 0.07
 @export var fixture_shade_size: Vector3 = Vector3(0.54, 0.28, 0.54)
@@ -342,6 +342,7 @@ func _add_fixture_part(
 	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
 	mesh_instance.name = part_name
 	mesh_instance.position = local_position
+	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var mesh: BoxMesh = BoxMesh.new()
 	mesh.size = dimensions
 	var material: StandardMaterial3D = StandardMaterial3D.new()
