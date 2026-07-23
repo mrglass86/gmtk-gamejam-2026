@@ -21,14 +21,19 @@ enum State {
 
 @export_group("Patrol")
 @export var patrol_speed: float = 1.5
+@export var initial_sleep_duration: float = 30.0
 @export var patrol_cycle_duration: float = 60.0
-@export var patrol_repath_distance: float = 0.25
+@export var patrol_repath_distance: float = 0.05
+@export var navigation_path_desired_distance: float = 0.55
+@export var navigation_target_desired_distance: float = 0.02
+@export var wake_exit_position: Vector3 = Vector3(4.2, 0.42, -3.8)
+@export var wake_exit_distance: float = 0.08
 @export var facing_turn_speed: float = 6.0
 @export var patrol_rows: Array[Dictionary] = [
 	{
 		"time": 0.0,
 		"position": Vector3(5.5, 0.42, -4.2),
-		"dwell": 8.0,
+		"dwell": 0.0,
 	},
 	{
 		"time": 15.0,
@@ -91,6 +96,7 @@ var _bark_elapsed: float = 0.0
 var _repeat_cooldown_remaining: float = 0.0
 var _last_checked_position: Vector3
 var _has_checked_position: bool = false
+var _has_left_bed: bool = false
 
 
 func _ready() -> void:
@@ -148,13 +154,25 @@ func get_state_name() -> StringName:
 
 func _finish_navigation_setup() -> void:
 	await get_tree().physics_frame
+	if _navigation_agent != null:
+		while (
+			NavigationServer3D.map_get_iteration_id(
+				_navigation_agent.get_navigation_map()
+			)
+			<= 0
+		):
+			await get_tree().physics_frame
+		_navigation_agent.path_desired_distance = navigation_path_desired_distance
+		_navigation_agent.target_desired_distance = navigation_target_desired_distance
 	_navigation_ready = true
-	_set_navigation_target(get_base_target(_get_clock_elapsed()), true)
+	_set_navigation_target(_get_live_base_target(), true)
 
 
 func _update_base(delta: float) -> void:
-	var target: Vector3 = get_base_target(_get_clock_elapsed())
+	var target: Vector3 = _get_live_base_target()
 	_set_navigation_target(target)
+	if _is_initially_sleeping():
+		return
 	_move_along_path(patrol_speed, delta)
 
 
@@ -236,7 +254,7 @@ func _mark_target_checked() -> void:
 
 func _resume_base() -> void:
 	_set_state(State.BASE)
-	_set_navigation_target(get_base_target(_get_clock_elapsed()), true)
+	_set_navigation_target(_get_live_base_target(), true)
 
 
 func _is_repeat_target_suppressed(target: Vector3) -> bool:
@@ -248,12 +266,29 @@ func _is_repeat_target_suppressed(target: Vector3) -> bool:
 
 
 func _move_along_path(speed: float, delta: float) -> bool:
+	if not _has_left_bed:
+		if _move_toward_wake_exit(speed, delta):
+			return true
+		_has_left_bed = true
+		_set_navigation_target(_last_navigation_target, true)
 	if not _can_query_navigation() or _navigation_agent.is_navigation_finished():
 		return false
 	var next_path_position: Vector3 = _navigation_agent.get_next_path_position()
 	var movement: Vector3 = next_path_position - global_position
 	movement.y = 0.0
 	if movement.length_squared() <= 0.0:
+		return false
+	var movement_distance: float = minf(speed * delta, movement.length())
+	var movement_direction: Vector3 = movement.normalized()
+	global_position += movement_direction * movement_distance
+	_face_direction(movement_direction, delta)
+	return true
+
+
+func _move_toward_wake_exit(speed: float, delta: float) -> bool:
+	var movement: Vector3 = wake_exit_position - global_position
+	movement.y = 0.0
+	if movement.length() <= wake_exit_distance:
 		return false
 	var movement_distance: float = minf(speed * delta, movement.length())
 	var movement_direction: Vector3 = movement.normalized()
@@ -328,6 +363,18 @@ func _apply_state_visual() -> void:
 
 func _get_clock_elapsed() -> float:
 	return maxf(GameClock.run_length - GameClock.time_remaining, 0.0)
+
+
+func _get_patrol_elapsed() -> float:
+	return maxf(_get_clock_elapsed() - initial_sleep_duration, 0.0)
+
+
+func _get_live_base_target() -> Vector3:
+	return get_base_target(_get_patrol_elapsed())
+
+
+func _is_initially_sleeping() -> bool:
+	return _get_clock_elapsed() < initial_sleep_duration
 
 
 func _row_time(row: Dictionary) -> float:

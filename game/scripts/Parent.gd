@@ -24,7 +24,9 @@ enum State {
 ## Zero follows GameClock.run_length. Set positive only to override/cap the routine timeline.
 @export var routine_duration: float = 0.0
 @export var routine_speed: float = 1.5
-@export var routine_repath_distance: float = 0.25
+@export var routine_repath_distance: float = 0.05
+@export var navigation_path_desired_distance: float = 0.8
+@export var navigation_target_desired_distance: float = 0.02
 @export var facing_turn_speed: float = 5.0
 @export var routine_rows: Array[Dictionary] = [
 	{
@@ -144,6 +146,9 @@ enum State {
 @export var hearing_radius: float = 8.0
 @export var seen_suspicion_per_second: float = 25.0
 @export var suspicion_decay_per_second: float = 8.0
+@export var seen_full_rate_distance: float = 4.0
+@export var seen_max_multiplier_distance: float = 2.5
+@export var seen_max_proximity_multiplier: float = 3.0
 
 @export_group("Investigate")
 @export var investigate_speed: float = 2.2
@@ -169,6 +174,25 @@ enum State {
 @export var cone_base_color: Color = Color(0.68, 0.56, 0.92, 0.24)
 @export var cone_suspicious_color: Color = Color(1.0, 0.68, 0.18, 0.34)
 @export var cone_found_color: Color = Color(1.0, 0.12, 0.12, 0.45)
+
+@export_group("B6 Runtime Verification")
+@export var verify_time_scale: float = 20.0
+@export var verify_physics_ticks_per_second: int = 1200
+@export var verify_warmup_frames: int = 12
+@export var verify_max_physics_frames: int = 12000
+@export var verify_parent_duration: float = 120.0
+@export var verify_pet_duration: float = 60.0
+@export var verify_parent_min_displacement: float = 5.0
+@export var verify_kitchen_waypoint: Vector3 = Vector3(9.5, 0.7, -3.8)
+@export var verify_waypoint_tolerance: float = 1.5
+@export var verify_pet_sleep_tolerance: float = 0.25
+@export var verify_pet_min_displacement: float = 2.0
+@export var verify_observer_parking_position: Vector3 = Vector3(-30.0, 0.6, -20.0)
+@export var verify_point_blank_parent_position: Vector3 = Vector3(-0.2, 0.7, -4.6)
+@export var verify_point_blank_facing: Vector3 = Vector3(-1.0, 0.0, 0.0)
+@export var verify_point_blank_distance: float = 2.0
+@export var verify_point_blank_duration: float = 3.0
+@export var verify_point_blank_suspicion: float = 90.0
 
 var suspicion: float = 0.0
 
@@ -205,6 +229,8 @@ func _ready() -> void:
 	if not NoiseSystem.noise_emitted.is_connected(_on_noise_emitted):
 		NoiseSystem.noise_emitted.connect(_on_noise_emitted)
 	_finish_navigation_setup.call_deferred()
+	if OS.get_cmdline_user_args().has("--verify-b6"):
+		_run_b6_verification.call_deferred()
 
 
 func _physics_process(delta: float) -> void:
@@ -273,6 +299,16 @@ func get_state_name() -> StringName:
 
 func _finish_navigation_setup() -> void:
 	await get_tree().physics_frame
+	if _navigation_agent != null:
+		while (
+			NavigationServer3D.map_get_iteration_id(
+				_navigation_agent.get_navigation_map()
+			)
+			<= 0
+		):
+			await get_tree().physics_frame
+		_navigation_agent.path_desired_distance = navigation_path_desired_distance
+		_navigation_agent.target_desired_distance = navigation_target_desired_distance
 	_navigation_ready = true
 	_set_navigation_target(get_base_target(_get_routine_time()), true)
 
@@ -379,7 +415,7 @@ func _update_perception(delta: float) -> void:
 	var sees_player: bool = _can_see_player()
 	if sees_player:
 		_last_known_position = _player.global_position
-		suspicion += seen_suspicion_per_second * delta
+		suspicion += seen_suspicion_per_second * _get_seen_rate_multiplier() * delta
 		if suspicion >= suspicion_max:
 			_begin_found_or_carry()
 		elif suspicion >= investigate_threshold:
@@ -387,6 +423,23 @@ func _update_perception(delta: float) -> void:
 	elif not _heard_since_last_tick:
 		suspicion -= suspicion_decay_per_second * delta
 	suspicion = clampf(suspicion, 0.0, suspicion_max)
+
+
+func _get_seen_rate_multiplier() -> float:
+	if _player == null:
+		return 1.0
+	var distance_to_player: float = global_position.distance_to(_player.global_position)
+	if distance_to_player >= seen_full_rate_distance:
+		return 1.0
+	if distance_to_player <= seen_max_multiplier_distance:
+		return maxf(seen_max_proximity_multiplier, 1.0)
+	var distance_span: float = seen_full_rate_distance - seen_max_multiplier_distance
+	if distance_span <= 0.0:
+		return maxf(seen_max_proximity_multiplier, 1.0)
+	var proximity_weight: float = (
+		seen_full_rate_distance - distance_to_player
+	) / distance_span
+	return lerpf(1.0, maxf(seen_max_proximity_multiplier, 1.0), proximity_weight)
 
 
 func _can_see_player() -> bool:
@@ -654,6 +707,149 @@ func _face_direction(direction: Vector3, delta: float) -> void:
 		return
 	var target_yaw: float = atan2(-flat_direction.x, -flat_direction.z)
 	rotation.y = lerp_angle(rotation.y, target_yaw, clampf(facing_turn_speed * delta, 0.0, 1.0))
+
+
+func _run_b6_verification() -> void:
+	var pet: DinnerPet = get_parent().get_node_or_null("Pet") as DinnerPet
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var player_was_processing: bool = _player != null and _player.is_physics_processing()
+	var parent_start: Vector3 = global_position
+	var pet_start: Vector3 = pet.global_position if pet != null else Vector3.ZERO
+	var parent_max_displacement: float = 0.0
+	var kitchen_min_distance: float = INF
+	var pet_sleep_max_displacement: float = 0.0
+	var pet_max_displacement: float = 0.0
+	var reached_parent_duration: bool = false
+
+	Engine.time_scale = maxf(verify_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(verify_physics_ticks_per_second, 60)
+	if _player != null:
+		_player.set_input_locked(true)
+		_player.set_physics_process(false)
+		_player.global_position = verify_observer_parking_position
+
+	for _frame_index in range(verify_warmup_frames):
+		await get_tree().physics_frame
+
+	GameClock.start()
+	for _frame_index in range(verify_max_physics_frames):
+		await get_tree().physics_frame
+		var clock_elapsed: float = GameClock.run_length - GameClock.time_remaining
+		parent_max_displacement = maxf(
+			parent_max_displacement,
+			parent_start.distance_to(global_position)
+		)
+		kitchen_min_distance = minf(
+			kitchen_min_distance,
+			global_position.distance_to(verify_kitchen_waypoint)
+		)
+		if pet != null and clock_elapsed <= verify_pet_duration:
+			var pet_displacement: float = pet_start.distance_to(pet.global_position)
+			pet_max_displacement = maxf(pet_max_displacement, pet_displacement)
+			if clock_elapsed <= pet.initial_sleep_duration:
+				pet_sleep_max_displacement = maxf(
+					pet_sleep_max_displacement,
+					pet_displacement
+				)
+		if clock_elapsed >= verify_parent_duration:
+			reached_parent_duration = true
+			break
+
+	var point_blank_lit: bool = false
+	var point_blank_triggered: bool = false
+	var point_blank_max_suspicion: float = 0.0
+	var reached_point_blank_duration: bool = false
+	if _player != null:
+		_prepare_point_blank_verification()
+		GameClock.start()
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			var clock_elapsed: float = GameClock.run_length - GameClock.time_remaining
+			var brightness: float = LightSystem.get_brightness_at(_player.global_position)
+			point_blank_lit = point_blank_lit or brightness > brightness_threshold
+			point_blank_max_suspicion = maxf(point_blank_max_suspicion, suspicion)
+			point_blank_triggered = (
+				point_blank_triggered
+				or suspicion >= verify_point_blank_suspicion
+				or _state == State.FOUND
+			)
+			if clock_elapsed >= verify_point_blank_duration:
+				reached_point_blank_duration = true
+				break
+
+	GameClock.running = false
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+	if _player != null:
+		_player.set_physics_process(player_was_processing)
+
+	var parent_moved: bool = parent_max_displacement >= verify_parent_min_displacement
+	var reached_kitchen: bool = kitchen_min_distance <= verify_waypoint_tolerance
+	var pet_slept: bool = (
+		pet != null
+		and pet_sleep_max_displacement <= verify_pet_sleep_tolerance
+	)
+	var pet_patrolled: bool = (
+		pet != null
+		and pet_max_displacement >= verify_pet_min_displacement
+	)
+	var verification_passed: bool = (
+		reached_parent_duration
+		and parent_moved
+		and reached_kitchen
+		and pet_slept
+		and pet_patrolled
+		and reached_point_blank_duration
+		and point_blank_lit
+		and point_blank_triggered
+	)
+	print(
+		(
+			"B6 live metrics: parent displacement=%.2f m, kitchen closest=%.2f m, "
+			+ "pet sleep drift=%.2f m, pet displacement=%.2f m, "
+			+ "point-blank max suspicion=%.1f."
+		)
+		% [
+			parent_max_displacement,
+			kitchen_min_distance,
+			pet_sleep_max_displacement,
+			pet_max_displacement,
+			point_blank_max_suspicion,
+		]
+	)
+	get_tree().quit(0 if verification_passed else 1)
+	assert(reached_parent_duration, "B6 clock did not tick through the 120 s routine check.")
+	assert(parent_moved, "B6 parent stayed immobile during the live routine check.")
+	assert(reached_kitchen, "B6 parent never reached the kitchen waypoint.")
+	assert(pet_slept, "B6 pet moved during its initial sleep window.")
+	assert(pet_patrolled, "B6 pet did not patrol after waking.")
+	assert(reached_point_blank_duration, "B6 clock did not tick through the 3 s detection check.")
+	assert(point_blank_lit, "B6 planted player was not observably lit.")
+	assert(point_blank_triggered, "B6 point-blank player did not reach 90 suspicion or FOUND.")
+	print("B6 live SceneTree verification passed.")
+
+
+func _prepare_point_blank_verification() -> void:
+	suspicion = 0.0
+	_state = State.ROUTINE
+	_investigate_elapsed = 0.0
+	_investigate_look_elapsed = 0.0
+	_found_no_sight_elapsed = 0.0
+	_repeat_cooldown_remaining = 0.0
+	_has_checked_position = false
+	global_position = verify_point_blank_parent_position
+	var facing: Vector3 = verify_point_blank_facing
+	facing.y = 0.0
+	facing = facing.normalized() if facing.length_squared() > 0.0 else Vector3.FORWARD
+	rotation.y = atan2(-facing.x, -facing.z)
+	_cone_yaw_degrees = 0.0
+	_set_navigation_target(global_position, true)
+	var player_position: Vector3 = global_position + facing * verify_point_blank_distance
+	player_position.y = verify_observer_parking_position.y
+	_player.global_position = player_position
+	for zone: String in LightSystem.VALID_ZONES:
+		LightSystem.set_zone_enabled(zone, true)
 
 
 func _row_time(row: Dictionary) -> float:
