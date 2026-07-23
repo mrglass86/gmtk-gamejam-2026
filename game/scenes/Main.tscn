@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3]
+[gd_scene load_steps=28 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/LevelBuilder.gd" id="2_level"]
@@ -11,6 +11,9 @@
 [ext_resource type="Script" path="res://scripts/Door.gd" id="9_door"]
 [ext_resource type="Script" path="res://scripts/Snack.gd" id="10_snack"]
 [ext_resource type="Script" path="res://scripts/Parent.gd" id="11_parent"]
+[ext_resource type="Script" path="res://scripts/PhaseDirector.gd" id="12_phase"]
+[ext_resource type="Script" path="res://scripts/NightstandClock.gd" id="13_clock"]
+[ext_resource type="Script" path="res://scripts/DebugTools.gd" id="14_debug"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -260,14 +263,29 @@ script = ExtResource("10_snack")
 mesh = SubResource("SnackMesh")
 material_override = SubResource("SnackMaterial")
 
-[node name="NightstandClock" type="Node3D" parent="."]
-position = Vector3(-10.2, 0.85, -5.6)
+[node name="NightstandClock" type="Label3D" parent="."]
+position = Vector3(-10.2, 1.0, -5.6)
+modulate = Color(0.95, 0.08, 0.08, 1)
+outline_modulate = Color(0.08, 0.01, 0.01, 1)
+font_size = 48
+outline_size = 8
+pixel_size = 0.008
+billboard = 1
+no_depth_test = true
+text = "5:00"
+script = ExtResource("13_clock")
 
 [node name="BrightnessReadout" type="CanvasLayer" parent="."]
 script = ExtResource("5_readout")
 
 [node name="NoiseIndicatorManager" type="Node3D" parent="."]
 script = ExtResource("7_indicator_manager")
+
+[node name="PhaseDirector" type="Node" parent="."]
+script = ExtResource("12_phase")
+
+[node name="DebugTools" type="Node" parent="."]
+script = ExtResource("14_debug")
 
 [node name="Label" type="Label" parent="BrightnessReadout"]
 offset_left = 24.0

@@ -26,6 +26,7 @@ func start() -> void:
 	time_remaining = run_length
 	phase = 0
 	running = true
+	phase_changed.emit(phase)
 
 
 func _process(delta: float) -> void:
@@ -42,10 +43,14 @@ func _process(delta: float) -> void:
 func scrub(seconds: float) -> void:
 	time_remaining = clampf(time_remaining - seconds, 0.0, run_length)
 	_update_phase()
+	if time_remaining <= 0.0 and running:
+		running = false
+		time_expired.emit()
 
 
 func _update_phase() -> void:
-	var target: int = clampi(int((run_length - time_remaining) / phase_interval), 0, 4)
+	var safe_interval: float = maxf(phase_interval, 0.001)
+	var target: int = clampi(int((run_length - time_remaining) / safe_interval), 0, 4)
 	if target != phase:
 		phase = target
 		phase_changed.emit(phase)

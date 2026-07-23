@@ -46,9 +46,14 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a41"):
 		_verify_a41_playtest_fixes()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a5"):
+		_verify_a5_clock_and_phases()
+		return
 	var capture_path: String = _capture_path_from_args()
 	if not capture_path.is_empty():
 		_capture_layout(capture_path)
+		return
+	GameClock.start()
 
 
 func _verify_input_map() -> void:
@@ -60,9 +65,9 @@ func _verify_input_map() -> void:
 
 
 func _verify_light_system() -> void:
-	var bedroom_anchor: Vector3 = Vector3(-10.0, 0.0, 0.5)
+	var bedroom_anchor: Vector3 = Vector3(-11.1, 0.0, -3.9)
 	assert(is_equal_approx(LightSystem.get_brightness_at(bedroom_anchor), 1.0))
-	assert(is_zero_approx(LightSystem.get_brightness_at(Vector3(-20.0, 0.0, 0.5))))
+	assert(is_zero_approx(LightSystem.get_brightness_at(Vector3(-30.0, 0.0, 0.0))))
 
 	var max_probe: Vector3 = Vector3(30.0, 0.0, 0.0)
 	LightSystem.register_light("a1_max_low", "bedroom", Vector3(33.0, 0.0, 0.0), 10.0)
@@ -265,6 +270,84 @@ func _verify_wall_junctions() -> void:
 func _wall_world_aabb(wall: Node3D) -> AABB:
 	var mesh_instance: MeshInstance3D = wall.get_child(0) as MeshInstance3D
 	return mesh_instance.global_transform * mesh_instance.get_aabb()
+
+
+func _verify_a5_clock_and_phases() -> void:
+	await get_tree().process_frame
+	var phase_director: Node = $PhaseDirector
+	var debug_tools: Node = $DebugTools
+	var clock_label: Label3D = $NightstandClock as Label3D
+
+	GameClock.start()
+	GameClock.running = false
+	await get_tree().process_frame
+	assert(GameClock.phase == 0 and is_equal_approx(GameClock.time_remaining, 300.0))
+	clock_label.call("_update_text")
+	assert(clock_label.text == "5:00")
+	assert(clock_label.modulate.r > 0.8 and clock_label.modulate.g < 0.2)
+	assert(($Level/LivingLampVisual as Node3D).visible)
+	assert(NoiseSystem.get_mask_at(Vector3(-2.75, 0.0, -4.1)) > 0.0)
+
+	GameClock.scrub(60.0)
+	assert(GameClock.phase == 1 and is_equal_approx(GameClock.time_remaining, 240.0))
+	assert(not ($Level/LivingLampVisual as Node3D).visible)
+
+	GameClock.scrub(60.0)
+	assert(GameClock.phase == 2 and is_equal_approx(GameClock.time_remaining, 180.0))
+	assert(not ($Level/TVGlow as Node3D).visible)
+	assert(is_zero_approx(NoiseSystem.get_mask_at(Vector3(-2.75, 0.0, -4.1))))
+
+	GameClock.scrub(60.0)
+	assert(GameClock.phase == 3 and is_equal_approx(GameClock.time_remaining, 120.0))
+	assert(not ($Level/KitchenLampVisual as Node3D).visible)
+	assert(is_zero_approx(NoiseSystem.get_mask_at(Vector3(8.5, 0.0, -5.3))))
+
+	GameClock.scrub(60.0)
+	assert(GameClock.phase == 4 and is_equal_approx(GameClock.time_remaining, 60.0))
+	assert(not ($Level/MidLampVisual as Node3D).visible)
+	assert(not ($Level/AlcoveLampVisual as Node3D).visible)
+
+	GameClock.scrub(-120.0)
+	assert(GameClock.phase == 2 and is_equal_approx(GameClock.time_remaining, 180.0))
+	assert(($Level/KitchenLampVisual as Node3D).visible)
+	assert(($Level/MidLampVisual as Node3D).visible)
+	assert(NoiseSystem.get_mask_at(Vector3(8.5, 0.0, -5.3)) > 0.0)
+	assert(not ($Level/LivingLampVisual as Node3D).visible)
+	assert(not ($Level/TVGlow as Node3D).visible)
+
+	GameClock.start()
+	GameClock.running = false
+	var skip_event: InputEventAction = InputEventAction.new()
+	skip_event.action = &"debug_skip"
+	skip_event.pressed = true
+	debug_tools.call("_unhandled_input", skip_event)
+	assert(is_equal_approx(GameClock.time_remaining, 270.0))
+	var rewind_event: InputEventAction = InputEventAction.new()
+	rewind_event.action = &"debug_rewind"
+	rewind_event.pressed = true
+	debug_tools.call("_unhandled_input", rewind_event)
+	assert(is_equal_approx(GameClock.time_remaining, 300.0))
+	var overlay_event: InputEventAction = InputEventAction.new()
+	overlay_event.action = &"debug_overlay"
+	overlay_event.pressed = true
+	debug_tools.call("_unhandled_input", overlay_event)
+	assert(bool(debug_tools.call("is_overlay_visible")))
+
+	for sync_frame: int in range(12):
+		await get_tree().physics_frame
+	var screen_center: Vector2 = get_viewport().get_visible_rect().size * 0.5
+	assert(bool(debug_tools.call("teleport_player_to_screen_point", screen_center)))
+	var debug_surface: NoiseSurface = debug_tools.call(
+		"spawn_noise_surface_at_screen_point", screen_center
+	) as NoiseSurface
+	assert(debug_surface != null and debug_surface.surface_height <= 0.03)
+	debug_surface.queue_free()
+
+	phase_director.call("apply_phase", 0)
+	assert(($Level/LivingLampVisual as Node3D).visible)
+	assert(($Level/TVGlow as Node3D).visible)
+	print("A5 verification passed: clock thresholds, pure phase restore, debug tools, and world clock.")
+	get_tree().quit()
 
 
 func _capture_path_from_args() -> String:
