@@ -20,6 +20,8 @@ const REQUIRED_ACTIONS: PackedStringArray = [
 	"debug_overlay",
 	"debug_teleport",
 	"debug_spawn_noise",
+	"debug_spawn_lamp",
+	"debug_remove_lamp",
 ]
 
 
@@ -63,6 +65,9 @@ func _ready() -> void:
 		return
 	if OS.get_cmdline_user_args().has("--verify-a9"):
 		_verify_a9_practical_lighting()
+		return
+	if OS.get_cmdline_user_args().has("--verify-a10"):
+		_verify_a10_presentation()
 		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
@@ -248,10 +253,13 @@ func _verify_a41_playtest_fixes() -> void:
 		var collision: CollisionShape3D = collisions[0] as CollisionShape3D
 		assert(collision.position.y >= 0.0, "%s collision is not floor-flush." % hazard_name)
 
-	var bathroom_door: Node3D = get_node("Level/BathroomDoor") as Node3D
+	var bathroom_door: DinnerDoor = get_node(
+		"Level/BathroomDoor"
+	) as DinnerDoor
+	assert(bathroom_door != null)
 	assert(
-		bathroom_door.find_children("*", "CollisionObject3D", true, false).is_empty(),
-		"Bathroom door dressing added collision to the walkway."
+		bathroom_door.get_node_or_null("Blocker/CollisionShape3D") != null,
+		"Bathroom quiet-zone door has no scripted doorway blocker."
 	)
 	_verify_wall_junctions()
 
@@ -425,11 +433,11 @@ func _verify_a51_second_walk_fixes() -> void:
 	assert(player.global_position.y >= 0.5, "Player fell through the repaired east-hall floor.")
 	assert(player.is_on_floor(), "Player did not settle on the repaired east-hall floor.")
 
-	var fridge: Node3D = $Fridge
+	var fridge: DinnerDoor = $Fridge as DinnerDoor
 	var fridge_hinge: Node3D = $Fridge/DoorVisual
 	var fridge_panel: MeshInstance3D = $Fridge/DoorVisual/Panel as MeshInstance3D
-	assert(is_equal_approx(fridge_hinge.position.x, 1.2))
-	assert(is_equal_approx(fridge_panel.position.x, -1.2))
+	assert(is_equal_approx(fridge_hinge.position.z, -1.1))
+	assert(is_equal_approx(fridge_panel.position.z, 1.1))
 	fridge.set("openness", 1.0)
 	fridge.call("_apply_visual")
 	assert(is_equal_approx(fridge_hinge.rotation_degrees.y, -90.0))
@@ -437,7 +445,7 @@ func _verify_a51_second_walk_fixes() -> void:
 	var north_wall_aabb: AABB = _wall_world_aabb($Level/NorthWall as Node3D)
 	assert(
 		panel_aabb.intersects(north_wall_aabb),
-		"Open fridge panel does not reach the back wall."
+		"Open fridge panel does not rest against the north wall."
 	)
 
 	var parent: Node3D = $Parent
@@ -755,7 +763,7 @@ func _verify_a8_tuning() -> void:
 
 func _verify_a9_practical_lighting() -> void:
 	var environment: Environment = ($WorldEnvironment as WorldEnvironment).environment
-	assert(is_equal_approx(environment.ambient_light_energy, 0.08))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
 
 	var level: Node3D = $Level as Node3D
 	var configured_range: float = float(level.get("lamp_range"))
@@ -828,7 +836,208 @@ func _verify_a9_practical_lighting() -> void:
 
 	print(
 		"A9 verification passed: five cool emissive practicals, 5.8 m pools, "
-		+ "0.08 ambient contrast, and live capsule/HUD brightness tracking."
+		+ "0.05 ambient contrast, and live capsule/HUD brightness tracking."
+	)
+	get_tree().quit()
+
+
+func _verify_a10_presentation() -> void:
+	get_tree().paused = false
+	for settle_frame: int in range(12):
+		await get_tree().physics_frame
+
+	var environment: Environment = ($WorldEnvironment as WorldEnvironment).environment
+	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
+
+	var bathroom_door: DinnerDoor = $Level/BathroomDoor as DinnerDoor
+	assert(bathroom_door != null)
+	assert(bathroom_door.player_path == NodePath("../../Player"))
+	assert(bathroom_door.snack_path == NodePath("../../Snack"))
+	var bathroom_panel: MeshInstance3D = (
+		$Level/BathroomDoor/DoorVisual/Panel as MeshInstance3D
+	)
+	var bathroom_blocker: CollisionShape3D = (
+		$Level/BathroomDoor/Blocker/CollisionShape3D as CollisionShape3D
+	)
+	assert(bathroom_panel != null and bathroom_blocker != null)
+	assert(
+		($Level/BathroomDoor/DoorVisual as StaticBody3D).collision_layer == 0,
+		"Bathroom visual panel still has physical collision."
+	)
+	assert(not bathroom_blocker.disabled)
+	bathroom_door.openness = 0.4
+	bathroom_door.call("_apply_visual")
+	bathroom_door.call("_update_blocker_collision")
+	await get_tree().physics_frame
+	assert(bathroom_blocker.disabled)
+	bathroom_door.close_immediately()
+	await get_tree().physics_frame
+	assert(not bathroom_blocker.disabled)
+
+	var parent_has_bathroom_path: bool = false
+	for property: Dictionary in $Parent.get_property_list():
+		if property["name"] == &"bathroom_door_path":
+			parent_has_bathroom_path = true
+			break
+	if parent_has_bathroom_path:
+		assert(
+			$Parent.get("bathroom_door_path")
+			== NodePath("../Level/BathroomDoor")
+		)
+
+	var crib: StaticBody3D = $Level/CribBlock as StaticBody3D
+	var crib_meshes: Array[Node] = crib.find_children(
+		"*",
+		"MeshInstance3D",
+		true,
+		false
+	)
+	assert(crib_meshes.size() == 8, "Crib needs four posts and four side rails.")
+	var couch: StaticBody3D = $Level/Couch as StaticBody3D
+	var couch_meshes: Array[Node] = couch.find_children(
+		"*",
+		"MeshInstance3D",
+		true,
+		false
+	)
+	assert(couch_meshes.size() == 4, "Couch needs seat, back, and two arms.")
+	assert(($Pet/Body as MeshInstance3D).mesh is CapsuleMesh)
+	assert($Pet/Snout != null)
+	var bowl: Node3D = $Level/KitchenBowl as Node3D
+	assert((bowl.get_node("Bowl") as MeshInstance3D).mesh is CylinderMesh)
+	assert(
+		bowl.find_children("*", "CollisionObject3D", true, false).is_empty(),
+		"Kitchen bowl blocks the nav-reachable floor."
+	)
+	var navigation_map: RID = get_world_3d().navigation_map
+	var bowl_nav_point: Vector3 = NavigationServer3D.map_get_closest_point(
+		navigation_map,
+		bowl.global_position
+	)
+	assert(
+		Vector2(bowl_nav_point.x, bowl_nav_point.z).distance_to(
+			Vector2(bowl.global_position.x, bowl.global_position.z)
+		) < 0.2,
+		"Kitchen bowl is not on reachable navigation."
+	)
+
+	var fridge: DinnerDoor = $Fridge as DinnerDoor
+	var fridge_hinge: Node3D = $Fridge/DoorVisual as Node3D
+	var fridge_panel: MeshInstance3D = (
+		$Fridge/DoorVisual/Panel as MeshInstance3D
+	)
+	var fridge_body: MeshInstance3D = (
+		$Level/FridgeBlock.get_child(0) as MeshInstance3D
+	)
+	var fridge_body_aabb: AABB = (
+		fridge_body.global_transform * fridge_body.get_aabb()
+	)
+	fridge.openness = 0.0
+	fridge.call("_apply_visual")
+	var closed_panel_aabb: AABB = (
+		fridge_panel.global_transform * fridge_panel.get_aabb()
+	)
+	assert(closed_panel_aabb.size.z > 2.1)
+	assert(not closed_panel_aabb.intersects(fridge_body_aabb))
+	var minimum_fridge_clearance: float = INF
+	for openness_step: int in range(9):
+		fridge.openness = float(openness_step) / 8.0
+		fridge.call("_apply_visual")
+		var swept_aabb: AABB = (
+			fridge_panel.global_transform * fridge_panel.get_aabb()
+		)
+		assert(
+			not swept_aabb.intersects(fridge_body_aabb),
+			"Fridge visual swept through its body at %.3f openness."
+			% fridge.openness
+		)
+		minimum_fridge_clearance = minf(
+			minimum_fridge_clearance,
+			fridge_body_aabb.position.x - swept_aabb.end.x
+		)
+	var open_panel_aabb: AABB = (
+		fridge_panel.global_transform * fridge_panel.get_aabb()
+	)
+	var north_wall_aabb: AABB = _wall_world_aabb($Level/NorthWall as Node3D)
+	assert(open_panel_aabb.size.x > 2.1 and open_panel_aabb.size.z < 0.2)
+	assert(open_panel_aabb.intersects(north_wall_aabb))
+	assert(
+		not fridge_panel.find_children("*", "CollisionShape3D", true, false)
+	)
+	assert(is_equal_approx(fridge_hinge.rotation_degrees.y, -90.0))
+	fridge.close_immediately()
+
+	var tv_glow: AreaLight3D = $Level/TVGlow as AreaLight3D
+	var couch_target: Vector3 = Vector3(1.55, 0.4, -4.4)
+	var tv_to_couch: Vector3 = (
+		couch_target - tv_glow.global_position
+	).normalized()
+	assert((-tv_glow.global_basis.z).normalized().dot(tv_to_couch) > 0.99)
+	var phase_director: PhaseDirector = $PhaseDirector as PhaseDirector
+	assert(phase_director.tv_flicker_amount >= 0.15)
+	phase_director.apply_phase(0)
+	var minimum_tv_energy: float = INF
+	var maximum_tv_energy: float = 0.0
+	for flicker_step: int in range(120):
+		phase_director.set("_tv_flicker_time", float(flicker_step) / 120.0)
+		phase_director.apply_tv_flicker()
+		minimum_tv_energy = minf(minimum_tv_energy, tv_glow.light_energy)
+		maximum_tv_energy = maxf(maximum_tv_energy, tv_glow.light_energy)
+	assert(maximum_tv_energy - minimum_tv_energy > 0.3)
+	phase_director.apply_phase(2)
+	assert(not tv_glow.visible)
+	phase_director.apply_phase(0)
+
+	var audio_director: DinnerAudioDirector = $AudioDirector as DinnerAudioDirector
+	var carpet_volume_gap: float = (
+		audio_director.hardwood_step_volume_db
+		- audio_director.carpet_step_volume_db
+	)
+	assert(carpet_volume_gap >= 14.0)
+
+	var debug_tools: DinnerDebugTools = $DebugTools as DinnerDebugTools
+	var screen_center: Vector2 = get_viewport().get_visible_rect().size * 0.5
+	var trial_lamp: Node3D = debug_tools.spawn_trial_lamp_at_screen_point(
+		screen_center
+	)
+	assert(trial_lamp != null)
+	var initial_trial_radius: float = float(trial_lamp.get_meta(&"radius"))
+	var adjusted_trial_radius: float = debug_tools.adjust_active_trial_radius(
+		0.5
+	)
+	assert(is_equal_approx(adjusted_trial_radius, initial_trial_radius + 0.5))
+	var trial_rows: PackedStringArray = debug_tools.get_trial_lamp_rows()
+	assert(
+		trial_rows.size() == 1
+		and trial_rows[0].begins_with('_add_omni("TrialLamp')
+		and trial_rows[0].contains("%.2f)" % adjusted_trial_radius)
+	)
+	assert(
+		debug_tools.remove_nearest_trial_lamp_at_screen_point(screen_center)
+	)
+	await get_tree().process_frame
+	assert(debug_tools.get_trial_lamp_rows().is_empty())
+
+	print(
+		(
+			"A10 metrics: ambient=%.2f, crib=%d parts, couch=%d parts, "
+			+ "fridge sweep clearance=%.3f m, TV energy=%.2f..%.2f, "
+			+ "carpet gap=%.1f dB, trial radius=%.2f m."
+		)
+		% [
+			environment.ambient_light_energy,
+			crib_meshes.size(),
+			couch_meshes.size(),
+			minimum_fridge_clearance,
+			minimum_tv_energy,
+			maximum_tv_energy,
+			carpet_volume_gap,
+			adjusted_trial_radius,
+		]
+	)
+	print(
+		"A10 verification passed: quiet door, silhouettes, outward fridge, "
+		+ "TV cue, dark house, lamp tool, and carpet whisper."
 	)
 	get_tree().quit()
 
@@ -913,6 +1122,14 @@ func _capture_layout(capture_path: String) -> void:
 	var capture_fridge_light: bool = OS.get_cmdline_user_args().has(
 		"--capture-a7-fridge"
 	)
+	var capture_a10_fridge_open: bool = OS.get_cmdline_user_args().has(
+		"--capture-a10-fridge-open"
+	)
+	var capture_a10_fridge_closed: bool = OS.get_cmdline_user_args().has(
+		"--capture-a10-fridge-closed"
+	)
+	if capture_a10_fridge_open or capture_a10_fridge_closed:
+		_configure_a10_fridge_capture(capture_a10_fridge_open)
 	if OS.get_cmdline_user_args().has("--capture-a7-snack"):
 		var pantry: DinnerDoor = $Pantry as DinnerDoor
 		pantry.openness = 0.6
@@ -937,3 +1154,42 @@ func _capture_layout(capture_path: String) -> void:
 	else:
 		print("A0 layout capture saved: %s" % capture_path)
 	get_tree().quit()
+
+
+func _configure_a10_fridge_capture(is_open: bool) -> void:
+	var fridge: DinnerDoor = $Fridge as DinnerDoor
+	fridge.openness = 1.0 if is_open else 0.0
+	fridge.call("_apply_visual")
+	var camera_target: Vector3 = Vector3(12.3, 0.8, -5.1)
+	var camera_rig: Node3D = $CameraRig as Node3D
+	camera_rig.global_position = camera_target + Vector3(0.0, 13.5, 7.2)
+	camera_rig.look_at(camera_target, Vector3.UP)
+	($CameraRig/OrthoCamera as Camera3D).size = 7.0
+
+	var state_label: Label3D = Label3D.new()
+	state_label.name = "A10FridgeStateLabel"
+	state_label.text = (
+		"FRIDGE OPEN — OUTWARD SWEEP / NORTH-WALL REST"
+		if is_open
+		else "FRIDGE CLOSED — WALL-SIDE HINGE"
+	)
+	state_label.position = Vector3(12.1, 2.6, -4.0)
+	state_label.font_size = 42
+	state_label.outline_size = 8
+	state_label.pixel_size = 0.006
+	state_label.modulate = Color("#f2f5f9")
+	state_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	state_label.no_depth_test = true
+	add_child(state_label)
+
+	var wall_label: Label3D = Label3D.new()
+	wall_label.name = "A10NorthWallLabel"
+	wall_label.text = "NORTH WALL"
+	wall_label.position = Vector3(10.8, 1.5, -6.15)
+	wall_label.font_size = 34
+	wall_label.outline_size = 7
+	wall_label.pixel_size = 0.006
+	wall_label.modulate = Color("#c9d8eb")
+	wall_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	wall_label.no_depth_test = true
+	add_child(wall_label)
