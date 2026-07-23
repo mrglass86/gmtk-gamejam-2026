@@ -13,6 +13,9 @@ extends Node3D
 @export var prop_height: float = 0.8
 @export var lamp_energy: float = 2.0
 @export_range(5.5, 6.0) var lamp_range: float = 5.8
+@export var omni_source_height: float = 4.5
+@export var omni_shadow_blur: float = 2.0
+@export_range(0.0, 1.0) var shadow_opacity: float = 0.8
 
 @export_group("Practical Light Fixtures")
 @export var fixture_stand_color: Color = Color("#3c4654")
@@ -97,15 +100,16 @@ func _build_props() -> void:
 	_add_prop("DogBed", Vector3(5.5, 0.15, -4.75), Vector3(1.8, 0.3, 2.7), prop_color)
 	_add_prop("KitchenCounter", Vector3(9.8, 0.45, -5.35), Vector3(5.4, 0.9, 2.1), prop_color)
 	_add_prop("FridgeBlock", Vector3(13.75, 1.1, -5.3), Vector3(2.4, 2.2, 2.2), Color("#9aa5b0"))
-	_add_prop("KitchenTable", Vector3(10.55, 0.4, -1.2), Vector3(2.5, 0.8, 2.6), prop_color)
+	_add_kitchen_table()
 	_add_kitchen_bowl()
-	_add_prop("DiningTable", Vector3(0.95, 0.4, 0.9), Vector3(5.1, 0.8, 2.2), prop_color)
+	_add_dining_table()
 	_add_prop("AdultBed", Vector3(-9.8, 0.4, 4.75), Vector3(4.6, 0.8, 3.1), prop_color)
 	_add_prop("HallShelf", Vector3(10.1, 0.55, 4.35), Vector3(1.4, 1.1, 3.5), prop_color)
 	_add_prop("AdultDoorPanel", Vector3(-12.75, 0.6, 1.5), Vector3(2.3, 1.2, 0.12), wall_color)
 	_add_prop("KitchenSpeaker", Vector3(8.5, 1.15, -5.3), Vector3(0.5, 0.5, 0.5), Color("#6f7882"))
 	_add_visual_prop("FrontDoor", Vector3(8.0, 0.575, 6.3), Vector3(2.4, 1.15, 0.15), Color("#59616b"))
 	_add_visual_prop("DoorMat", Vector3(8.0, 0.01, 5.85), Vector3(1.6, 0.02, 0.9), carpet_color)
+	_add_front_door_side_table()
 
 
 func _build_lights() -> void:
@@ -114,35 +118,45 @@ func _build_lights() -> void:
 		"bedroom",
 		Vector3(-10.2, 1.12, -5.6),
 		0.85,
-		0.72
+		0.72,
+		-1.0,
+		Vector3(-10.8, 4.5, -3.8)
 	)
 	_add_omni(
 		"LivingLampVisual",
 		"living",
 		Vector3(0.15, 1.48, -5.25),
 		0.9,
-		0.0
+		0.0,
+		-1.0,
+		Vector3(1.5, 4.5, -3.9)
 	)
 	_add_omni(
 		"KitchenLampVisual",
 		"kitchen",
 		Vector3(9.8, 1.28, -5.05),
 		1.0,
-		0.92
+		0.92,
+		-1.0,
+		Vector3(10.7, 4.5, -2.3)
 	)
 	_add_omni(
 		"MidLampVisual",
 		"hall",
 		Vector3(-0.5, 1.42, 0.5),
 		0.9,
-		0.0
+		0.0,
+		-1.0,
+		Vector3(-1.0, 4.5, 0.4)
 	)
 	_add_omni(
 		"AlcoveLampVisual",
 		"hall",
-		Vector3(8.0, 1.42, 4.8),
+		Vector3(9.7, 1.25, 5.85),
 		0.85,
-		0.0
+		0.66,
+		-1.0,
+		Vector3(8.3, 4.5, 4.7)
 	)
 	_add_area_glow(
 		"TVGlow",
@@ -338,13 +352,143 @@ func _add_kitchen_bowl() -> void:
 	add_child(bowl)
 
 
+func _add_dining_table() -> void:
+	var chair_rows: Array[Dictionary] = [
+		{"position": Vector3(-1.35, 0.0, -1.0), "yaw": PI},
+		{"position": Vector3(1.35, 0.0, -1.0), "yaw": PI},
+		{"position": Vector3(-1.35, 0.0, 1.0), "yaw": 0.0},
+		{"position": Vector3(1.35, 0.0, 1.0), "yaw": 0.0},
+	]
+	_add_table_group(
+		"DiningTable",
+		Vector3(0.95, 0.0, 0.9),
+		Vector3(4.25, 0.16, 1.5),
+		Vector3(5.1, 0.9, 2.75),
+		chair_rows
+	)
+
+
+func _add_kitchen_table() -> void:
+	var chair_rows: Array[Dictionary] = [
+		{"position": Vector3(0.0, 0.0, -1.1), "yaw": PI},
+		{"position": Vector3(1.15, 0.0, 0.0), "yaw": PI * 0.5},
+		{"position": Vector3(0.0, 0.0, 1.1), "yaw": 0.0},
+	]
+	_add_table_group(
+		"KitchenTable",
+		Vector3(10.55, 0.0, -1.2),
+		Vector3(2.0, 0.16, 1.8),
+		Vector3(3.25, 0.9, 3.25),
+		chair_rows
+	)
+
+
+func _add_table_group(
+	node_name: String,
+	center: Vector3,
+	top_size: Vector3,
+	collision_size: Vector3,
+	chair_rows: Array[Dictionary]
+) -> void:
+	var table: StaticBody3D = StaticBody3D.new()
+	table.name = node_name
+	table.position = center
+	table.add_to_group("nav_source")
+	_add_box_collision(
+		table,
+		collision_size,
+		Vector3(0.0, collision_size.y * 0.5, 0.0)
+	)
+	_add_box_visual_part(
+		table,
+		"Top",
+		Vector3(0.0, 0.78, 0.0),
+		top_size,
+		prop_color
+	)
+	var leg_x: float = top_size.x * 0.5 - 0.18
+	var leg_z: float = top_size.z * 0.5 - 0.18
+	for x_position: float in [-leg_x, leg_x]:
+		for z_position: float in [-leg_z, leg_z]:
+			_add_box_visual_part(
+				table,
+				"Leg",
+				Vector3(x_position, 0.37, z_position),
+				Vector3(0.14, 0.74, 0.14),
+				prop_color
+			)
+	for chair_row: Dictionary in chair_rows:
+		_add_chair_visual(
+			table,
+			chair_row["position"] as Vector3,
+			float(chair_row["yaw"])
+		)
+	add_child(table)
+
+
+func _add_chair_visual(
+	table: Node3D,
+	local_position: Vector3,
+	yaw: float
+) -> void:
+	var chair: Node3D = Node3D.new()
+	chair.name = "Chair"
+	chair.position = local_position
+	chair.rotation.y = yaw
+	_add_box_visual_part(
+		chair,
+		"Seat",
+		Vector3(0.0, 0.42, 0.0),
+		Vector3(0.72, 0.14, 0.62),
+		prop_color.lightened(0.06)
+	)
+	_add_box_visual_part(
+		chair,
+		"Back",
+		Vector3(0.0, 0.72, 0.29),
+		Vector3(0.72, 0.68, 0.12),
+		prop_color.lightened(0.06)
+	)
+	table.add_child(chair)
+
+
+func _add_front_door_side_table() -> void:
+	var table: StaticBody3D = StaticBody3D.new()
+	table.name = "FrontDoorSideTable"
+	table.position = Vector3(9.7, 0.0, 5.85)
+	table.add_to_group("nav_source")
+	_add_box_collision(
+		table,
+		Vector3(1.0, 0.66, 0.55),
+		Vector3(0.0, 0.33, 0.0)
+	)
+	_add_box_visual_part(
+		table,
+		"Top",
+		Vector3(0.0, 0.62, 0.0),
+		Vector3(1.0, 0.12, 0.55),
+		prop_color
+	)
+	for x_position: float in [-0.4, 0.4]:
+		for z_position: float in [-0.19, 0.19]:
+			_add_box_visual_part(
+				table,
+				"Leg",
+				Vector3(x_position, 0.3, z_position),
+				Vector3(0.1, 0.6, 0.1),
+				prop_color
+			)
+	add_child(table)
+
+
 func _add_omni(
 	node_name: String,
 	zone: String,
 	position_value: Vector3,
 	energy_scale: float,
 	fixture_base_height: float,
-	range_override: float = -1.0
+	range_override: float = -1.0,
+	light_world_position: Vector3 = Vector3.ZERO
 ) -> void:
 	var fixture: Node3D = Node3D.new()
 	fixture.name = node_name
@@ -353,7 +497,14 @@ func _add_omni(
 
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = "Light"
-	light.position = Vector3(0.0, position_value.y, 0.0)
+	var resolved_light_position: Vector3 = light_world_position
+	if resolved_light_position.is_zero_approx():
+		resolved_light_position = Vector3(
+			position_value.x,
+			omni_source_height,
+			position_value.z
+		)
+	light.position = resolved_light_position - fixture.position
 	light.light_color = Color("#d6e1f2")
 	light.light_energy = lamp_energy * energy_scale
 	var effective_range: float = (
@@ -361,6 +512,8 @@ func _add_omni(
 	)
 	light.omni_range = effective_range
 	light.shadow_enabled = true
+	light.shadow_blur = omni_shadow_blur
+	light.shadow_opacity = shadow_opacity
 	fixture.add_child(light)
 	add_child(fixture)
 	LightSystem.register_light(

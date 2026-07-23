@@ -64,6 +64,9 @@ height = 0.75
 radius = 0.15
 height = 0.22
 
+[sub_resource type="BoxMesh" id="BoxMesh_pet_ear"]
+size = Vector3(0.12, 0.18, 0.14)
+
 [sub_resource type="StandardMaterial3D" id="PetMaterial"]
 albedo_color = Color(0.63, 0.56, 0.82, 1)
 roughness = 0.85
@@ -100,6 +103,7 @@ rotation_degrees = Vector3(-55, -25, 0)
 light_color = Color(0.76, 0.83, 0.95, 1)
 light_energy = 0.15
 shadow_enabled = true
+shadow_opacity = 0.8
 
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("3_camera")
@@ -124,21 +128,27 @@ position = Vector3(-11.8, 0.02, -0.05)
 loudness_multiplier = 3.0
 surface_size = Vector2(1.8, 0.9)
 surface_group = &"surface_creaky"
-surface_color = Color(0.607843, 0.627451, 0.647059, 1)
+surface_color = Color(0.486275, 0.509804, 0.537255, 1)
+creaky_plank_color_a = Color(0.521569, 0.545098, 0.572549, 1)
+creaky_plank_color_b = Color(0.486275, 0.509804, 0.537255, 1)
 
 [node name="CreakKitchen" parent="Level" instance=ExtResource("8_noise_surface")]
 position = Vector3(6.2, 0.0, 0.0)
 loudness_multiplier = 3.0
 surface_size = Vector2(1.8, 0.8)
 surface_group = &"surface_creaky"
-surface_color = Color(0.607843, 0.627451, 0.647059, 1)
+surface_color = Color(0.486275, 0.509804, 0.537255, 1)
+creaky_plank_color_a = Color(0.521569, 0.545098, 0.572549, 1)
+creaky_plank_color_b = Color(0.486275, 0.509804, 0.537255, 1)
 
 [node name="CreakAdult" parent="Level" instance=ExtResource("8_noise_surface")]
 position = Vector3(-5.7, 0.0, 3.5)
 loudness_multiplier = 3.0
 surface_size = Vector2(1.8, 0.8)
 surface_group = &"surface_creaky"
-surface_color = Color(0.607843, 0.627451, 0.647059, 1)
+surface_color = Color(0.486275, 0.509804, 0.537255, 1)
+creaky_plank_color_a = Color(0.521569, 0.545098, 0.572549, 1)
+creaky_plank_color_b = Color(0.486275, 0.509804, 0.537255, 1)
 
 [node name="ToyHallRug" parent="Level" instance=ExtResource("8_noise_surface")]
 position = Vector3(-5.6, 0.02, 0.0)
@@ -199,14 +209,26 @@ position = Vector3(5.5, 0.42, -4.2)
 script = ExtResource("4_pet")
 
 [node name="Body" type="MeshInstance3D" parent="Pet"]
-rotation_degrees = Vector3(0, 0, 90)
+rotation_degrees = Vector3(90, 0, 0)
 mesh = SubResource("CapsuleMesh_pet")
 material_override = SubResource("PetMaterial")
 
 [node name="Snout" type="MeshInstance3D" parent="Pet"]
-position = Vector3(0.43, 0.02, 0)
+position = Vector3(0, -0.05, -0.43)
 scale = Vector3(1.15, 0.8, 0.8)
 mesh = SubResource("SphereMesh_pet_snout")
+material_override = SubResource("PetMaterial")
+
+[node name="EarLeft" type="MeshInstance3D" parent="Pet"]
+position = Vector3(-0.13, 0.2, -0.23)
+rotation_degrees = Vector3(-12, 0, -8)
+mesh = SubResource("BoxMesh_pet_ear")
+material_override = SubResource("PetMaterial")
+
+[node name="EarRight" type="MeshInstance3D" parent="Pet"]
+position = Vector3(0.13, 0.2, -0.23)
+rotation_degrees = Vector3(-12, 0, 8)
+mesh = SubResource("BoxMesh_pet_ear")
 material_override = SubResource("PetMaterial")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="Pet"]
@@ -249,6 +271,8 @@ light_color = Color(0.78, 0.88, 1, 1)
 light_energy = 0.0
 omni_range = 0.0
 shadow_enabled = true
+shadow_blur = 2.0
+shadow_opacity = 0.8
 
 [node name="Pantry" type="Node3D" parent="."]
 position = Vector3(13.2, 0.0, 2.5)

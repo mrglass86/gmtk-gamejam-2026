@@ -27,12 +27,15 @@ const NOISE_SURFACE_SCENE: PackedScene = preload("res://scenes/NoiseSurface.tscn
 
 @export_group("Trial Lamps")
 @export var trial_lamp_height: float = 1.42
+@export var trial_lamp_source_height: float = 4.5
 @export var trial_lamp_radius_default: float = 5.8
 @export var trial_lamp_radius_min: float = 1.0
 @export var trial_lamp_radius_max: float = 10.0
 @export var trial_lamp_radius_step: float = 0.25
 @export var trial_lamp_energy: float = 1.8
 @export var trial_lamp_analytic_energy: float = 1.0
+@export var trial_lamp_shadow_blur: float = 2.0
+@export_range(0.0, 1.0) var trial_lamp_shadow_opacity: float = 0.8
 @export var trial_lamp_zone: String = "hall"
 
 var noise_loudness: float = 1.0
@@ -150,7 +153,9 @@ func spawn_trial_lamp_at_screen_point(screen_point: Vector2) -> Node3D:
 	lamp.set_meta(&"light_id", "debug_trial_lamp_%02d" % lamp_number)
 	lamp.set_meta(&"radius", trial_lamp_radius_default)
 	_level.add_child(lamp)
-	lamp.global_position = nav_position as Vector3
+	var floor_position: Vector3 = nav_position as Vector3
+	floor_position.y = 0.0
+	lamp.global_position = floor_position
 	_add_trial_lamp_visual(lamp)
 	_trial_lamps.append(lamp)
 	_active_trial_lamp = lamp
@@ -270,11 +275,13 @@ func _add_trial_lamp_visual(lamp: Node3D) -> void:
 
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = "Light"
-	light.position = Vector3(0.0, trial_lamp_height, 0.0)
+	light.position = Vector3(0.0, trial_lamp_source_height, 0.0)
 	light.light_color = Color("#d6e1f2")
 	light.light_energy = trial_lamp_energy
 	light.omni_range = trial_lamp_radius_default
 	light.shadow_enabled = true
+	light.shadow_blur = trial_lamp_shadow_blur
+	light.shadow_opacity = trial_lamp_shadow_opacity
 	lamp.add_child(light)
 
 
