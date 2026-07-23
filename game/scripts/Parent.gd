@@ -30,25 +30,95 @@ enum State {
 	{
 		"time": 0.0,
 		"position": Vector3(-0.2, 0.7, -4.6),
-		"dwell": 60.0,
+		"dwell": 53.0,
 		"facing": Vector3(-1.0, 0.0, 0.0),
 	},
 	{
-		"time": 90.0,
+		"time": 60.0,
 		"position": Vector3(9.5, 0.7, -3.8),
 		"dwell": 15.0,
 		"facing": Vector3(0.0, 0.0, -1.0),
 	},
 	{
-		"time": 130.0,
+		"time": 82.0,
 		"position": Vector3(-0.2, 0.7, -4.6),
-		"dwell": 70.0,
+		"dwell": 98.0,
+		"facing": Vector3(-1.0, 0.0, 0.0),
+	},
+	# Phase 3: leave through the living opening, cross the middle band, and
+	# enter the bathroom through its open south side.
+	{
+		"time": 182.8,
+		"position": Vector3(0.8, 0.7, -0.8),
+		"dwell": 0.0,
 		"facing": Vector3(-1.0, 0.0, 0.0),
 	},
 	{
-		"time": 240.0,
+		"time": 187.5,
+		"position": Vector3(-5.8, 0.7, -0.8),
+		"dwell": 0.0,
+		"facing": Vector3(0.0, 0.0, -1.0),
+	},
+	{
+		"time": 189.4,
+		"position": Vector3(-5.8, 0.7, -3.5),
+		"dwell": 15.0,
+		"facing": Vector3(1.0, 0.0, 0.0),
+	},
+	{
+		"time": 206.3,
+		"position": Vector3(-5.8, 0.7, -0.8),
+		"dwell": 0.0,
+		"facing": Vector3(1.0, 0.0, 0.0),
+	},
+	{
+		"time": 211.0,
+		"position": Vector3(0.8, 0.7, -0.8),
+		"dwell": 0.0,
+		"facing": Vector3(0.0, 0.0, -1.0),
+	},
+	{
+		"time": 213.8,
+		"position": Vector3(-0.2, 0.7, -4.6),
+		"dwell": 26.2,
+		"facing": Vector3(-1.0, 0.0, 0.0),
+	},
+	# Phase 4: leave at exactly 240 s elapsed, cross the dining band west to
+	# east, then visit the kitchen and alcove lamps before the kid-door check.
+	{
+		"time": 242.8,
+		"position": Vector3(0.8, 0.7, -0.8),
+		"dwell": 0.0,
+		"facing": Vector3(-1.0, 0.0, 0.0),
+	},
+	{
+		"time": 244.8,
+		"position": Vector3(-2.0, 0.7, -0.8),
+		"dwell": 2.0,
+		"facing": Vector3(1.0, 0.0, 0.0),
+	},
+	{
+		"time": 251.9,
+		"position": Vector3(5.2, 0.7, -0.8),
+		"dwell": 2.0,
+		"facing": Vector3(1.0, 0.0, 0.0),
+	},
+	{
+		"time": 258.0,
+		"position": Vector3(10.5, 0.7, -3.0),
+		"dwell": 5.0,
+		"facing": Vector3(0.0, 0.0, -1.0),
+	},
+	{
+		"time": 268.9,
+		"position": Vector3(8.0, 0.7, 4.8),
+		"dwell": 5.0,
+		"facing": Vector3(-1.0, 0.0, 0.0),
+	},
+	{
+		"time": 289.3,
 		"position": Vector3(-12.75, 0.7, -0.8),
-		"dwell": 60.0,
+		"dwell": 10.7,
 		"facing": Vector3(0.0, 0.0, -1.0),
 	},
 ]
