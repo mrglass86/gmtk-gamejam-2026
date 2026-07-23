@@ -9,21 +9,21 @@ a journal.
 - Direction: Shoulda Eaten Dinner (toddler stealth; the countdown is the
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: build day 1 (Thursday) — systems complete
-- Next playable checkpoint: CP4 — integrate B5's authoritative routine, then
-  play the catch and chase.
+- Next playable checkpoint: CP4 — play B5's authoritative route, catch, and
+  chase, with the pulled-forward audio pass audible in the same run.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A6.1 plus A4.1/A5.1 are in `game/`
-  (Compatibility renderer). The approved director layout bakes a connected
-  156-polygon navmesh; input, lighting, noise, indicator, route, ambient-mask,
-  first/second-walk, countdown-phase, and game-flow checks pass.
+- Godot version: 4.7.1-stable — A0.2 through A6.1 plus A4.1/A5.1 and the CC0
+  audio pass are in `game/` (Compatibility renderer). The approved director
+  layout bakes a connected 156-polygon navmesh; input, lighting, noise,
+  indicator, route, ambient-mask, countdown, game-flow, and audio checks pass.
 - Entry scene: `res://scenes/Main.tscn`
-- Run/build status: `e26ce9c`/`0223b1b` fix A6.1 camera framing, remove the
-  warning-producing placeholder audio, hide the brightness label in release,
-  and formally verify immediate/expiry win, expiry loss, and real scene reload.
-  A1–A6 plus a 600-frame run pass. S11 is accepted from the director's live
-  Chrome proof: zero console errors, title/input, glow, and shadows all green.
+- Run/build status: `538d697` clears the stale Parent scene override so B5's
+  15-row route is authoritative. `d34f4a8` adds the complete CC0 audio pass,
+  credits, first-input Web gate, and `--verify-audio`. A5.1/B5, A6/A6.1,
+  audio, clean startup, and release Web export pass. A real Web canvas click
+  starts audio with zero console warnings/errors.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -33,13 +33,13 @@ a journal.
 
 ## Current focus
 
-- Friday/CP4 next: remove the stale `Main.tscn` Parent routine override so B5's
-  script table is authoritative, then play the catch/chase against S7 and S10.
+- Friday/CP4 next: Noah plays the authoritative route, catch/chase, snack round
+  trip, and first audio mix against S7/S9/S10.
 
 ## Known blockers or risks
 
-- Audio is intentionally absent until Saturday's capped pass; the first
-  imported sound must start from GameFlow's first-input transition.
+- Audio is functionally complete but has not had a director listening pass;
+  tune exported direct volumes only if a tell or masking bed is misleading.
 - The scaffolded input map was hand-serialized — lane A verifies it in A0.
 - Route timing remains unmeasured in play; tune furniture/entrances only if the
   quiet route misses the 1.4–1.6× target.

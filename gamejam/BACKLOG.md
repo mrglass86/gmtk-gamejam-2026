@@ -56,8 +56,8 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       speed retune — lane B (`946cd11`, `351f268`). Accept: S7/S9 at CP4.
 - [x] B5 pulled forward — bathroom trip plus phase-4 dining-band lights-off
       route at 1.388–1.421 m/s implied travel — lane B (`dcd5e1e`).
-- [ ] B5 scene integration — lane A removes the Parent routine override so the
-      script table is authoritative. Accept: S10 route-contest row.
+- [x] B5 scene integration — Parent scene override removed; B5's 15-row script
+      table is authoritative (`538d697`, `--verify-a51`).
 - [ ] CP4 catch-loop gate — Claude validates, Noah plays the catch and the chase.
 - [x] B4 Pet.gd — lane B (`bd77d16`). Accept: S8 at CP5.
 - [x] A6 win/lose/title/restart — lane A (`d3a9d5d`, `0223b1b`). First title
@@ -73,8 +73,11 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 ## Should — Saturday (feel day)
 
-- [ ] Audio pass, 2-hour cap, CC0 only; the three countdown sounds first (TV
-      click-off, light switch, parent footsteps turning) — Claude supplies links, lane A wires.
+- [x] Audio pass pulled forward — CC0 countdown tells, surface/player and parent
+      footsteps, stings, pet cues, held-door creak, and positional masking beds
+      (`d34f4a8`, `--verify-audio`, release Web click clean).
+- [ ] Director audio mix walk — verify the three countdown tells read above the
+      beds and tune `AudioDirector` export volumes only.
 - [ ] One outside playtester, watched silently; fixes prioritized by Claude via playtest-critic lens.
 - [ ] Tuning pass from the playtest — Noah verdicts, lanes apply.
 - [ ] Submission page: screenshots, GIF of a ring resolving, controls, the

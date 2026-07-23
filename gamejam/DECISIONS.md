@@ -259,3 +259,21 @@ Record decisions another session or tool would otherwise have to rediscover.
   conflicts with the Saturday audio pass.
 - **Evidence / handoff:** Commits `d3a9d5d`, `e26ce9c`, `0223b1b`,
   `--verify-a6`, and `gamejam/handoffs/2026-07-23-a6-formal-report.md`.
+
+## 2026-07-23 — Scene-side, first-input CC0 audio architecture
+
+- **Decision:** `DinnerAudioDirector` observes the existing actor, noise, phase,
+  and game-flow signals without changing lane B scripts. It uses only plain
+  `AudioStreamPlayer` / `AudioStreamPlayer3D` nodes, direct `volume_db`
+  changes, and a player-mounted `AudioListener3D`; no bus effects. Every stream
+  starts at or after `GameFlow.game_started`. TV and speaker playback positions
+  and max distances match their analytic masking sources.
+- **Why:** This keeps Web autoplay, single-threaded export, lane ownership, and
+  the audio/masking theme relationship explicit and independently verifiable.
+- **Rejected / cut:** Generator placeholders, pre-gesture playback, audio-bus
+  effects, actor-script audio edits, and non-CC0 sources.
+- **Owner:** Lane A
+- **Revisit when:** The director's listening pass finds a countdown tell or
+  masking bed misleading; tune exported direct volumes before replacing clips.
+- **Evidence / handoff:** `d34f4a8`, `CREDITS.md`, `--verify-audio`, clean
+  release Web canvas-click proof.
