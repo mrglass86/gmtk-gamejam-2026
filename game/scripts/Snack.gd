@@ -11,6 +11,7 @@ signal dropped(drop_position: Vector3)
 @export_node_path("Node3D") var player_path: NodePath = NodePath("../Player")
 @export var pickup_radius: float = 1.0
 @export var starts_available: bool = false
+@export var drop_pickup_lockout: float = 0.75
 
 @export_group("Optional Visual")
 @export_node_path("VisualInstance3D") var visual_path: NodePath = NodePath("Visual")
@@ -20,6 +21,7 @@ var carried_by: DinnerPlayer
 
 var _player: DinnerPlayer
 var _visual: VisualInstance3D
+var _pickup_lockout_remaining: float = 0.0
 
 
 func _ready() -> void:
@@ -29,7 +31,10 @@ func _ready() -> void:
 	_refresh_visual()
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
+	_pickup_lockout_remaining = maxf(_pickup_lockout_remaining - delta, 0.0)
+	if _pickup_lockout_remaining > 0.0:
+		return
 	if not available_for_pickup or _player == null:
 		return
 	if _player.global_position.distance_to(global_position) <= pickup_radius:
@@ -37,6 +42,7 @@ func _physics_process(_delta: float) -> void:
 
 
 func reveal_for_pickup() -> void:
+	_pickup_lockout_remaining = 0.0
 	available_for_pickup = true
 	_refresh_visual()
 
@@ -47,7 +53,11 @@ func reveal_at(reveal_position: Vector3) -> void:
 
 
 func pick_up(player: DinnerPlayer) -> bool:
-	if not available_for_pickup or player == null:
+	if (
+		not available_for_pickup
+		or player == null
+		or _pickup_lockout_remaining > 0.0
+	):
 		return false
 	available_for_pickup = false
 	carried_by = player
@@ -58,11 +68,12 @@ func pick_up(player: DinnerPlayer) -> bool:
 
 
 func drop_at(drop_position: Vector3) -> void:
-	if carried_by != null:
-		carried_by.set_carrying_snack(false)
+	if _player != null:
+		_player.set_carrying_snack(false)
 	carried_by = null
 	global_position = drop_position
 	available_for_pickup = true
+	_pickup_lockout_remaining = drop_pickup_lockout
 	_refresh_visual()
 	dropped.emit(drop_position)
 

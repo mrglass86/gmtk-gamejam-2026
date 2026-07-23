@@ -59,6 +59,7 @@ var _blocker_shape: CollisionShape3D
 var _blocker_disabled: bool = false
 var _snack_revealed: bool = false
 var _closing_requested: bool = false
+var _programmatic_open_target: float = -1.0
 
 
 func _ready() -> void:
@@ -87,6 +88,17 @@ func _physics_process(delta: float) -> void:
 			openness = 0.0
 			_closing_requested = false
 			fully_closed.emit()
+	elif _programmatic_open_target >= 0.0:
+		if sneak_open_duration <= 0.0:
+			openness = _programmatic_open_target
+		else:
+			openness = minf(
+				openness + delta / sneak_open_duration,
+				_programmatic_open_target
+			)
+		if openness >= _programmatic_open_target:
+			openness = _programmatic_open_target
+			_programmatic_open_target = -1.0
 	elif _can_open():
 		var open_duration: float = rush_open_duration if Input.is_action_pressed("run") else sneak_open_duration
 		if open_duration > 0.0:
@@ -102,6 +114,7 @@ func _physics_process(delta: float) -> void:
 
 
 func close() -> void:
+	_programmatic_open_target = -1.0
 	if is_zero_approx(openness):
 		openness = 0.0
 		_closing_requested = false
@@ -109,8 +122,32 @@ func close() -> void:
 	_closing_requested = true
 
 
+func close_immediately() -> void:
+	_closing_requested = false
+	_programmatic_open_target = -1.0
+	openness = 0.0
+	_apply_visual()
+	_update_blocker_collision()
+	if door_kind == DoorKind.FRIDGE:
+		_set_fridge_spill(0.0)
+	fully_closed.emit()
+
+
+func open_to(target_openness: float) -> void:
+	_closing_requested = false
+	var clamped_target: float = clampf(target_openness, 0.0, 1.0)
+	if clamped_target <= openness:
+		_programmatic_open_target = -1.0
+		return
+	_programmatic_open_target = clamped_target
+
+
 func is_closing() -> bool:
 	return _closing_requested
+
+
+func is_opening_to_target() -> bool:
+	return _programmatic_open_target >= 0.0
 
 
 func _can_open() -> bool:
