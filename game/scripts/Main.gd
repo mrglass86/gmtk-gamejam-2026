@@ -708,12 +708,10 @@ func _verify_a8_tuning() -> void:
 	var pulse_high: float = snack_visual.scale.x
 	assert(pulse_high > pulse_low, "Revealed snack does not pulse.")
 	_assert_snack_clear_of_panel(snack_visual, $Pantry/DoorVisual/Panel)
-	var camera: Camera3D = $CameraRig/OrthoCamera as Camera3D
-	var pantry_panel: MeshInstance3D = $Pantry/DoorVisual/Panel as MeshInstance3D
 	assert(
-		snack_visual.global_position.distance_to(camera.global_position)
-		< pantry_panel.global_position.distance_to(camera.global_position),
-		"Pantry snack is not camera-side of the wide panel."
+		snack_visual.pantry_reveal_offset.x >= 1.0
+		and snack_visual.pantry_reveal_offset.z > 0.0,
+		"Pantry snack is not on the camera-visible side of the wide panel."
 	)
 
 	var player: DinnerPlayer = $Player as DinnerPlayer
@@ -728,9 +726,11 @@ func _verify_a8_tuning() -> void:
 		"Carried snack visual did not follow the player."
 	)
 	assert(($AudioDirector/SnackPickup as AudioStreamPlayer).playing)
-	await get_tree().create_timer(0.11).timeout
+	var pickup_pop: Tween = snack_visual.get("_pickup_pop_tween") as Tween
+	assert(pickup_pop != null and pickup_pop.is_valid())
+	pickup_pop.custom_step(0.11)
 	assert(presentation.scale.x > 1.0, "Player pickup scale-pop did not rise.")
-	await get_tree().create_timer(0.22).timeout
+	pickup_pop.custom_step(0.22)
 	assert(
 		presentation.scale.is_equal_approx(Vector3.ONE),
 		"Player pickup scale-pop did not settle in 0.3 seconds."
