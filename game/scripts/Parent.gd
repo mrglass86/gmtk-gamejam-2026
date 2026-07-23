@@ -9,6 +9,7 @@ signal player_caught(catch_position: Vector3)
 enum State {
 	ROUTINE,
 	INVESTIGATE,
+	HUNT,
 	FOUND,
 	CARRY,
 	POST_DEPOSIT_EXIT,
@@ -161,6 +162,13 @@ enum State {
 	},
 ]
 
+@export_group("Routine Glances")
+@export var glance_interval: float = 15.0
+@export var glance_duration: float = 2.0
+@export var glance_min_offset_degrees: float = 100.0
+@export var glance_max_offset_degrees: float = 160.0
+@export var glance_random_seed: int = 260724
+
 @export_group("Vision")
 @export var vision_range: float = 7.0
 @export var routine_cone_angle_degrees: float = 60.0
@@ -203,6 +211,11 @@ enum State {
 @export var found_lose_sight_duration: float = 5.0
 @export var found_escape_suspicion: float = 60.0
 
+@export_group("Hunt")
+@export var hunt_threshold: float = 75.0
+@export var hunt_exit_suspicion: float = 60.0
+@export var hunt_timeout: float = 8.0
+
 @export_group("Carry")
 @export var carry_speed: float = 3.0
 @export var carry_arrival_distance: float = 0.5
@@ -226,6 +239,7 @@ enum State {
 @export_group("Readability")
 @export var cone_base_color: Color = Color(0.68, 0.56, 0.92, 0.24)
 @export var cone_suspicious_color: Color = Color(1.0, 0.68, 0.18, 0.34)
+@export var cone_hunt_color: Color = Color(1.0, 0.38, 0.12, 0.4)
 @export var cone_found_color: Color = Color(1.0, 0.12, 0.12, 0.45)
 
 @export_group("B6 Runtime Verification")
@@ -286,6 +300,16 @@ enum State {
 @export var verify_b9_cone_wall_position: Vector3 = Vector3(0.0, 0.7, -5.3)
 @export var verify_b9_cone_wall_honesty_tolerance: float = 0.02
 
+@export_group("B10 Runtime Verification")
+@export var verify_b10_sprint_start: Vector3 = Vector3(-12.75, 0.6, -0.8)
+@export var verify_b10_sprint_parent_start: Vector3 = Vector3(-0.2, 0.7, -4.6)
+@export var verify_b10_sprint_fridge: Vector3 = Vector3(12.2, 0.6, -4.2)
+@export var verify_b10_sprint_duration: float = 40.0
+@export var verify_b10_return_min_distance: float = 3.0
+@export var verify_b10_glance_deadline: float = 20.0
+@export var verify_b10_glance_player_distance: float = 3.5
+@export var verify_b10_glance_detection_min: float = 5.0
+
 var suspicion: float = 0.0
 
 var _state: State = State.ROUTINE
@@ -298,6 +322,7 @@ var _bedroom_door: DinnerDoor
 var _bathroom_door: DinnerDoor
 var _cone_material: StandardMaterial3D
 var _cone_ray_distances: Array[float] = []
+var _glance_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _navigation_ready: bool = false
 var _last_navigation_target: Vector3
 var _has_navigation_target: bool = false
@@ -309,6 +334,8 @@ var _last_known_position: Vector3
 var _investigate_elapsed: float = 0.0
 var _investigate_look_elapsed: float = 0.0
 var _found_no_sight_elapsed: float = 0.0
+var _hunt_no_noise_elapsed: float = 0.0
+var _hunt_target_position: Vector3
 var _repeat_cooldown_remaining: float = 0.0
 var _last_checked_position: Vector3
 var _has_checked_position: bool = false
@@ -320,6 +347,12 @@ var _verify_b8_door_creak_heard: bool = false
 var _verify_b9_bowl_clatter_heard: bool = false
 var _routine_staged_door_row: int = -1
 var _routine_staged_door_opened: bool = false
+var _glance_row_index: int = -1
+var _glance_interval_elapsed: float = 0.0
+var _glance_duration_elapsed: float = 0.0
+var _glance_active: bool = false
+var _glance_direction: Vector3
+var _glance_count: int = 0
 
 
 func _ready() -> void:
@@ -330,6 +363,7 @@ func _ready() -> void:
 	_snack = get_node_or_null(snack_path) as DinnerSnack
 	_bedroom_door = get_node_or_null(bedroom_door_path) as DinnerDoor
 	_bathroom_door = get_node_or_null(bathroom_door_path) as DinnerDoor
+	_glance_rng.seed = glance_random_seed
 	_setup_cone()
 	if not NoiseSystem.noise_emitted.is_connected(_on_noise_emitted):
 		NoiseSystem.noise_emitted.connect(_on_noise_emitted)
@@ -342,6 +376,8 @@ func _ready() -> void:
 		_run_b8_live_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--verify-b9"):
 		_run_b9_live_verification.call_deferred()
+	if OS.get_cmdline_user_args().has("--verify-b10"):
+		_run_b10_live_verification.call_deferred()
 
 
 func _physics_process(delta: float) -> void:
@@ -354,6 +390,8 @@ func _physics_process(delta: float) -> void:
 			_update_routine(delta)
 		State.INVESTIGATE:
 			_update_investigate(delta)
+		State.HUNT:
+			_update_hunt(delta)
 		State.FOUND:
 			_update_found(delta)
 		State.CARRY:
@@ -425,6 +463,8 @@ func get_state_name() -> StringName:
 func _set_state(next_state: State) -> void:
 	if _state == next_state:
 		return
+	if next_state != State.ROUTINE:
+		_cancel_glance()
 	_state = next_state
 	state_changed.emit(get_state_name())
 
@@ -450,8 +490,84 @@ func _update_routine(delta: float) -> void:
 	_update_routine_door_staging(routine_time)
 	var target: Vector3 = get_base_target(routine_time)
 	_set_navigation_target(target)
-	if not _move_along_path(routine_speed, delta):
-		_face_direction(get_base_facing(routine_time), delta)
+	if _move_along_path(routine_speed, delta):
+		_cancel_glance()
+		return
+	var routine_facing: Vector3 = get_base_facing(routine_time)
+	var dwell_row_index: int = _get_active_dwell_row_index(routine_time)
+	if dwell_row_index >= 0:
+		routine_facing = _update_glance(
+			delta,
+			dwell_row_index,
+			routine_facing
+		)
+	else:
+		_cancel_glance()
+	_face_direction(routine_facing, delta)
+
+
+func _get_active_dwell_row_index(routine_time: float) -> int:
+	for row_index in range(routine_rows.size()):
+		var row: Dictionary = routine_rows[row_index]
+		var dwell: float = _row_dwell(row)
+		if dwell <= 0.0:
+			continue
+		var arrival_time: float = _row_time(row)
+		if routine_time >= arrival_time and routine_time <= arrival_time + dwell:
+			return row_index
+	return -1
+
+
+func _update_glance(
+	delta: float,
+	dwell_row_index: int,
+	dwell_facing: Vector3
+) -> Vector3:
+	if _glance_row_index != dwell_row_index:
+		_glance_row_index = dwell_row_index
+		_glance_interval_elapsed = 0.0
+		_glance_duration_elapsed = 0.0
+		_glance_active = false
+	if _glance_active:
+		_glance_duration_elapsed += delta
+		if _glance_duration_elapsed < glance_duration:
+			return _glance_direction
+		_glance_active = false
+		_glance_duration_elapsed = 0.0
+		_glance_interval_elapsed = 0.0
+		return dwell_facing
+	_glance_interval_elapsed += delta
+	if glance_interval <= 0.0 or _glance_interval_elapsed < glance_interval:
+		return dwell_facing
+	var minimum_offset: float = minf(
+		glance_min_offset_degrees,
+		glance_max_offset_degrees
+	)
+	var maximum_offset: float = maxf(
+		glance_min_offset_degrees,
+		glance_max_offset_degrees
+	)
+	var glance_offset: float = _glance_rng.randf_range(
+		minimum_offset,
+		maximum_offset
+	)
+	if _glance_rng.randf() < 0.5:
+		glance_offset *= -1.0
+	_glance_direction = dwell_facing.rotated(
+		Vector3.UP,
+		deg_to_rad(glance_offset)
+	).normalized()
+	_glance_active = true
+	_glance_duration_elapsed = 0.0
+	_glance_count += 1
+	return _glance_direction
+
+
+func _cancel_glance() -> void:
+	_glance_row_index = -1
+	_glance_interval_elapsed = 0.0
+	_glance_duration_elapsed = 0.0
+	_glance_active = false
 
 
 func _update_routine_door_staging(routine_time: float) -> void:
@@ -526,6 +642,22 @@ func _update_investigate(delta: float) -> void:
 	_investigate_look_elapsed += delta
 	if _investigate_look_elapsed >= investigate_look_duration:
 		_finish_investigate()
+
+
+func _update_hunt(delta: float) -> void:
+	if _heard_since_last_tick:
+		_hunt_no_noise_elapsed = 0.0
+	else:
+		_hunt_no_noise_elapsed += delta
+	if (
+		suspicion < hunt_exit_suspicion
+		or _hunt_no_noise_elapsed >= hunt_timeout
+	):
+		_finish_hunt()
+		return
+	_set_navigation_target(_hunt_target_position)
+	if not _move_along_path(found_speed, delta):
+		_face_direction(_hunt_target_position - global_position, delta)
 
 
 func _update_carry(delta: float) -> void:
@@ -724,7 +856,7 @@ func _update_perception(delta: float) -> void:
 		suspicion += seen_suspicion_per_second * _get_seen_rate_multiplier() * delta
 		if suspicion >= suspicion_max:
 			_begin_found_or_carry()
-		elif suspicion >= investigate_threshold:
+		elif suspicion >= investigate_threshold and _state != State.HUNT:
 			_begin_or_update_investigate(_last_known_position)
 	elif not _heard_since_last_tick:
 		suspicion -= suspicion_decay_per_second * delta
@@ -810,8 +942,13 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 	_last_known_position = pos
 	if _state == State.FOUND:
 		return
-	if suspicion >= suspicion_max:
-		_begin_found_or_carry()
+	if _state == State.HUNT:
+		_hunt_target_position = pos
+		_hunt_no_noise_elapsed = 0.0
+		_set_navigation_target(pos, true)
+		return
+	if suspicion >= hunt_threshold:
+		_begin_hunt(pos)
 	elif event_contribution >= event_alert_threshold:
 		_begin_or_update_investigate(pos, true)
 	elif suspicion >= investigate_threshold:
@@ -840,11 +977,29 @@ func _begin_or_update_investigate(
 	if _state == State.INVESTIGATE:
 		_set_navigation_target(target, true)
 		return
+	_cancel_glance()
 	_state = State.INVESTIGATE
 	_investigate_elapsed = 0.0
 	_investigate_look_elapsed = 0.0
 	_set_navigation_target(target, true)
 	state_changed.emit(get_state_name())
+
+
+func _begin_hunt(target: Vector3) -> void:
+	_hunt_target_position = target
+	_last_known_position = target
+	_hunt_no_noise_elapsed = 0.0
+	_cancel_glance()
+	_set_state(State.HUNT)
+	_set_navigation_target(target, true)
+
+
+func _finish_hunt() -> void:
+	_last_known_position = _hunt_target_position
+	_investigate_elapsed = 0.0
+	_investigate_look_elapsed = 0.0
+	_set_state(State.INVESTIGATE)
+	_set_navigation_target(_last_known_position, true)
 
 
 func _finish_investigate() -> void:
@@ -876,6 +1031,7 @@ func _begin_found_or_carry() -> void:
 func _begin_found() -> void:
 	if _player == null or _state == State.CARRY:
 		return
+	_cancel_glance()
 	suspicion = suspicion_max
 	_last_known_position = _player.global_position
 	_found_no_sight_elapsed = 0.0
@@ -885,6 +1041,7 @@ func _begin_found() -> void:
 
 
 func _escape_found() -> void:
+	_cancel_glance()
 	suspicion = clampf(found_escape_suspicion, 0.0, suspicion_max)
 	_state = State.INVESTIGATE
 	_investigate_elapsed = 0.0
@@ -960,6 +1117,8 @@ func _update_readability() -> void:
 	var suspicion_weight: float = clampf(suspicion / suspicion_max, 0.0, 1.0)
 	if _state == State.FOUND or _state == State.CARRY:
 		_cone_material.albedo_color = cone_found_color
+	elif _state == State.HUNT:
+		_cone_material.albedo_color = cone_hunt_color
 	else:
 		_cone_material.albedo_color = cone_base_color.lerp(cone_suspicious_color, suspicion_weight)
 
@@ -968,6 +1127,8 @@ func _get_current_cone_angle() -> float:
 	match _state:
 		State.INVESTIGATE:
 			return investigate_cone_angle_degrees
+		State.HUNT:
+			return found_cone_angle_degrees
 		State.FOUND:
 			return found_cone_angle_degrees
 		State.CARRY:
@@ -2009,6 +2170,323 @@ func _run_b9_live_verification() -> void:
 		"B9 dog bowl visit skipped path, clatter, eating bob, or patrol resume."
 	)
 	print("B9 live SceneTree verification passed.")
+
+
+func _run_b10_live_verification() -> void:
+	var pet: DinnerPet = get_parent().get_node_or_null("Pet") as DinnerPet
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var player_was_processing: bool = _player != null and _player.is_physics_processing()
+	var pet_was_processing: bool = pet != null and pet.is_physics_processing()
+
+	Engine.time_scale = maxf(verify_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(verify_physics_ticks_per_second, 60)
+	if _player != null:
+		_player.set_physics_process(false)
+		_player.detach_from_carrier(verify_b10_sprint_start)
+	if pet != null:
+		pet.set_physics_process(false)
+	for zone: String in LightSystem.VALID_ZONES:
+		LightSystem.set_zone_enabled(zone, false)
+	for _frame_index in range(verify_warmup_frames):
+		await get_tree().physics_frame
+
+	global_position = verify_b10_sprint_parent_start
+	_state = State.ROUTINE
+	suspicion = 0.0
+	_heard_since_last_tick = false
+	_hunt_no_noise_elapsed = 0.0
+	_has_checked_position = false
+	_repeat_cooldown_remaining = 0.0
+	_cancel_glance()
+	_set_navigation_target(global_position, true)
+	var outbound_path: Array[Vector3] = [
+		verify_b10_sprint_start,
+		Vector3(-5.75, 0.6, -0.8),
+		Vector3(0.0, 0.6, -0.8),
+		Vector3(6.0, 0.6, -0.8),
+		verify_b10_sprint_fridge,
+	]
+	var sprint_path: Array[Vector3] = outbound_path.duplicate()
+	for reverse_index in range(outbound_path.size() - 2, -1, -1):
+		sprint_path.append(outbound_path[reverse_index])
+	var path_index: int = 1
+	var sprint_returning: bool = false
+	var sprint_completed: bool = false
+	var hunt_triggered: bool = false
+	var hunt_first_time: float = INF
+	var hunt_cone_wide: bool = false
+	var hunt_color_observed: bool = false
+	var hunt_retarget_observed: bool = false
+	var hunt_exit_observed: bool = false
+	var return_min_distance: float = INF
+	var footstep_elapsed: float = 0.0
+	var sprint_elapsed: float = 0.0
+	var previous_clock_elapsed: float = 0.0
+	Input.action_press("run")
+	GameClock.start()
+	for _frame_index in range(verify_max_physics_frames):
+		await get_tree().physics_frame
+		var clock_elapsed: float = GameClock.run_length - GameClock.time_remaining
+		var frame_delta: float = maxf(clock_elapsed - previous_clock_elapsed, 0.0)
+		previous_clock_elapsed = clock_elapsed
+		sprint_elapsed = clock_elapsed
+		var movement_remaining: float = _player.run_speed * frame_delta
+		while movement_remaining > 0.0 and path_index < sprint_path.size():
+			var target: Vector3 = sprint_path[path_index]
+			var target_delta: Vector3 = target - _player.global_position
+			target_delta.y = 0.0
+			var target_distance: float = target_delta.length()
+			if target_distance <= movement_remaining:
+				_player.global_position = target
+				movement_remaining -= target_distance
+				path_index += 1
+				if path_index == outbound_path.size():
+					sprint_returning = true
+			else:
+				_player.global_position += (
+					target_delta.normalized() * movement_remaining
+				)
+				movement_remaining = 0.0
+
+		footstep_elapsed += frame_delta
+		while footstep_elapsed >= _player.run_footstep_interval:
+			footstep_elapsed -= _player.run_footstep_interval
+			var raw_loudness: float = (
+				_player.run_noise_multiplier
+				* _player.hardwood_surface_multiplier
+			)
+			var mask: float = clampf(
+				NoiseSystem.get_mask_at(_player.global_position),
+				0.0,
+				1.0
+			)
+			NoiseSystem.emit_noise(
+				_player.global_position,
+				raw_loudness * (1.0 - mask),
+				_player
+			)
+		if _state == State.HUNT:
+			hunt_triggered = true
+			if hunt_first_time == INF:
+				hunt_first_time = sprint_elapsed
+			hunt_cone_wide = (
+				hunt_cone_wide
+				or is_equal_approx(
+					_get_current_cone_angle(),
+					found_cone_angle_degrees
+				)
+			)
+			hunt_color_observed = (
+				hunt_color_observed
+				or (
+					_cone_material != null
+					and _cone_material.albedo_color == cone_hunt_color
+				)
+			)
+			hunt_retarget_observed = (
+				hunt_retarget_observed
+				or _flat_distance(
+					_hunt_target_position,
+					_player.global_position
+				) <= _player.run_speed * _player.run_footstep_interval
+			)
+		elif hunt_triggered and _state == State.INVESTIGATE:
+			hunt_exit_observed = true
+		if sprint_returning:
+			return_min_distance = minf(
+				return_min_distance,
+				_flat_distance(global_position, _player.global_position)
+			)
+		if path_index >= sprint_path.size():
+			sprint_completed = true
+			break
+		if sprint_elapsed >= verify_b10_sprint_duration:
+			break
+	Input.action_release("run")
+
+	_player.global_position = verify_observer_parking_position
+	suspicion = hunt_threshold
+	_state = State.ROUTINE
+	_hunt_no_noise_elapsed = 0.0
+	_heard_since_last_tick = false
+	_begin_hunt(global_position)
+	GameClock.start()
+	var hunt_exit_elapsed: float = 0.0
+	for _frame_index in range(verify_max_physics_frames):
+		await get_tree().physics_frame
+		hunt_exit_elapsed = GameClock.run_length - GameClock.time_remaining
+		if _state == State.INVESTIGATE:
+			hunt_exit_observed = true
+			break
+		if hunt_exit_elapsed >= hunt_timeout + 0.5:
+			break
+	for zone: String in LightSystem.VALID_ZONES:
+		LightSystem.set_zone_enabled(zone, true)
+	global_position = _row_position(routine_rows[0])
+	_state = State.ROUTINE
+	suspicion = 0.0
+	_heard_since_last_tick = false
+	_has_checked_position = false
+	_repeat_cooldown_remaining = 0.0
+	_glance_rng.seed = glance_random_seed
+	_glance_count = 0
+	_cancel_glance()
+	_set_navigation_target(global_position, true)
+	_player.global_position = verify_observer_parking_position
+	GameClock.start()
+	var glance_started: bool = false
+	var glance_detected_player: bool = false
+	var glance_returned: bool = false
+	var glance_start_time: float = INF
+	var glance_offset_degrees: float = 0.0
+	var glance_max_suspicion: float = 0.0
+	var glance_player_lit: bool = false
+	var glance_player_planted: bool = false
+	var glance_dynamic_light_active: bool = false
+	var glance_light_id: String = "b10_verify_glance"
+	var dwell_facing: Vector3 = _row_facing(routine_rows[0])
+	for _frame_index in range(verify_max_physics_frames):
+		await get_tree().physics_frame
+		var glance_clock_elapsed: float = (
+			GameClock.run_length - GameClock.time_remaining
+		)
+		if _glance_active and not glance_started:
+			glance_started = true
+			glance_start_time = glance_clock_elapsed
+			glance_offset_degrees = rad_to_deg(
+				dwell_facing.angle_to(_glance_direction)
+			)
+			for candidate_distance: float in [
+				verify_b10_glance_player_distance,
+				3.0,
+				2.5,
+				2.0,
+				1.5,
+				1.0,
+			]:
+				_player.global_position = (
+					global_position
+					+ _glance_direction * candidate_distance
+				)
+				_player.global_position.y = verify_b10_sprint_start.y
+				if _has_clear_line_of_sight():
+					glance_player_planted = true
+					if (
+						LightSystem.get_brightness_at(_player.global_position)
+						<= brightness_threshold
+					):
+						LightSystem.register_dynamic_light(
+							glance_light_id,
+							_player.global_position
+						)
+						LightSystem.set_dynamic_light(
+							glance_light_id,
+							3.0,
+							1.0
+						)
+						glance_dynamic_light_active = true
+					break
+		if glance_player_planted:
+			glance_player_lit = (
+				glance_player_lit
+				or LightSystem.get_brightness_at(_player.global_position)
+				> brightness_threshold
+			)
+			glance_max_suspicion = maxf(glance_max_suspicion, suspicion)
+			if suspicion >= verify_b10_glance_detection_min:
+				glance_detected_player = true
+				_player.global_position = verify_observer_parking_position
+				glance_player_planted = false
+		if (
+			glance_started
+			and glance_detected_player
+			and not _glance_active
+		):
+			var current_facing: Vector3 = -global_transform.basis.z
+			current_facing.y = 0.0
+			glance_returned = current_facing.normalized().dot(dwell_facing) >= 0.9
+			if glance_returned:
+				break
+		if (
+			glance_clock_elapsed
+			>= verify_b10_glance_deadline + glance_duration + 3.0
+		):
+			break
+
+	GameClock.running = false
+	if glance_dynamic_light_active:
+		LightSystem.set_dynamic_light(glance_light_id, 0.0, 0.0)
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+	if _player != null:
+		_player.set_physics_process(player_was_processing)
+	if pet != null:
+		pet.set_physics_process(pet_was_processing)
+
+	var sprint_gate_passed: bool = (
+		sprint_completed
+		and hunt_triggered
+		and hunt_cone_wide
+		and hunt_color_observed
+		and hunt_retarget_observed
+		and return_min_distance < verify_b10_return_min_distance
+		and hunt_exit_observed
+	)
+	var glance_gate_passed: bool = (
+		glance_started
+		and glance_start_time <= verify_b10_glance_deadline
+		and glance_offset_degrees >= glance_min_offset_degrees
+		and glance_offset_degrees <= glance_max_offset_degrees
+		and glance_player_lit
+		and glance_detected_player
+		and glance_returned
+	)
+	var verification_passed: bool = sprint_gate_passed and glance_gate_passed
+	print(
+		(
+			"B10 live metrics: sprint=%.2f s, HUNT at %.2f s, "
+			+ "return closest=%.2f m, hunt exit=%.2f s; "
+			+ "glance at %.2f s / %.1f deg, suspicion=%.1f, returned=%s."
+		)
+		% [
+			sprint_elapsed,
+			hunt_first_time,
+			return_min_distance,
+			hunt_exit_elapsed,
+			glance_start_time,
+			glance_offset_degrees,
+			glance_max_suspicion,
+			glance_returned,
+		]
+	)
+	get_tree().quit(0 if verification_passed else 1)
+	assert(sprint_completed, "B10 sprint bot did not complete its round trip.")
+	assert(hunt_triggered, "B10 sprint bot never triggered HUNT.")
+	assert(
+		hunt_cone_wide and hunt_color_observed and hunt_retarget_observed,
+		"B10 HUNT missed its wide cone, colour, or newest-noise retarget."
+	)
+	assert(
+		return_min_distance < verify_b10_return_min_distance,
+		"B10 HUNT did not close within 3 m on the return leg."
+	)
+	assert(hunt_exit_observed, "B10 HUNT did not fall back to INVESTIGATE.")
+	assert(
+		glance_started and glance_start_time <= verify_b10_glance_deadline,
+		"B10 no couch glance occurred inside 20 s."
+	)
+	assert(
+		glance_offset_degrees >= glance_min_offset_degrees
+		and glance_offset_degrees <= glance_max_offset_degrees,
+		"B10 couch glance was outside the 100-160 degree range."
+	)
+	assert(
+		glance_player_lit and glance_detected_player,
+		"B10 glance did not see the lit player behind the couch."
+	)
+	assert(glance_returned, "B10 parent did not return to the dwell facing.")
+	print("B10 live SceneTree verification passed.")
 
 
 func _get_live_cone_hit_distances(cone_angle_degrees: float) -> Array[float]:
