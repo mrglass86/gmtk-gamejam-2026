@@ -15,10 +15,10 @@ extends Node3D
 @export var lamp_range: float = 7.0
 
 @export_group("Ambient Masking")
-@export var tv_mask_radius: float = 5.5
-@export_range(0.0, 1.0) var tv_mask_strength: float = 0.7
-@export var speaker_mask_radius: float = 4.5
-@export_range(0.0, 1.0) var speaker_mask_strength: float = 0.6
+@export var tv_mask_radius: float = 3.2
+@export_range(0.0, 0.6) var tv_mask_strength: float = 0.6
+@export var speaker_mask_radius: float = 2.4
+@export_range(0.0, 0.6) var speaker_mask_strength: float = 0.6
 
 @export var wall_color: Color = Color("#6d727a")
 @export var carpet_color: Color = Color("#353a42")

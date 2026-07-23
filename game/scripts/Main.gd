@@ -58,6 +58,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a7"):
 		_verify_a7_presentation()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a8"):
+		_verify_a8_tuning()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -175,8 +178,32 @@ func _verify_ambient_masks() -> void:
 	var speaker_position: Vector3 = Vector3(8.5, 0.0, -5.3)
 	var tv_mask: float = NoiseSystem.get_mask_at(tv_position)
 	var speaker_mask: float = NoiseSystem.get_mask_at(speaker_position)
-	assert(tv_mask > 0.0)
-	assert(speaker_mask > 0.0)
+	assert(tv_mask > 0.0 and tv_mask <= 0.6)
+	assert(speaker_mask > 0.0 and speaker_mask <= 0.6)
+	assert(is_zero_approx(NoiseSystem.get_mask_at(tv_position + Vector3(0.0, 0.0, 3.3))))
+	assert(
+		is_zero_approx(
+			NoiseSystem.get_mask_at(speaker_position + Vector3(0.0, 0.0, 2.5))
+		)
+	)
+
+	var player: DinnerPlayer = $Player as DinnerPlayer
+	var indicator_manager: Node3D = $NoiseIndicatorManager as Node3D
+	player.global_position = Vector3(2.0, 0.6, 0.0)
+	player.call("_emit_masked_noise", 1.0)
+	var clear_ring: NoiseIndicator = indicator_manager.get_child(
+		indicator_manager.get_child_count() - 1
+	) as NoiseIndicator
+	player.global_position = tv_position + Vector3.UP * 0.6
+	player.call("_emit_masked_noise", 1.0)
+	var tv_ring: NoiseIndicator = indicator_manager.get_child(
+		indicator_manager.get_child_count() - 1
+	) as NoiseIndicator
+	assert(tv_ring.max_radius > 0.0)
+	assert(
+		tv_ring.max_radius < clear_ring.max_radius,
+		"Player ring did not visibly shrink inside the TV mask."
+	)
 
 	NoiseSystem.set_ambient_source_enabled("tv", false)
 	assert(is_zero_approx(NoiseSystem.get_mask_at(tv_position)))
@@ -187,7 +214,10 @@ func _verify_ambient_masks() -> void:
 	assert(is_zero_approx(NoiseSystem.get_mask_at(speaker_position)))
 	NoiseSystem.set_ambient_source_enabled("kitchen_speaker", true)
 	assert(is_equal_approx(NoiseSystem.get_mask_at(speaker_position), speaker_mask))
-	print("A4 verification passed: TV/speaker masks register and vanish when disabled.")
+	print(
+		"A4 verification passed: tight nonzero masks register, player rings shrink, "
+		+ "and sources vanish when disabled."
+	)
 
 
 func _verify_a41_playtest_fixes() -> void:
@@ -642,6 +672,74 @@ func _verify_a7_presentation() -> void:
 	print(
 		"A7 verification passed: display stretch, visible fridge spill, TV flicker, "
 		+ "rate-driven creak, snack audio, and clear revealed snack mesh."
+	)
+	get_tree().quit()
+
+
+func _verify_a8_tuning() -> void:
+	_verify_ambient_masks()
+
+	var audio_director: DinnerAudioDirector = $AudioDirector as DinnerAudioDirector
+	audio_director.call("_on_game_started")
+	assert(audio_director.snack_pickup_volume_db >= -2.0)
+	assert(is_equal_approx(audio_director.tv_bed_max_distance, 3.2))
+	assert(is_equal_approx(audio_director.speaker_bed_max_distance, 2.4))
+
+	var snack: DinnerSnack = $Snack as DinnerSnack
+	var snack_visual: SnackVisualPresenter = $Snack/Visual as SnackVisualPresenter
+	var snack_mesh: SphereMesh = snack_visual.mesh as SphereMesh
+	var snack_material: StandardMaterial3D = (
+		snack_visual.material_override as StandardMaterial3D
+	)
+	assert(snack_mesh.radius >= 0.349)
+	assert(snack_material.emission_enabled)
+	assert(snack_material.emission_energy_multiplier > 0.0)
+
+	var pantry: DinnerDoor = $Pantry as DinnerDoor
+	pantry.openness = 0.6
+	pantry.call("_apply_visual")
+	snack.reveal_at(pantry.global_position)
+	snack_visual.apply_reveal_clearance()
+	snack_visual.set("_pulse_elapsed", 0.0)
+	snack_visual.call("_apply_pulse")
+	var pulse_low: float = snack_visual.scale.x
+	snack_visual.set("_pulse_elapsed", 0.25 / snack_visual.pulse_speed)
+	snack_visual.call("_apply_pulse")
+	var pulse_high: float = snack_visual.scale.x
+	assert(pulse_high > pulse_low, "Revealed snack does not pulse.")
+	_assert_snack_clear_of_panel(snack_visual, $Pantry/DoorVisual/Panel)
+	var camera: Camera3D = $CameraRig/OrthoCamera as Camera3D
+	var pantry_panel: MeshInstance3D = $Pantry/DoorVisual/Panel as MeshInstance3D
+	assert(
+		snack_visual.global_position.distance_to(camera.global_position)
+		< pantry_panel.global_position.distance_to(camera.global_position),
+		"Pantry snack is not camera-side of the wide panel."
+	)
+
+	var player: DinnerPlayer = $Player as DinnerPlayer
+	var presentation: Node3D = $Player/PresentationPivot as Node3D
+	assert(snack.pick_up(player))
+	snack_visual.call("_process", 0.0)
+	assert(snack_visual.visible)
+	assert(
+		snack_visual.global_position.distance_to(
+			player.to_global(snack_visual.carried_offset)
+		) < 0.01,
+		"Carried snack visual did not follow the player."
+	)
+	assert(($AudioDirector/SnackPickup as AudioStreamPlayer).playing)
+	await get_tree().create_timer(0.11).timeout
+	assert(presentation.scale.x > 1.0, "Player pickup scale-pop did not rise.")
+	await get_tree().create_timer(0.22).timeout
+	assert(
+		presentation.scale.is_equal_approx(Vector3.ONE),
+		"Player pickup scale-pop did not settle in 0.3 seconds."
+	)
+
+	audio_director.end_audio_verification()
+	print(
+		"A8 verification passed: tight nonzero masks, smaller TV rings, emissive "
+		+ "pulsing carried snack, louder pickup, pantry clearance, and pickup pop."
 	)
 	get_tree().quit()
 

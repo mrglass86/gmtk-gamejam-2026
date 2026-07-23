@@ -72,12 +72,15 @@ albedo_color = Color(0.44, 0.47, 0.51, 1)
 roughness = 0.9
 
 [sub_resource type="SphereMesh" id="SnackMesh"]
-radius = 0.3
-height = 0.6
+radius = 0.35
+height = 0.7
 
 [sub_resource type="StandardMaterial3D" id="SnackMaterial"]
-albedo_color = Color(0.95, 0.69, 0.24, 1)
-roughness = 0.8
+albedo_color = Color(1, 0.956863, 0.847059, 1)
+roughness = 0.55
+emission_enabled = true
+emission = Color(1, 0.956863, 0.847059, 1)
+emission_energy_multiplier = 2.4
 
 [sub_resource type="BoxShape3D" id="BoxShape_crib_goal"]
 size = Vector3(3.2, 1.6, 3.8)
@@ -157,8 +160,11 @@ surface_color = Color(0.768627, 0.788235, 0.807843, 1)
 [node name="Player" type="CharacterBody3D" parent="." groups=["player"]]
 position = Vector3(-12.4, 0.6, -4.0)
 script = ExtResource("6_player")
+capsule_mesh_path = NodePath("PresentationPivot/Capsule")
 
-[node name="Capsule" type="MeshInstance3D" parent="Player"]
+[node name="PresentationPivot" type="Node3D" parent="Player"]
+
+[node name="Capsule" type="MeshInstance3D" parent="Player/PresentationPivot"]
 mesh = SubResource("CapsuleMesh_player")
 material_override = SubResource("PlayerMaterial")
 
@@ -266,7 +272,7 @@ position = Vector3(13.5, 0.3, 0.0)
 script = ExtResource("10_snack")
 
 [node name="Visual" type="MeshInstance3D" parent="Snack"]
-position = Vector3(0, 0.36, 0)
+position = Vector3(0, 0.42, 0)
 mesh = SubResource("SnackMesh")
 material_override = SubResource("SnackMaterial")
 script = ExtResource("17_snack_visual")

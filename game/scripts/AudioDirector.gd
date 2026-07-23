@@ -71,7 +71,7 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 @export var sting_volume_db: float = -4.0
 
 @export_group("Snack")
-@export var snack_pickup_volume_db: float = -6.0
+@export var snack_pickup_volume_db: float = -2.0
 @export var snack_drop_volume_db: float = -10.0
 @export var snack_drop_max_distance: float = 8.0
 
@@ -80,8 +80,8 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 @export var speaker_bed_volume_db: float = -18.0
 @export var fridge_hum_volume_db: float = -22.0
 @export var clock_tick_volume_db: float = -18.0
-@export var tv_bed_max_distance: float = 5.5
-@export var speaker_bed_max_distance: float = 4.5
+@export var tv_bed_max_distance: float = 3.2
+@export var speaker_bed_max_distance: float = 2.4
 @export var fridge_hum_max_distance: float = 5.0
 @export var clock_tick_max_distance: float = 4.0
 
