@@ -22,6 +22,15 @@ signal snack_carrying_changed(carrying: bool)
 @export var toys_surface_multiplier: float = 4.0
 @export_range(0.0, 1.0) var floor_normal_min_y: float = 0.5
 
+@export_group("Movement Texture")
+@export var sneak_hop_height: float = 0.06
+@export var run_hop_height: float = 0.10
+@export_range(0.0, 1.0) var landing_squash_amount: float = 0.08
+@export_range(0.0, 1.0) var landing_spread_amount: float = 0.04
+@export_range(0.0, 1.0) var landing_spring_overshoot: float = 0.035
+@export_range(0.01, 1.0) var landing_recovery_fraction: float = 0.35
+@export var run_forward_lean_degrees: float = 8.0
+
 @export_group("Snack")
 @export var snack_noise_loudness: float = 0.3
 @export var snack_noise_interval: float = 0.6
@@ -43,12 +52,20 @@ var _snack_noise_elapsed: float = 0.0
 var _current_surface_multiplier: float = 1.0
 var _capsule_mesh: MeshInstance3D
 var _capsule_material: StandardMaterial3D
+var _capsule_base_position: Vector3
+var _capsule_base_scale: Vector3 = Vector3.ONE
+var _capsule_base_rotation: Vector3
+var _step_cycle_has_landed: bool = false
 var _carrier: Node3D
 var _carry_offset: Vector3
 
 
 func _ready() -> void:
 	_capsule_mesh = get_node_or_null(capsule_mesh_path) as MeshInstance3D
+	if _capsule_mesh != null:
+		_capsule_base_position = _capsule_mesh.position
+		_capsule_base_scale = _capsule_mesh.scale
+		_capsule_base_rotation = _capsule_mesh.rotation
 	_setup_capsule_material()
 	_update_capsule_readout()
 
@@ -57,6 +74,7 @@ func _physics_process(delta: float) -> void:
 	if _carrier != null:
 		velocity = Vector3.ZERO
 		global_position = _carrier.to_global(_carry_offset)
+		_reset_movement_texture()
 		_emit_snack_noise(delta)
 		_update_capsule_readout()
 		return
@@ -64,6 +82,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_update_surface_multiplier()
 	_emit_footsteps(delta)
+	_update_movement_texture()
 	_emit_snack_noise(delta)
 	_update_capsule_readout()
 
@@ -74,6 +93,7 @@ func set_input_locked(locked: bool) -> void:
 		velocity.x = 0.0
 		velocity.z = 0.0
 		_footstep_elapsed = 0.0
+		_reset_movement_texture()
 
 
 func attach_to_carrier(carrier: Node3D, carry_offset: Vector3) -> void:
@@ -144,16 +164,82 @@ func _emit_footsteps(delta: float) -> void:
 	var horizontal_speed: float = Vector2(real_velocity.x, real_velocity.z).length()
 	if noise_multiplier <= 0.0 or horizontal_speed <= 0.0:
 		_footstep_elapsed = 0.0
+		_step_cycle_has_landed = false
+		return
+
+	var interval: float = run_footstep_interval if Input.is_action_pressed("run") else sneak_footstep_interval
+	if interval <= 0.0:
+		_footstep_elapsed = 0.0
+		_step_cycle_has_landed = false
 		return
 
 	_footstep_elapsed += delta
-	var interval: float = run_footstep_interval if Input.is_action_pressed("run") else sneak_footstep_interval
 	if _footstep_elapsed < interval:
 		return
 
 	_footstep_elapsed = fmod(_footstep_elapsed, interval)
+	_step_cycle_has_landed = true
 	var raw_loudness: float = noise_multiplier * _current_surface_multiplier
 	_emit_masked_noise(raw_loudness)
+
+
+func _update_movement_texture() -> void:
+	if _capsule_mesh == null:
+		return
+	var real_velocity: Vector3 = get_real_velocity()
+	var horizontal_speed_squared: float = Vector2(real_velocity.x, real_velocity.z).length_squared()
+	if input_locked or is_zero_approx(horizontal_speed_squared):
+		_reset_movement_texture()
+		return
+
+	var is_running: bool = Input.is_action_pressed("run")
+	var interval: float = run_footstep_interval if is_running else sneak_footstep_interval
+	if interval <= 0.0:
+		_reset_movement_texture()
+		return
+
+	var step_phase: float = clampf(_footstep_elapsed / interval, 0.0, 1.0)
+	var hop_height: float = run_hop_height if is_running else sneak_hop_height
+	_capsule_mesh.position = _capsule_base_position + Vector3.UP * sin(step_phase * PI) * hop_height
+
+	var vertical_scale: float = 1.0
+	var horizontal_scale: float = 1.0
+	if _step_cycle_has_landed and step_phase < landing_recovery_fraction:
+		var recovery_phase: float = clampf(
+			step_phase / maxf(landing_recovery_fraction, 0.01),
+			0.0,
+			1.0
+		)
+		var compression_weight: float = 1.0 - recovery_phase
+		var spring_weight: float = sin(recovery_phase * PI)
+		vertical_scale = (
+			1.0
+			- landing_squash_amount * compression_weight
+			+ landing_spring_overshoot * spring_weight
+		)
+		horizontal_scale = (
+			1.0
+			+ landing_spread_amount * compression_weight
+			- landing_spring_overshoot * spring_weight
+		)
+
+	_capsule_mesh.scale = Vector3(
+		_capsule_base_scale.x * horizontal_scale,
+		_capsule_base_scale.y * vertical_scale,
+		_capsule_base_scale.z * horizontal_scale
+	)
+	_capsule_mesh.rotation = _capsule_base_rotation
+	if is_running:
+		_capsule_mesh.rotation.x += deg_to_rad(run_forward_lean_degrees)
+
+
+func _reset_movement_texture() -> void:
+	_step_cycle_has_landed = false
+	if _capsule_mesh == null:
+		return
+	_capsule_mesh.position = _capsule_base_position
+	_capsule_mesh.scale = _capsule_base_scale
+	_capsule_mesh.rotation = _capsule_base_rotation
 
 
 func _emit_snack_noise(delta: float) -> void:
