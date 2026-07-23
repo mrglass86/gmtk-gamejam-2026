@@ -9,9 +9,11 @@ happens inside the Godot project, including the level itself. Read
 
 ## Guardrails
 
-- Godot 4.7.1 only. Re-read brief section 0 (version notes): use `AreaLight3D`
-  for the TV, window, and under-door strip; do not enable HDR output; use
-  Context7 docs when available. Reject every Godot 3 idiom on sight:
+- Godot 4.7.1 only. Re-read brief section 0 (version notes) and
+  `docs/BRIEF_RISK_CHECK.md` (proof tests + fallbacks); documentation links and
+  lookup order live in `docs/GODOT_REFERENCE.md` — 4.7 branch only, never
+  `latest`. Do not enable HDR output; use Context7 when available. Reject every
+  Godot 3 idiom on sight:
   `Spatial`, `KinematicBody`, `connect("x", self, "_m")`, `yield`. In 4.x:
   `Node3D`, `CharacterBody3D`, `signal_name.connect(callable)`, `await`.
 - Typed GDScript. Every tuning number is an `@export`.
@@ -50,14 +52,19 @@ and note anything broken. Then build `scenes/Main.tscn` out per the brief's
 section 7 map: the two-route loop (bedroom → hallway/dining → kitchen, living
 room open to dining), half-height walls ~1.2 m, fixed orthographic camera over
 the whole floor plan, zone lamps (neutral-to-cool white only) registered per
-zone, TV as a cool `AreaLight3D`, floor colliders in the four surface groups
-with visually distinct greys per surface, untextured primitives only. Stub
-scenes with the contract names: `Player` (CharacterBody3D + capsule), `Parent`,
-`Pet`, `Crib`, `Fridge`, `Pantry`, `BedroomDoor`, `NightstandClock`.
-`NavigationRegion3D` baked (runtime bake on ready is fine during development);
-agents must not path through the half-height walls — check collision and agent
-height per brief section 5. Fridge and pantry on opposite kitchen sides; carpet
-laid deliberately as the silent highway (brief 7.3).
+zone, floor colliders in the four surface groups with visually distinct greys
+per surface, untextured primitives only. Lighting rig per risk-check section 1:
+`AreaLight3D` only for shadowless glow surfaces (TV, window, under-door strip);
+the readable shadow language comes from shadowed `SpotLight3D`/`OmniLight3D` —
+AreaLight3D cannot cast shadows in the Compatibility renderer. Stub scenes with
+the contract names: `Player` (CharacterBody3D + capsule), `Parent`, `Pet`,
+`Crib`, `Fridge`, `Pantry`, `BedroomDoor`, `NightstandClock`.
+`NavigationRegion3D` baked once, statically (drive the editor bake; no runtime
+rebaking per risk-check section 2); agents advance with
+`get_next_path_position()` every physics frame and must not path through the
+half-height walls — check collision and agent height per brief section 5.
+Fridge and pantry on opposite kitchen sides; carpet laid deliberately as the
+silent highway (brief 7.3).
 Post a screenshot (MCP or a headless capture) for the director's layout pass
 before A1 consumes the level.
 Accept: VALIDATION S1.
@@ -112,7 +119,9 @@ Accept: VALIDATION S6.
 ### A6 — Friday: win/lose, title, restart, export (brief 1, 2, 10.2)
 Title card with controls; win when the player enters the crib holding the
 snack, or survives to expiry in the crib with it; lose at expiry otherwise.
-Restart reloads the scene. Web export preset: threads off, Compatibility
-renderer. Thursday already proved the pipeline with a throwaway export — keep
-that preset.
+Restart reloads the scene. The first input on the title card starts the game
+and audio together (web autoplay rules, risk-check section 3); direct volume
+changes only — no audio-bus effects on web. Web export preset: threads off,
+Compatibility renderer. Thursday already proved the pipeline with a throwaway
+export — keep that preset.
 Accept: VALIDATION S9 UI rows and S11.

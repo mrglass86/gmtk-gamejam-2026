@@ -8,13 +8,18 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 - [x] Choose the direction and log it (Shoulda Eaten Dinner) — DECISIONS 2026-07-23.
 - [x] Scaffold the Godot 4.7.1 project: project.godot, autoload stubs, input map, Main.tscn — Claude.
-- [ ] Copy the brief into `gamejam/brief/`, git init, first commit — Noah pastes (kickoff handoff).
-- [ ] MCP setup for lane A, 30-minute hard abort; Context7 into Codex — Noah pastes Claude-supplied lines.
-- [ ] A0 greybox level, camera, actor stubs, navmesh, scaffold verification — lane A. Accept: S1.
+- [x] Brief in repo, git init, kickoff commits, first push to personal GitHub — done 2026-07-23.
+- [ ] MCP verification at first lane A session (bridge + Context7 already wired
+      in ~/.codex/config.toml); 30-minute hard abort → file-only fallback.
+- [x] A0 greybox level, camera, actor stubs, scaffold verification — lane A (`527dba7`). Accept: S1 minus navmesh.
+- [ ] A0.1 review fixes — lane A: navmesh startup bake (hand-authored mesh
+      tunnels a wall + ignores counter/props), lighting wash (sun/ambient down,
+      re-shoot layout PNG), BedroomDoor stub to the real doorway, clear the
+      WIRING attach. See `handoffs/2026-07-23-cp1-review.md`.
 - [ ] Directorial pass 1: layout screenshot — do the rooms and routes read — Noah.
-- [ ] A1 LightSystem — lane A. Accept: S2.
-- [ ] B1 Player.gd (movement, footsteps, capsule readout) — lane B. Accept: S3.
-- [ ] CP1 gate — Claude validates, Noah walks the greybox.
+- [x] A1 LightSystem — lane A (`8eff7c4`). Accept: S2 on review; runtime spot-check at CP1.
+- [x] B1 Player.gd — lane B (`8de9283`). Accept: S3 on review; runtime at CP1.
+- [ ] CP1 gate — after A0.1 fixes 1/2/4: Noah walks the greybox, Claude validates.
 - [ ] A2 NoiseSystem + dynamic-light helper — lane A. Accept: S4 core.
 - [ ] A3 noise indicators + the two teacher hazards — lane A. Accept: S4 full, S10 teacher rows.
 - [ ] B2 Door.gd + Snack.gd — lane B. Accept: S9 door/snack rows.

@@ -53,7 +53,7 @@ build regardless of state. Saturday is feel, audio, and submission.
 | T3 | Directorial pass 2 — door feel: sneak-open trickle vs rush-open bang | A2 NoiseSystem → A3 indicators + teacher hazards | B2 Door.gd + Snack.gd |
 | CP2 | Play it: make noise on every surface | Rings match the threshold table exactly | |
 | T4 | Walk both routes in-build; timing verdicts | A4 masking → A5 clock, phase director, debug keys, nightstand clock | B3 Parent.gd started |
-| CP3 | Play it: scrub phases with `]` | Phases re-price the world consistently; throwaway web export loads in a browser with one AreaLight3D and one shadow verified | |
+| CP3 | Play it: scrub phases with `]` | Phases re-price the world consistently; throwaway web export passes the risk-check section 1 proof (area-light glow + shadowed spot readable in two browsers) | |
 
 Thursday exit criteria: steps 1–6 integrated, export proven, Parent in progress.
 
@@ -108,13 +108,12 @@ clock, lights going out as it drains.
 
 ## 6. Tooling rules
 
-- MCP, lane A only, 30-minute hard abort (brief 9.2): try
-  `Coding-Solo/godot-mcp` first — npx only, no editor-plugin install, and the
-  capability that matters most (run the project, read debug output) with the
-  least setup. Step up to `mkdevkit/godot-mcp` later only if we want its
-  screenshot/input bridges and have slack. Context7 into Codex regardless.
-  Claude supplies the exact paste-lines once Noah confirms which Codex client
-  he's running.
+- MCP, lane A only, 30-minute hard abort (brief 9.2): `Coding-Solo/godot-mcp`
+  is already wired into Codex's config (~/.codex/config.toml, 2026-07-23) with
+  Context7 beside it — npx only, no editor-plugin install, and the capability
+  that matters most (run the project, read debug output). If it fails inside
+  the 30 minutes, the risk check names Funplay MCP (dock-configured) as the
+  alternate — only if abort budget remains; otherwise lanes go file-only.
 - Scene authoring: lane A owns the editor session and may write `.tscn` files
   directly — reliable for primitive greybox scenes and sanctioned now that no
   human is doing layout. Lane B still never touches scenes.

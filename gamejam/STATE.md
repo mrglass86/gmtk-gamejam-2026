@@ -14,22 +14,31 @@ a journal.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — project scaffolded at `game/` (Compatibility
-  renderer, autoload stubs, input map). Greybox pending (lane A, package A0).
+- Godot version: 4.7.1-stable — A0 greybox and A1 LightSystem are in `game/`
+  (Compatibility renderer). Input-map verification and headless LightSystem
+  checks pass; the first director-layout screenshot is committed.
 - Entry scene: `res://scenes/Main.tscn`
-- Run/build status: opens empty; no gameplay yet; not yet committed to git.
-- Remote: https://github.com/mrglass86/gmtk-gamejam-2026 (created empty — first push pending).
+- Run/build status: `527dba7` builds the greybox; `8eff7c4` adds analytic
+  zone lights and the temporary brightness readout. CP1 awaits lane B's
+  player-walk integration and the director's layout verdict.
+- Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
+  (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
+  machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
+- Codex: ChatGPT macOS app, local full-access harness; godot MCP bridge
+  (Coding-Solo) + Context7 configured in ~/.codex/config.toml 2026-07-23; jam
+  folder pre-trusted. App restart required to load them; 30-min abort stands.
 
 ## Current focus
 
-- Thursday: build order steps 1–6 plus the web export smoke test. Noah directs
-  (decisions and checkpoint play only — agents build everything, including
-  scenes). Lane briefs ready in `gamejam/codex/`; gates in `gamejam/VALIDATION.md`.
+- Thursday: A2 NoiseSystem is next for lane A while lane B integrates player
+  movement. Noah's next decision is the layout verdict from the A0 screenshot;
+  gates remain in `gamejam/VALIDATION.md`.
 
 ## Known blockers or risks
 
-- AreaLight3D on the web/Compatibility renderer is unverified (4.7 feature) —
-  Thursday's export test proves it or triggers the omni-cluster fallback.
+- AreaLight3D cannot cast shadows in the Compatibility renderer (risk check
+  section 1) — lighting rig = area-light glow + shadowed spot/omni for the
+  shadow language; Thursday's export proof confirms readability in browsers.
 - The scaffolded input map was hand-serialized — lane A verifies it in A0.
 - Agent-authored greybox is the new critical path — the A0 layout screenshot
   gate (directorial pass 1) is the safeguard.

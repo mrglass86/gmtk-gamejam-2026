@@ -11,7 +11,10 @@ tuning, changed behaviour is not.
       naming contract all present (the input map was hand-serialized — verify first open).
 - [ ] Half-height walls (~1.2 m) read as room boundaries from the ortho camera
       and cast floor shadows.
-- [ ] Navmesh baked; agents cannot path through walls.
+- [ ] Navmesh baked once, statically (no runtime rebaking); agents advance via
+      `get_next_path_position()` each physics frame and cannot path through
+      walls, cut corners into geometry, or resume a stale path after investigating
+      (risk check section 2).
 - [ ] Floor colliders tagged with the four surface groups; zones match the contract.
 - [ ] Node names match PLAN.md section 2 exactly.
 
@@ -87,7 +90,8 @@ tuning, changed behaviour is not.
 - [ ] Caught on return leg drops the snack where caught; it can be re-collected.
 - [ ] In crib holding snack → immediate win. Time expired → win only if in crib
       with snack, else lose (including in crib without snack).
-- [ ] Title card with controls; restart works; no other menus.
+- [ ] Title card with controls; the first input starts game and audio together;
+      restart works; no other menus.
 
 ## S10 — Level economy (CP5–CP6)
 
@@ -101,10 +105,14 @@ tuning, changed behaviour is not.
 
 ## S11 — Web export (CP3 smoke, CP6 full)
 
-- [ ] Export preset: web, threads off, Compatibility renderer.
+- [ ] Export preset: web, single-threaded (threads off), Compatibility renderer.
 - [ ] Loads in Chrome and Safari from the static server; no console errors.
-- [ ] AreaLight3D renders on web — or the omni-cluster fallback is invoked and logged.
-- [ ] Shadows visible and readable at the ortho angle in the browser.
+- [ ] Risk-check section 1 proof: AreaLight3D glow renders on web (no shadows
+      expected from it in Compatibility); the shadow read comes from the
+      shadowed spot/omni lights; player, wall boundaries, and safe/unsafe
+      lighting all readable at the ortho angle.
+- [ ] Audio starts reliably from the first user input (risk check section 3); no
+      audio-bus effects.
 - [ ] Playable frame rate in-browser on Noah's machine.
 
 ## Palette and accessibility (every visual checkpoint)

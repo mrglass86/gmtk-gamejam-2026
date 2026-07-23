@@ -129,3 +129,25 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** Agent-authored scenes start corrupting or MCP instability
   costs a block.
 - **Evidence / handoff:** `gamejam/PLAN.md` sections 1, 1.1, 6; lane briefs
+
+## 2026-07-23 — Risk-check alignment (docs/BRIEF_RISK_CHECK.md adopted)
+
+- **Decision:** The workspace's researched risk check governs four technical
+  calls. (1) Lighting rig: `AreaLight3D` is shadowless in the Compatibility
+  renderer → area lights carry only glow (TV, window, door strip); the shadow
+  language comes from shadowed spot/omni lights; gameplay brightness stays
+  analytic either way. (2) Navmesh: one static editor bake, no runtime
+  rebaking; agents advance via `get_next_path_position()` each physics frame.
+  (3) Web export: single-threaded; the first input starts game and audio
+  together; no audio-bus effects. (4) Dithering must pass a 30-minute
+  actors-stay-colored prototype or be cut immediately. MCP alternate if the
+  wired Coding-Solo bridge fails inside the abort window: Funplay (risk check
+  section 5).
+- **Why:** Resolves the AreaLight3D-on-web unknown at planning time instead of
+  Thursday night, and pins the navmesh/audio gotchas before agents hit them.
+- **Rejected / cut:** Brief section 0's blanket "use AreaLight3D" read as a
+  shadow source on web; runtime navmesh baking as a development default.
+- **Owner:** Claude
+- **Revisit when:** The Thursday export proof contradicts the risk check.
+- **Evidence / handoff:** `docs/BRIEF_RISK_CHECK.md`, `docs/GODOT_REFERENCE.md`,
+  lane briefs + VALIDATION.md updated same day
