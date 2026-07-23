@@ -1,9 +1,10 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/LevelBuilder.gd" id="2_level"]
 [ext_resource type="Script" path="res://scripts/CameraRig.gd" id="3_camera"]
 [ext_resource type="Script" path="res://scripts/AgentStub.gd" id="4_agent"]
+[ext_resource type="Script" path="res://scripts/BrightnessReadout.gd" id="5_readout"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -80,6 +81,7 @@ enabled = true
 
 [node name="Player" type="CharacterBody3D" parent="."]
 position = Vector3(-11, 0.6, 1.5)
+groups = ["player"]
 
 [node name="Capsule" type="MeshInstance3D" parent="Player"]
 mesh = SubResource("CapsuleMesh_player")
@@ -131,3 +133,15 @@ position = Vector3(-7.0, 0.0, 0.0)
 
 [node name="NightstandClock" type="Node3D" parent="."]
 position = Vector3(-9.0, 0.85, -2.0)
+
+[node name="BrightnessReadout" type="CanvasLayer" parent="."]
+script = ExtResource("5_readout")
+
+[node name="Label" type="Label" parent="BrightnessReadout"]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 350.0
+offset_bottom = 62.0
+theme_override_colors/font_color = Color(0.8, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "Brightness: --"

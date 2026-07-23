@@ -11,13 +11,53 @@ extends Node
 
 signal lighting_changed()
 
+const VALID_ZONES: PackedStringArray = ["bedroom", "hall", "living", "kitchen"]
+
+## Static sources are registered by LevelBuilder when it creates each named
+## ceiling lamp. Each source stores an analytic floor anchor, independent of
+## the visual light's ceiling position, so the brightness query describes the
+## place the player occupies rather than renderer output.
+var _lights: Dictionary = {}
+
+
+func register_light(id: String, zone: String, pos: Vector3, radius: float, enabled: bool = true) -> void:
+	if not VALID_ZONES.has(zone):
+		push_error("LightSystem rejected unknown zone: %s" % zone)
+		return
+	if radius <= 0.0:
+		push_error("LightSystem rejected non-positive radius for %s" % id)
+		return
+	_lights[id] = {
+		"zone": zone,
+		"position": pos,
+		"radius": radius,
+		"enabled": enabled,
+	}
+	lighting_changed.emit()
+
+
+func unregister_light(id: String) -> void:
+	if _lights.erase(id):
+		lighting_changed.emit()
+
 
 func get_brightness_at(pos: Vector3) -> float:
-	# TODO A1: max contribution of any enabled registered light,
-	# linear falloff to zero at the radius edge. 0.0 dark .. 1.0 fully lit.
-	return 0.0
+	var brightest: float = 0.0
+	for light_id: String in _lights:
+		var light_data: Dictionary = _lights[light_id]
+		if not light_data["enabled"]:
+			continue
+		var light_position: Vector3 = light_data["position"]
+		var radius: float = light_data["radius"]
+		var contribution: float = clampf(1.0 - light_position.distance_to(pos) / radius, 0.0, 1.0)
+		brightest = maxf(brightest, contribution)
+	return brightest
 
 
 func set_zone_enabled(zone: String, on: bool) -> void:
-	# TODO A1: toggle every registered light in the zone.
+	for light_id: String in _lights:
+		var light_data: Dictionary = _lights[light_id]
+		if light_data["zone"] == zone:
+			light_data["enabled"] = on
+			_lights[light_id] = light_data
 	lighting_changed.emit()

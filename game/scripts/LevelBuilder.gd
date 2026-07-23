@@ -64,10 +64,10 @@ func _build_props() -> void:
 
 
 func _build_lights() -> void:
-	_add_omni("BedroomLampVisual", Vector3(-10.0, 4.0, 0.5), 0.85)
-	_add_omni("HallLampVisual", Vector3(0.5, 4.0, 6.0), 1.0)
-	_add_omni("LivingLampVisual", Vector3(1.5, 4.0, -7.0), 0.9)
-	_add_omni("KitchenLampVisual", Vector3(11.0, 4.0, 0.0), 1.0)
+	_add_omni("BedroomLampVisual", "bedroom", Vector3(-10.0, 4.0, 0.5), 0.85)
+	_add_omni("HallLampVisual", "hall", Vector3(0.5, 4.0, 6.0), 1.0)
+	_add_omni("LivingLampVisual", "living", Vector3(1.5, 4.0, -7.0), 0.9)
+	_add_omni("KitchenLampVisual", "kitchen", Vector3(11.0, 4.0, 0.0), 1.0)
 	_add_area_glow("TVGlow", Vector3(2.5, 1.3, -7.7), Vector3(-90.0, 0.0, 0.0), Color("#7ea5d8"))
 	_add_area_glow("WindowGlow", Vector3(-13.8, 2.4, 1.5), Vector3(0.0, 90.0, 0.0), Color("#c7d5e7"))
 	_add_area_glow("DoorStripGlow", Vector3(-7.1, 0.55, 3.75), Vector3(-90.0, 0.0, 0.0), Color("#d5dce8"))
@@ -129,7 +129,7 @@ func _add_prop(node_name: String, center: Vector3, dimensions: Vector3, color: C
 	add_child(prop)
 
 
-func _add_omni(node_name: String, position_value: Vector3, energy_scale: float) -> void:
+func _add_omni(node_name: String, zone: String, position_value: Vector3, energy_scale: float) -> void:
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = node_name
 	light.position = position_value
@@ -138,6 +138,7 @@ func _add_omni(node_name: String, position_value: Vector3, energy_scale: float) 
 	light.omni_range = lamp_range
 	light.shadow_enabled = true
 	add_child(light)
+	LightSystem.register_light(node_name, zone, Vector3(position_value.x, 0.0, position_value.z), lamp_range)
 
 
 func _add_area_glow(node_name: String, position_value: Vector3, rotation_degrees_value: Vector3, color: Color) -> void:
