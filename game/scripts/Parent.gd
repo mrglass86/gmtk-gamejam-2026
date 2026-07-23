@@ -1,8 +1,7 @@
 extends Node3D
 class_name DinnerParent
 
-## Time-indexed parent routine with investigate and carry overrides.
-## Routine coordinates are placeholders until the A0.2 relayout is committed.
+## Time-indexed parent routine with investigate, found chase, and carry overrides.
 
 signal state_changed(state_name: StringName)
 signal player_caught(catch_position: Vector3)
@@ -10,6 +9,7 @@ signal player_caught(catch_position: Vector3)
 enum State {
 	ROUTINE,
 	INVESTIGATE,
+	FOUND,
 	CARRY,
 }
 
@@ -21,34 +21,35 @@ enum State {
 @export_node_path("Node3D") var snack_path: NodePath = NodePath("../Snack")
 
 @export_group("Routine")
-@export var routine_duration: float = 300.0
+## Zero follows GameClock.run_length. Set positive only to override/cap the routine timeline.
+@export var routine_duration: float = 0.0
 @export var routine_speed: float = 1.5
 @export var routine_repath_distance: float = 0.25
 @export var facing_turn_speed: float = 5.0
 @export var routine_rows: Array[Dictionary] = [
 	{
 		"time": 0.0,
-		"position": Vector3(1.5, 0.7, -7.0),
+		"position": Vector3(-0.2, 0.7, -4.6),
 		"dwell": 60.0,
 		"facing": Vector3(-1.0, 0.0, 0.0),
 	},
 	{
 		"time": 90.0,
-		"position": Vector3(10.0, 0.7, -2.5),
+		"position": Vector3(9.5, 0.7, -3.8),
 		"dwell": 15.0,
 		"facing": Vector3(0.0, 0.0, -1.0),
 	},
 	{
 		"time": 130.0,
-		"position": Vector3(1.5, 0.7, -7.0),
+		"position": Vector3(-0.2, 0.7, -4.6),
 		"dwell": 70.0,
 		"facing": Vector3(-1.0, 0.0, 0.0),
 	},
 	{
 		"time": 240.0,
-		"position": Vector3(-7.0, 0.7, 3.5),
+		"position": Vector3(-12.75, 0.7, -0.8),
 		"dwell": 60.0,
-		"facing": Vector3(-1.0, 0.0, 0.0),
+		"facing": Vector3(0.0, 0.0, -1.0),
 	},
 ]
 
@@ -81,6 +82,12 @@ enum State {
 @export var repeat_cooldown_duration: float = 8.0
 @export var repeat_cooldown_distance: float = 2.0
 
+@export_group("Found Chase")
+@export var found_speed: float = 3.2
+@export var grab_distance: float = 1.1
+@export var found_lose_sight_duration: float = 5.0
+@export var found_escape_suspicion: float = 60.0
+
 @export_group("Carry")
 @export var carry_speed: float = 2.6
 @export var carry_arrival_distance: float = 0.5
@@ -111,6 +118,7 @@ var _heard_since_last_tick: bool = false
 var _last_known_position: Vector3
 var _investigate_elapsed: float = 0.0
 var _investigate_look_elapsed: float = 0.0
+var _found_no_sight_elapsed: float = 0.0
 var _repeat_cooldown_remaining: float = 0.0
 var _last_checked_position: Vector3
 var _has_checked_position: bool = false
@@ -138,6 +146,8 @@ func _physics_process(delta: float) -> void:
 			_update_routine(delta)
 		State.INVESTIGATE:
 			_update_investigate(delta)
+		State.FOUND:
+			_update_found(delta)
 		State.CARRY:
 			_update_carry(delta)
 
@@ -235,6 +245,29 @@ func _update_carry(delta: float) -> void:
 		_finish_carry()
 
 
+func _update_found(delta: float) -> void:
+	if _player == null:
+		_escape_found()
+		return
+	if global_position.distance_to(_player.global_position) <= grab_distance:
+		_begin_carry()
+		return
+
+	if _has_clear_line_of_sight():
+		_last_known_position = _player.global_position
+		_found_no_sight_elapsed = 0.0
+	else:
+		_found_no_sight_elapsed += delta
+		if _found_no_sight_elapsed >= found_lose_sight_duration:
+			_escape_found()
+			return
+
+	_set_navigation_target(_player.global_position)
+	if _can_query_navigation():
+		if not _move_along_path(found_speed, delta):
+			_face_direction(_player.global_position - global_position, delta)
+
+
 func _move_along_path(speed: float, delta: float) -> bool:
 	if not _can_query_navigation() or _navigation_agent.is_navigation_finished():
 		return false
@@ -267,7 +300,7 @@ func _can_query_navigation() -> bool:
 
 
 func _update_perception(delta: float) -> void:
-	if _state == State.CARRY or _player == null:
+	if _state == State.FOUND or _state == State.CARRY or _player == null:
 		return
 
 	var sees_player: bool = _can_see_player()
@@ -275,7 +308,7 @@ func _update_perception(delta: float) -> void:
 		_last_known_position = _player.global_position
 		suspicion += seen_suspicion_per_second * delta
 		if suspicion >= suspicion_max:
-			_begin_carry()
+			_begin_found_or_carry()
 		elif suspicion >= investigate_threshold:
 			_begin_or_update_investigate(_last_known_position)
 	elif not _heard_since_last_tick:
@@ -327,8 +360,10 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 	)
 	_heard_since_last_tick = true
 	_last_known_position = pos
+	if _state == State.FOUND:
+		return
 	if suspicion >= suspicion_max:
-		_begin_carry()
+		_begin_found_or_carry()
 	elif suspicion >= investigate_threshold:
 		_begin_or_update_investigate(pos)
 
@@ -364,8 +399,39 @@ func _is_repeat_target_suppressed(target: Vector3) -> bool:
 	)
 
 
+func _begin_found_or_carry() -> void:
+	if _player == null:
+		return
+	if global_position.distance_to(_player.global_position) <= grab_distance:
+		_begin_carry()
+	else:
+		_begin_found()
+
+
+func _begin_found() -> void:
+	if _player == null or _state == State.CARRY:
+		return
+	suspicion = suspicion_max
+	_last_known_position = _player.global_position
+	_found_no_sight_elapsed = 0.0
+	_state = State.FOUND
+	_set_navigation_target(_player.global_position, true)
+	state_changed.emit(get_state_name())
+
+
+func _escape_found() -> void:
+	suspicion = clampf(found_escape_suspicion, 0.0, suspicion_max)
+	_state = State.INVESTIGATE
+	_investigate_elapsed = 0.0
+	_investigate_look_elapsed = 0.0
+	_set_navigation_target(_last_known_position, true)
+	state_changed.emit(get_state_name())
+
+
 func _begin_carry() -> void:
 	if _state == State.CARRY or _player == null:
+		return
+	if global_position.distance_to(_player.global_position) > grab_distance:
 		return
 	var catch_position: Vector3 = _player.global_position
 	if _player.carrying_snack:
@@ -394,7 +460,10 @@ func _finish_carry() -> void:
 
 
 func _get_routine_time() -> float:
-	return clampf(routine_duration - GameClock.time_remaining, 0.0, routine_duration)
+	var clock_duration: float = GameClock.run_length
+	var timeline_duration: float = routine_duration if routine_duration > 0.0 else clock_duration
+	var elapsed: float = clock_duration - GameClock.time_remaining
+	return clampf(elapsed, 0.0, timeline_duration)
 
 
 func _update_sweep(delta: float) -> void:
@@ -414,7 +483,7 @@ func _update_readability() -> void:
 	if not is_equal_approx(cone_angle, _rendered_cone_angle):
 		_build_cone_mesh(cone_angle)
 	var suspicion_weight: float = clampf(suspicion / suspicion_max, 0.0, 1.0)
-	if _state == State.CARRY:
+	if _state == State.FOUND or _state == State.CARRY:
 		_cone_material.albedo_color = cone_found_color
 	else:
 		_cone_material.albedo_color = cone_base_color.lerp(cone_suspicious_color, suspicion_weight)
@@ -424,6 +493,8 @@ func _get_current_cone_angle() -> float:
 	match _state:
 		State.INVESTIGATE:
 			return investigate_cone_angle_degrees
+		State.FOUND:
+			return found_cone_angle_degrees
 		State.CARRY:
 			return found_cone_angle_degrees
 		_:
