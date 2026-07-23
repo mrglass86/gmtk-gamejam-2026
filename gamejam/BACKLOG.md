@@ -78,6 +78,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       fridge spill, subtle TV flicker, rate-driven held-door creak, actual dog
       cues, and snack pickup/drop plus reveal clearance (`3def8f8`,
       `--verify-a7`).
+- [x] A8 third-run tuning — TV/speaker masks capped at 0.6 and tightened,
+      player rings visibly shrink without vanishing, and the snack is larger,
+      emissive, pulsing, carried, louder on pickup, camera-clear at the pantry,
+      with a 0.3 s player pop (`33b7832`–`ed2c253`, `--verify-a8`).
 - [ ] Snack round trip wired end to end — lanes A+B. Pickup/drop feedback and
       reveal clearance are verified; accept the complete interaction in S9.
 - [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.
