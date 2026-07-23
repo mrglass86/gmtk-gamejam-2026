@@ -8,8 +8,9 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Open
 
-- [ ] (lane B) Attach `res://scripts/Player.gd` to the `Player` `CharacterBody3D` in `Main.tscn`; add a `MeshInstance3D` child named `Capsule` and a floor collision shape. Put each floor collider in exactly one `surface_carpet`, `surface_hardwood`, `surface_creaky`, or `surface_toys` group so B1 can derive footstep noise.
+- [ ] (lane B) Attach `res://scripts/Door.gd` to `BedroomDoor`, `Pantry`, and `Fridge` in `Main.tscn`; configure their `door_kind` values and add an optional `DoorVisual` pivot child to animate. Add a `Snack` `Node3D` at the goal with a `MeshInstance3D` child named `Visual`, attach `res://scripts/Snack.gd`, and assign it to whichever goal doors should award the snack (`provides_snack = true`).
 
 ## Done
 
-_None yet._
+- [x] (lane B) Attached `res://scripts/Player.gd` to `Player` in `Main.tscn`.
+  The existing `Capsule`, collision shape, and tagged floor colliders satisfy B1.

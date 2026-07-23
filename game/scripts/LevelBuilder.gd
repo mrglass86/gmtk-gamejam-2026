@@ -1,8 +1,8 @@
 extends Node3D
 
 ## A0 procedural greybox. It uses only primitive meshes and builds static
-## collision for the authored floor and walls; NavigationRegion3D owns the
-## matching pre-authored static navmesh in Main.tscn.
+## collision for the authored floor and walls. The completed collider set is
+## baked exactly once at startup into the NavigationRegion3D below this node.
 
 @export var wall_height: float = 1.2
 @export var wall_thickness: float = 0.25
@@ -24,6 +24,7 @@ func _ready() -> void:
 	_build_walls()
 	_build_props()
 	_build_lights()
+	_bake_navigation_once()
 	if _is_layout_capture():
 		_add_review_labels()
 
@@ -106,6 +107,7 @@ func _add_floor(node_name: String, center: Vector3, dimensions: Vector2, color: 
 	floor.name = node_name
 	floor.position = center + Vector3(0.0, -floor_thickness * 0.5, 0.0)
 	floor.add_to_group(surface_group)
+	floor.add_to_group("nav_source")
 	_add_box_visual(floor, Vector3(dimensions.x, floor_thickness, dimensions.y), color)
 	_add_box_collision(floor, Vector3(dimensions.x, floor_thickness, dimensions.y))
 	add_child(floor)
@@ -115,6 +117,7 @@ func _add_wall(node_name: String, center: Vector3, dimensions: Vector3) -> void:
 	var wall: StaticBody3D = StaticBody3D.new()
 	wall.name = node_name
 	wall.position = center
+	wall.add_to_group("nav_source")
 	_add_box_visual(wall, dimensions, wall_color)
 	_add_box_collision(wall, dimensions)
 	add_child(wall)
@@ -124,6 +127,7 @@ func _add_prop(node_name: String, center: Vector3, dimensions: Vector3, color: C
 	var prop: StaticBody3D = StaticBody3D.new()
 	prop.name = node_name
 	prop.position = center
+	prop.add_to_group("nav_source")
 	_add_box_visual(prop, dimensions, color)
 	_add_box_collision(prop, dimensions)
 	add_child(prop)
@@ -170,3 +174,11 @@ func _add_box_collision(parent: Node3D, dimensions: Vector3) -> void:
 	shape.size = dimensions
 	collision.shape = shape
 	parent.add_child(collision)
+
+
+func _bake_navigation_once() -> void:
+	var navigation_region: NavigationRegion3D = $NavigationRegion3D
+	navigation_region.bake_navigation_mesh(false)
+	var polygon_count: int = navigation_region.navigation_mesh.get_polygon_count()
+	assert(polygon_count > 0, "Static navigation bake produced no polygons.")
+	print("A0.1 static navmesh baked once: %d polygons." % polygon_count)

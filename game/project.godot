@@ -87,3 +87,7 @@ debug_spawn_noise={
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+
+[navigation]
+
+3d/default_cell_size=0.1

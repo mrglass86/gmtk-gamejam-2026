@@ -3,7 +3,7 @@ extends Node3D
 ## Entry-point helpers owned by lane A. The layout capture is opt-in and is used
 ## only for director review: pass --capture-layout=/absolute/path/to/file.png.
 
-@export var capture_warmup_frames: int = 3
+@export var capture_warmup_frames: int = 12
 
 const REQUIRED_ACTIONS: PackedStringArray = [
 	"move_left",
