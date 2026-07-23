@@ -18,6 +18,7 @@ const VALID_ZONES: PackedStringArray = ["bedroom", "hall", "living", "kitchen"]
 ## the visual light's ceiling position, so the brightness query describes the
 ## place the player occupies rather than renderer output.
 var _lights: Dictionary = {}
+var _dynamic_lights: Dictionary = {}
 
 
 func register_light(id: String, zone: String, pos: Vector3, radius: float, enabled: bool = true) -> void:
@@ -41,6 +42,33 @@ func unregister_light(id: String) -> void:
 		lighting_changed.emit()
 
 
+## Dynamic lights are intentionally outside VALID_ZONES: the fridge is a
+## transient analytic spill, not a routine-controlled room lamp.
+func register_dynamic_light(id: String, pos: Vector3) -> void:
+	_dynamic_lights[id] = {
+		"position": pos,
+		"radius": 0.0,
+		"energy": 0.0,
+	}
+	lighting_changed.emit()
+
+
+func set_dynamic_light(id: String, radius: float, energy: float) -> void:
+	if not _dynamic_lights.has(id):
+		push_error("LightSystem cannot update missing dynamic light: %s" % id)
+		return
+	var light_data: Dictionary = _dynamic_lights[id]
+	light_data["radius"] = maxf(radius, 0.0)
+	light_data["energy"] = maxf(energy, 0.0)
+	_dynamic_lights[id] = light_data
+	lighting_changed.emit()
+
+
+func unregister_dynamic_light(id: String) -> void:
+	if _dynamic_lights.erase(id):
+		lighting_changed.emit()
+
+
 func get_brightness_at(pos: Vector3) -> float:
 	var brightest: float = 0.0
 	for light_id: String in _lights:
@@ -51,6 +79,17 @@ func get_brightness_at(pos: Vector3) -> float:
 		var radius: float = light_data["radius"]
 		var contribution: float = clampf(1.0 - light_position.distance_to(pos) / radius, 0.0, 1.0)
 		brightest = maxf(brightest, contribution)
+	for light_id: String in _dynamic_lights:
+		var dynamic_data: Dictionary = _dynamic_lights[light_id]
+		var dynamic_radius: float = dynamic_data["radius"]
+		var dynamic_energy: float = dynamic_data["energy"]
+		if dynamic_radius <= 0.0 or dynamic_energy <= 0.0:
+			continue
+		var dynamic_position: Vector3 = dynamic_data["position"]
+		var dynamic_contribution: float = dynamic_energy * clampf(
+			1.0 - dynamic_position.distance_to(pos) / dynamic_radius, 0.0, 1.0
+		)
+		brightest = maxf(brightest, dynamic_contribution)
 	return brightest
 
 
