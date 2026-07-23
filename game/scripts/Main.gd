@@ -741,6 +741,8 @@ func _verify_a8_tuning() -> void:
 		pickup_pop.kill()
 
 	audio_director.end_audio_verification()
+	for settle_frame: int in range(8):
+		await get_tree().process_frame
 	print(
 		"A8 verification passed: tight nonzero masks, smaller TV rings, emissive "
 		+ "pulsing carried snack, louder pickup, pantry clearance, and pickup pop."
