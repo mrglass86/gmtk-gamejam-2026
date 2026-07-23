@@ -8,12 +8,11 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Open
 
-- [ ] (lane B / B11) Keep the A11 dog visual's snout pointing along Pet-local
-  `-Z`; `Pet.gd` smoothly yaws that authored forward axis into every travel
-  direction (patrol, investigate, and bowl).
-
 ## Done
 
+- [x] (lane B / B11) A11 dog visual keeps its snout along Pet-local `-Z`;
+  `Pet.gd` smoothly yaws that forward axis into patrol, investigate, and bowl
+  travel directions.
 - [x] (lane B / B9) Added scripted `Level/BathroomDoor` with the exact
   `../Level/BathroomDoor` Parent path, quiet-zone blocker, collision-free
   panel, and explicit Player/Snack paths from under `Level`.

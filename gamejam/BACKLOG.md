@@ -97,6 +97,9 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [x] B10 sprint-bot follow-up — couch glances, HUNT at 75 suspicion, newest
       noise retargeting, and 1.2 run multiplier (`bb1dc61`, `--verify-b10`).
       Live bot: HUNT at 7.56 s, 0.18 m return closest, glance at 15.03 s.
+- [x] B11 dog travel facing — the A11 snout is authored along local -Z and
+      Pet's smooth root yaw makes the snout lead during patrol, investigate,
+      and bowl travel (`6544f54`, `6df8cff`, `--verify-a11`, B6/B9 live gates).
 - [ ] Snack round trip wired end to end — lanes A+B. Pickup/drop feedback and
       reveal clearance are verified; accept the complete interaction in S9.
 - [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.

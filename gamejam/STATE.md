@@ -9,9 +9,9 @@ a journal.
 - Direction: Shoulda Eaten Dinner (toddler stealth; the countdown is the
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Friday — director-run behavior and presentation fixpacks
-- Next playable checkpoint: director run six — exercise the combined B8–B10
+- Next playable checkpoint: director run six — exercise the combined B8–B11
   catch, ring-true hearing, bathroom staging, dog bowl visit, couch glances,
-  HUNT response, A10 presentation, and full win/lose loop.
+  HUNT response, A11 presentation, and full win/lose loop.
 
 ## Working build
 
@@ -51,6 +51,9 @@ a journal.
   startup plus A10/B9/A4.1/A7/A8/A9/audio gates pass on the combined head.
   `bb1dc61` adds B10 couch glances, 75-suspicion HUNT with newest-noise
   retargeting, and 1.2 run noise. Clean committed-tree startup and B6–B10 pass.
+  A11/B11 author the dog snout along local -Z and retain Pet's smooth root yaw
+  for patrol, investigate, and bowl travel. Clean committed-tree startup plus
+  A11, B6, and B9 pass on the combined head.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
