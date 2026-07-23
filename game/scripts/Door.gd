@@ -5,6 +5,8 @@ class_name DinnerDoor
 ## Risk is based only on the current openness rate: a paused door is silent and
 ## the fridge creates no analytical spill while it is paused.
 
+signal fully_closed()
+
 enum DoorKind {
 	BEDROOM,
 	PANTRY,
@@ -22,6 +24,7 @@ enum DoorKind {
 @export_range(0.0, 1.0) var snack_open_threshold: float = 0.6
 @export var sneak_open_duration: float = 5.0
 @export var rush_open_duration: float = 1.0
+@export var close_duration: float = 1.0
 
 @export_group("Creak")
 @export var creak_loudness_per_open_rate: float = 4.0
@@ -55,6 +58,7 @@ var _creak_elapsed: float = 0.0
 var _blocker_shape: CollisionShape3D
 var _blocker_disabled: bool = false
 var _snack_revealed: bool = false
+var _closing_requested: bool = false
 
 
 func _ready() -> void:
@@ -74,7 +78,16 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	var previous_openness: float = openness
-	if _can_open():
+	if _closing_requested:
+		if close_duration <= 0.0:
+			openness = 0.0
+		else:
+			openness = maxf(openness - delta / close_duration, 0.0)
+		if is_zero_approx(openness):
+			openness = 0.0
+			_closing_requested = false
+			fully_closed.emit()
+	elif _can_open():
 		var open_duration: float = rush_open_duration if Input.is_action_pressed("run") else sneak_open_duration
 		if open_duration > 0.0:
 			openness = minf(openness + delta / open_duration, 1.0)
@@ -86,6 +99,18 @@ func _physics_process(delta: float) -> void:
 	_update_blocker_collision()
 	_apply_risk(openness_rate, delta)
 	_try_reveal_snack()
+
+
+func close() -> void:
+	if is_zero_approx(openness):
+		openness = 0.0
+		_closing_requested = false
+		return
+	_closing_requested = true
+
+
+func is_closing() -> bool:
+	return _closing_requested
 
 
 func _can_open() -> bool:

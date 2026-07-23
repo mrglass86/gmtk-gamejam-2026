@@ -111,6 +111,10 @@ func detach_from_carrier(drop_position: Vector3) -> void:
 	set_input_locked(false)
 
 
+func is_attached_to_carrier() -> bool:
+	return _carrier != null
+
+
 func set_carrying_snack(carrying: bool) -> void:
 	if carrying_snack == carrying:
 		return

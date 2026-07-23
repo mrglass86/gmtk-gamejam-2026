@@ -152,6 +152,10 @@ func get_state_name() -> StringName:
 	return State.keys()[_state]
 
 
+func bark() -> void:
+	_begin_bark()
+
+
 func _finish_navigation_setup() -> void:
 	await get_tree().physics_frame
 	if _navigation_agent != null:
@@ -237,6 +241,7 @@ func _on_noise_emitted(pos: Vector3, _loudness: float, source: Node) -> void:
 func _begin_bark() -> void:
 	_bark_elapsed = 0.0
 	_set_state(State.BARK)
+	# The dog is a house alarm. Ambient masking applies only to player noise.
 	NoiseSystem.emit_noise(global_position, bark_loudness, self)
 	bark_started.emit()
 

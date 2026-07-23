@@ -11,6 +11,10 @@ enum State {
 	INVESTIGATE,
 	FOUND,
 	CARRY,
+	POST_DEPOSIT_EXIT,
+	POST_DEPOSIT_CLOSE,
+	POST_DEPOSIT_WAIT,
+	POST_DEPOSIT_PEEK,
 }
 
 @export_group("Scene References")
@@ -19,6 +23,7 @@ enum State {
 @export_node_path("MeshInstance3D") var vision_cone_path: NodePath = NodePath("VisionCone")
 @export_node_path("Node3D") var crib_path: NodePath = NodePath("../Crib")
 @export_node_path("Node3D") var snack_path: NodePath = NodePath("../Snack")
+@export_node_path("DinnerDoor") var bedroom_door_path: NodePath = NodePath("../BedroomDoor")
 
 @export_group("Routine")
 ## Zero follows GameClock.run_length. Set positive only to override/cap the routine timeline.
@@ -167,8 +172,18 @@ enum State {
 @export_group("Carry")
 @export var carry_speed: float = 3.0
 @export var carry_arrival_distance: float = 0.5
+@export var carry_hard_timeout: float = 20.0
 @export var carry_offset: Vector3 = Vector3(0.55, 0.35, 0.0)
 @export var crib_player_offset: Vector3 = Vector3(0.0, 0.65, 0.0)
+
+@export_group("Post Deposit")
+@export var post_deposit_hall_position: Vector3 = Vector3(-12.75, 0.7, -0.8)
+@export var post_deposit_exit_speed: float = 2.2
+@export var post_deposit_arrival_distance: float = 0.45
+@export var post_deposit_door_closed_openness: float = 0.01
+@export var post_deposit_wait_duration: float = 3.5
+@export var post_deposit_peek_target: Vector3 = Vector3(-11.2, 0.7, -3.9)
+@export var post_deposit_peek_duration: float = 0.8
 
 @export_group("Readability")
 @export var cone_base_color: Color = Color(0.68, 0.56, 0.92, 0.24)
@@ -194,6 +209,19 @@ enum State {
 @export var verify_point_blank_duration: float = 3.0
 @export var verify_point_blank_suspicion: float = 90.0
 
+@export_group("B7 Runtime Verification")
+@export var verify_carry_parent_position: Vector3 = Vector3(-11.2, 0.7, -3.0)
+@export var verify_catch_offset: Vector3 = Vector3(0.5, -0.1, 0.0)
+@export var verify_carry_cycle_duration: float = 15.0
+@export var verify_failsafe_margin: float = 0.5
+@export var verify_bark_parent_position: Vector3 = Vector3(3.2, 0.7, -4.2)
+@export var verify_bark_pet_position: Vector3 = Vector3(5.5, 0.42, -4.2)
+@export var verify_bark_mask_id: String = "b7_tv_mask_at_dog_bed"
+@export var verify_bark_mask_radius: float = 4.0
+@export var verify_bark_mask_strength: float = 0.7
+@export var verify_bark_min_mask: float = 0.5
+@export var verify_bark_min_suspicion: float = 35.0
+
 var suspicion: float = 0.0
 
 var _state: State = State.ROUTINE
@@ -202,6 +230,7 @@ var _navigation_agent: NavigationAgent3D
 var _vision_cone: MeshInstance3D
 var _crib: Node3D
 var _snack: DinnerSnack
+var _bedroom_door: DinnerDoor
 var _cone_material: StandardMaterial3D
 var _navigation_ready: bool = false
 var _last_navigation_target: Vector3
@@ -217,6 +246,10 @@ var _found_no_sight_elapsed: float = 0.0
 var _repeat_cooldown_remaining: float = 0.0
 var _last_checked_position: Vector3
 var _has_checked_position: bool = false
+var _carry_elapsed: float = 0.0
+var _carry_path_started: bool = false
+var _post_deposit_elapsed: float = 0.0
+var _post_deposit_path_started: bool = false
 
 
 func _ready() -> void:
@@ -225,12 +258,15 @@ func _ready() -> void:
 	_vision_cone = get_node_or_null(vision_cone_path) as MeshInstance3D
 	_crib = get_node_or_null(crib_path) as Node3D
 	_snack = get_node_or_null(snack_path) as DinnerSnack
+	_bedroom_door = get_node_or_null(bedroom_door_path) as DinnerDoor
 	_setup_cone()
 	if not NoiseSystem.noise_emitted.is_connected(_on_noise_emitted):
 		NoiseSystem.noise_emitted.connect(_on_noise_emitted)
 	_finish_navigation_setup.call_deferred()
 	if OS.get_cmdline_user_args().has("--verify-b6"):
 		_run_b6_verification.call_deferred()
+	if OS.get_cmdline_user_args().has("--verify-b7"):
+		_run_b7_verification.call_deferred()
 
 
 func _physics_process(delta: float) -> void:
@@ -247,6 +283,14 @@ func _physics_process(delta: float) -> void:
 			_update_found(delta)
 		State.CARRY:
 			_update_carry(delta)
+		State.POST_DEPOSIT_EXIT:
+			_update_post_deposit_exit(delta)
+		State.POST_DEPOSIT_CLOSE:
+			_update_post_deposit_close(delta)
+		State.POST_DEPOSIT_WAIT:
+			_update_post_deposit_wait(delta)
+		State.POST_DEPOSIT_PEEK:
+			_update_post_deposit_peek(delta)
 
 	_update_sweep(delta)
 	_update_readability()
@@ -297,6 +341,13 @@ func get_state_name() -> StringName:
 	return State.keys()[_state]
 
 
+func _set_state(next_state: State) -> void:
+	if _state == next_state:
+		return
+	_state = next_state
+	state_changed.emit(get_state_name())
+
+
 func _finish_navigation_setup() -> void:
 	await get_tree().physics_frame
 	if _navigation_agent != null:
@@ -342,6 +393,10 @@ func _update_investigate(delta: float) -> void:
 
 
 func _update_carry(delta: float) -> void:
+	_carry_elapsed += delta
+	if _carry_elapsed >= carry_hard_timeout:
+		_finish_carry()
+		return
 	if _crib == null or _player == null:
 		_finish_carry()
 		return
@@ -349,8 +404,72 @@ func _update_carry(delta: float) -> void:
 		return
 	_set_navigation_target(_crib.global_position)
 	_move_along_path(carry_speed, delta)
-	if global_position.distance_to(_crib.global_position) <= carry_arrival_distance:
+	if not _navigation_agent.is_navigation_finished():
+		_carry_path_started = true
+	if not _carry_path_started:
+		return
+	var reachable_crib_position: Vector3 = _navigation_agent.get_final_position()
+	var arrival_delta: Vector3 = reachable_crib_position - global_position
+	arrival_delta.y = 0.0
+	if (
+		arrival_delta.length() <= carry_arrival_distance
+		or _navigation_agent.is_navigation_finished()
+	):
 		_finish_carry()
+
+
+func _update_post_deposit_exit(delta: float) -> void:
+	_set_navigation_target(post_deposit_hall_position)
+	_move_along_path(post_deposit_exit_speed, delta)
+	if not _navigation_agent.is_navigation_finished():
+		_post_deposit_path_started = true
+	if not _post_deposit_path_started:
+		return
+	var arrival_delta: Vector3 = post_deposit_hall_position - global_position
+	arrival_delta.y = 0.0
+	if (
+		arrival_delta.length() <= post_deposit_arrival_distance
+		or _navigation_agent.is_navigation_finished()
+	):
+		_begin_post_deposit_close()
+
+
+func _update_post_deposit_close(delta: float) -> void:
+	_face_bedroom_door(delta)
+	if (
+		_bedroom_door == null
+		or _bedroom_door.openness <= post_deposit_door_closed_openness
+	):
+		_post_deposit_elapsed = 0.0
+		_set_state(State.POST_DEPOSIT_WAIT)
+
+
+func _update_post_deposit_wait(delta: float) -> void:
+	_post_deposit_elapsed += delta
+	_face_bedroom_door(delta)
+	if _post_deposit_elapsed >= post_deposit_wait_duration:
+		_post_deposit_elapsed = 0.0
+		_set_state(State.POST_DEPOSIT_PEEK)
+
+
+func _update_post_deposit_peek(delta: float) -> void:
+	_post_deposit_elapsed += delta
+	_face_direction(post_deposit_peek_target - global_position, delta)
+	if _post_deposit_elapsed >= post_deposit_peek_duration:
+		_resume_routine_after_deposit()
+
+
+func _begin_post_deposit_close() -> void:
+	_post_deposit_elapsed = 0.0
+	_set_state(State.POST_DEPOSIT_CLOSE)
+	if _bedroom_door != null:
+		_bedroom_door.close()
+
+
+func _face_bedroom_door(delta: float) -> void:
+	if _bedroom_door == null:
+		return
+	_face_direction(_bedroom_door.global_position - global_position, delta)
 
 
 func _update_found(delta: float) -> void:
@@ -409,7 +528,12 @@ func _can_query_navigation() -> bool:
 
 
 func _update_perception(delta: float) -> void:
-	if _state == State.FOUND or _state == State.CARRY or _player == null:
+	if (
+		_state == State.FOUND
+		or _state == State.CARRY
+		or _is_post_deposit_state()
+		or _player == null
+	):
 		return
 
 	var sees_player: bool = _can_see_player()
@@ -473,7 +597,7 @@ func _has_clear_line_of_sight() -> bool:
 
 
 func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
-	if source == self or _state == State.CARRY:
+	if source == self or _state == State.CARRY or _is_post_deposit_state():
 		return
 	var distance_to_noise: float = global_position.distance_to(pos)
 	if distance_to_noise >= hearing_radius:
@@ -492,6 +616,15 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 		_begin_found_or_carry()
 	elif suspicion >= investigate_threshold:
 		_begin_or_update_investigate(pos)
+
+
+func _is_post_deposit_state() -> bool:
+	return (
+		_state == State.POST_DEPOSIT_EXIT
+		or _state == State.POST_DEPOSIT_CLOSE
+		or _state == State.POST_DEPOSIT_WAIT
+		or _state == State.POST_DEPOSIT_PEEK
+	)
 
 
 func _begin_or_update_investigate(target: Vector3) -> void:
@@ -567,10 +700,11 @@ func _begin_carry() -> void:
 			_player.set_carrying_snack(false)
 	_player.attach_to_carrier(self, carry_offset)
 	suspicion = 0.0
-	_state = State.CARRY
+	_carry_elapsed = 0.0
+	_carry_path_started = false
+	_set_state(State.CARRY)
 	if _crib != null:
 		_set_navigation_target(_crib.global_position, true)
-	state_changed.emit(get_state_name())
 	player_caught.emit(catch_position)
 
 
@@ -580,9 +714,15 @@ func _finish_carry() -> void:
 		if _crib != null:
 			player_drop_position = _crib.global_position + crib_player_offset
 		_player.detach_from_carrier(player_drop_position)
-	_state = State.ROUTINE
+	_post_deposit_elapsed = 0.0
+	_post_deposit_path_started = false
+	_set_state(State.POST_DEPOSIT_EXIT)
+	_set_navigation_target(post_deposit_hall_position, true)
+
+
+func _resume_routine_after_deposit() -> void:
+	_set_state(State.ROUTINE)
 	_set_navigation_target(get_base_target(_get_routine_time()), true)
-	state_changed.emit(get_state_name())
 
 
 func _get_routine_time() -> float:
@@ -828,6 +968,168 @@ func _run_b6_verification() -> void:
 	assert(point_blank_lit, "B6 planted player was not observably lit.")
 	assert(point_blank_triggered, "B6 point-blank player did not reach 90 suspicion or FOUND.")
 	print("B6 live SceneTree verification passed.")
+
+
+func _run_b7_verification() -> void:
+	var pet: DinnerPet = get_parent().get_node_or_null("Pet") as DinnerPet
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var player_was_processing: bool = _player != null and _player.is_physics_processing()
+
+	Engine.time_scale = maxf(verify_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(verify_physics_ticks_per_second, 60)
+	for _frame_index in range(verify_warmup_frames):
+		await get_tree().physics_frame
+
+	var catch_started: bool = false
+	var saw_post_exit: bool = false
+	var saw_door_close: bool = false
+	var saw_hall_wait: bool = false
+	var saw_peek: bool = false
+	var carry_cycle_completed: bool = false
+	var carry_cycle_elapsed: float = 0.0
+	if _player != null and _crib != null and _bedroom_door != null:
+		_player.set_physics_process(true)
+		_bedroom_door.openness = 1.0
+		global_position = verify_carry_parent_position
+		_state = State.ROUTINE
+		suspicion = 0.0
+		_set_navigation_target(global_position, true)
+		var catch_position: Vector3 = global_position + verify_catch_offset
+		_player.detach_from_carrier(catch_position)
+		_begin_found_or_carry()
+		catch_started = (
+			_state == State.CARRY
+			and _player.is_attached_to_carrier()
+			and _player.input_locked
+		)
+
+		GameClock.start()
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			carry_cycle_elapsed = GameClock.run_length - GameClock.time_remaining
+			saw_post_exit = saw_post_exit or _state == State.POST_DEPOSIT_EXIT
+			saw_door_close = saw_door_close or _state == State.POST_DEPOSIT_CLOSE
+			saw_hall_wait = saw_hall_wait or _state == State.POST_DEPOSIT_WAIT
+			saw_peek = saw_peek or _state == State.POST_DEPOSIT_PEEK
+			if _state == State.ROUTINE:
+				carry_cycle_completed = true
+				break
+			if carry_cycle_elapsed >= verify_carry_cycle_duration:
+				break
+
+	var player_released: bool = (
+		_player != null
+		and not _player.is_attached_to_carrier()
+		and not _player.input_locked
+	)
+	var bedroom_door_closed: bool = (
+		_bedroom_door != null
+		and _bedroom_door.openness <= post_deposit_door_closed_openness
+	)
+
+	var failsafe_started: bool = false
+	var failsafe_released: bool = false
+	var failsafe_elapsed: float = 0.0
+	if _player != null:
+		global_position = verify_carry_parent_position
+		_state = State.ROUTINE
+		suspicion = 0.0
+		_navigation_ready = false
+		var failsafe_catch_position: Vector3 = global_position + verify_catch_offset
+		_player.detach_from_carrier(failsafe_catch_position)
+		_begin_found_or_carry()
+		failsafe_started = _state == State.CARRY and _player.is_attached_to_carrier()
+
+		GameClock.start()
+		var failsafe_test_duration: float = carry_hard_timeout + verify_failsafe_margin
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			failsafe_elapsed = GameClock.run_length - GameClock.time_remaining
+			if not _player.is_attached_to_carrier() and not _player.input_locked:
+				failsafe_released = true
+				break
+			if failsafe_elapsed >= failsafe_test_duration:
+				break
+		_navigation_ready = true
+
+	var tv_mask_active: bool = false
+	var bark_alarm_triggered: bool = false
+	var bark_max_suspicion: float = 0.0
+	if pet != null and _player != null:
+		_player.set_physics_process(false)
+		_player.detach_from_carrier(verify_observer_parking_position)
+		global_position = verify_bark_parent_position
+		_state = State.ROUTINE
+		suspicion = 0.0
+		_has_checked_position = false
+		_repeat_cooldown_remaining = 0.0
+		_set_navigation_target(global_position, true)
+		pet.global_position = verify_bark_pet_position
+		GameClock.start()
+		NoiseSystem.register_ambient_source(
+			verify_bark_mask_id,
+			verify_bark_pet_position,
+			verify_bark_mask_radius,
+			verify_bark_mask_strength
+		)
+		tv_mask_active = (
+			NoiseSystem.get_mask_at(verify_bark_pet_position) >= verify_bark_min_mask
+		)
+		pet.bark()
+		bark_max_suspicion = suspicion
+		await get_tree().physics_frame
+		bark_max_suspicion = maxf(bark_max_suspicion, suspicion)
+		bark_alarm_triggered = (
+			bark_max_suspicion >= verify_bark_min_suspicion
+			or _state == State.INVESTIGATE
+		)
+		NoiseSystem.unregister_ambient_source(verify_bark_mask_id)
+
+	GameClock.running = false
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+	if _player != null:
+		_player.set_physics_process(player_was_processing)
+
+	var verification_passed: bool = (
+		catch_started
+		and carry_cycle_completed
+		and carry_cycle_elapsed <= verify_carry_cycle_duration
+		and player_released
+		and bedroom_door_closed
+		and saw_post_exit
+		and saw_door_close
+		and saw_hall_wait
+		and saw_peek
+		and failsafe_started
+		and failsafe_released
+		and tv_mask_active
+		and bark_alarm_triggered
+	)
+	print(
+		(
+			"B7 live metrics: carry cycle=%.2f s, door openness=%.3f, "
+			+ "failsafe release=%.2f s, bark suspicion=%.1f."
+		)
+		% [
+			carry_cycle_elapsed,
+			_bedroom_door.openness if _bedroom_door != null else -1.0,
+			failsafe_elapsed,
+			bark_max_suspicion,
+		]
+	)
+	get_tree().quit(0 if verification_passed else 1)
+	assert(catch_started, "B7 catch did not attach and lock the player.")
+	assert(carry_cycle_completed, "B7 parent did not return to routine within 15 s.")
+	assert(player_released, "B7 deposit did not detach and unlock the player.")
+	assert(bedroom_door_closed, "B7 post-deposit sequence did not close the bedroom door.")
+	assert(saw_post_exit and saw_door_close, "B7 parent skipped the exit or door-close beat.")
+	assert(saw_hall_wait and saw_peek, "B7 parent skipped the hall wait or peek beat.")
+	assert(failsafe_started and failsafe_released, "B7 20 s carry failsafe did not release.")
+	assert(tv_mask_active, "B7 TV mask was not active during the bark check.")
+	assert(bark_alarm_triggered, "B7 unmasked bark did not raise parent suspicion to 35.")
+	print("B7 live SceneTree verification passed.")
 
 
 func _prepare_point_blank_verification() -> void:
