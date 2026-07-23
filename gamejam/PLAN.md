@@ -102,6 +102,9 @@ clock, lights going out as it drains.
   2–3 posed questions. His verdicts become the next block's tasks.
 - Findings become BACKLOG.md items or an immediate bounce to the owning lane.
   Rulings go to DECISIONS.md. Nothing merges on a red gate.
+- After every green gate: commit and push to the remote
+  (https://github.com/mrglass86/gmtk-gamejam-2026) so progress is banked
+  off-machine.
 
 ## 6. Tooling rules
 
@@ -126,7 +129,7 @@ clock, lights going out as it drains.
 ## 7. Friday tag ritual
 
 ```bash
-cd "/Users/noahhayes/Documents/GMTK GameJam 2026" && git add -A && git commit -m "Friday freeze" && git tag jam-friday
+cd "/Users/noahhayes/Documents/GMTK GameJam 2026" && git add -A && git commit -m "Friday freeze" && git tag jam-friday && git push origin main --tags
 ```
 
 Then lane A exports the web build and Noah uploads the zip to itch as a draft.

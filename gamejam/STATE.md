@@ -18,6 +18,7 @@ a journal.
   renderer, autoload stubs, input map). Greybox pending (lane A, package A0).
 - Entry scene: `res://scenes/Main.tscn`
 - Run/build status: opens empty; no gameplay yet; not yet committed to git.
+- Remote: https://github.com/mrglass86/gmtk-gamejam-2026 (created empty — first push pending).
 
 ## Current focus
 

@@ -51,6 +51,10 @@ mkdir -p "/Users/noahhayes/Documents/GMTK GameJam 2026/gamejam/brief" && cp "/Us
 cd "/Users/noahhayes/Documents/GMTK GameJam 2026" && git init -b main && git add -A && git commit -m "Jam kickoff: brief, plan, lane briefs, Godot scaffold"
 ```
 
+```bash
+cd "/Users/noahhayes/Documents/GMTK GameJam 2026" && git remote add origin https://github.com/mrglass86/gmtk-gamejam-2026.git && git push -u origin main
+```
+
 ## Open flags
 
 - AreaLight3D on web/Compatibility unverified — Thursday export smoke test decides.
