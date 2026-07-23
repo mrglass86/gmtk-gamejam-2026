@@ -11,17 +11,15 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [x] Brief in repo, git init, kickoff commits, first push to personal GitHub — done 2026-07-23.
 - [ ] MCP verification at first lane A session (bridge + Context7 already wired
       in ~/.codex/config.toml); 30-minute hard abort → file-only fallback.
-- [x] A0 greybox level, camera, actor stubs, scaffold verification — lane A (`527dba7`). Accept: S1 minus navmesh.
-- [ ] A0.1 review fixes — lane A: navmesh startup bake (hand-authored mesh
-      tunnels a wall + ignores counter/props), lighting wash (sun/ambient down,
-      re-shoot layout PNG), BedroomDoor stub to the real doorway, clear the
-      WIRING attach. See `handoffs/2026-07-23-cp1-review.md`.
+- [x] A0 greybox level, camera, actor stubs, scaffold verification — lane A (`527dba7`, `aa4fbf4`). Accept: S1 pending CP1 walk.
+- [x] A0.1 review fixes — static-collider startup nav bake, lighting wash,
+      re-shot layout, BedroomDoor placement, and Player wiring (`aa4fbf4`).
 - [ ] Directorial pass 1: layout screenshot — do the rooms and routes read — Noah.
 - [x] A1 LightSystem — lane A (`8eff7c4`). Accept: S2 on review; runtime spot-check at CP1.
 - [x] B1 Player.gd — lane B (`8de9283`). Accept: S3 on review; runtime at CP1.
 - [ ] CP1 gate — after A0.1 fixes 1/2/4: Noah walks the greybox, Claude validates.
-- [ ] A2 NoiseSystem + dynamic-light helper — lane A. Accept: S4 core.
-- [ ] A3 noise indicators + the two teacher hazards — lane A. Accept: S4 full, S10 teacher rows.
+- [x] A2 NoiseSystem + dynamic-light helper — lane A (`e7c1f68`). Accept: S4 core.
+- [x] A3 noise indicators + the two teacher hazards — lane A (`04c34a0`). Accept: S4 full, S10 teacher rows.
 - [ ] B2 Door.gd + Snack.gd — lane B. Accept: S9 door/snack rows.
 - [ ] CP2 gate — Claude validates, Noah plays every surface; directorial pass 2 on door feel.
 - [ ] A4 ambient masking zones — lane A. Accept: S5.

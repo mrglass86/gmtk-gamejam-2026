@@ -151,3 +151,19 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** The Thursday export proof contradicts the risk check.
 - **Evidence / handoff:** `docs/BRIEF_RISK_CHECK.md`, `docs/GODOT_REFERENCE.md`,
   lane briefs + VALIDATION.md updated same day
+
+## 2026-07-23 — Static-collider navigation bake at startup
+
+- **Decision:** Replace A0's unsafe hand-authored navigation polygons with one
+  synchronous startup bake after `LevelBuilder` has created its immutable
+  floors, walls, props, and hazard overlays. The bake parses only the
+  `nav_source` static-collider group, with agent radius 0.4 m, max climb 0.25 m,
+  and 0.1 m cells; it is asserted to contain polygons and never rebaked in play.
+- **Why:** CP1 review found the manual mesh crossed a bedroom wall and ignored
+  kitchen furniture, so it could not support B3 parent/pet navigation safely.
+- **Rejected / cut:** Continuing to hand-maintain polygons; dynamic or repeated
+  runtime bakes; runtime obstacle carving.
+- **Owner:** Lane A
+- **Revisit when:** Level geometry changes after startup (not in current scope).
+- **Evidence / handoff:** `gamejam/handoffs/2026-07-23-cp1-review.md`,
+  `aa4fbf4`.

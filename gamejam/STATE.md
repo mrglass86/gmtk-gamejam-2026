@@ -14,13 +14,13 @@ a journal.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0 greybox and A1 LightSystem are in `game/`
-  (Compatibility renderer). Input-map verification and headless LightSystem
-  checks pass; the first director-layout screenshot is committed.
+- Godot version: 4.7.1-stable — A0.1, A1, A2, and A3 are in `game/`
+  (Compatibility renderer). The navmesh now bakes once from static colliders;
+  input, lighting, noise-bus, and indicator threshold checks pass.
 - Entry scene: `res://scenes/Main.tscn`
-- Run/build status: `527dba7` builds the greybox; `8eff7c4` adds analytic
-  zone lights and the temporary brightness readout. CP1 awaits lane B's
-  player-walk integration and the director's layout verdict.
+- Run/build status: `aa4fbf4` applies CP1 fixes; `e7c1f68` adds NoiseSystem and
+  the fridge helper; `04c34a0` adds the indicators and teaching hazards. The
+  revised layout capture is ready; CP1 requires Noah's in-game walk.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -30,9 +30,9 @@ a journal.
 
 ## Current focus
 
-- Thursday: A2 NoiseSystem is next for lane A while lane B integrates player
-  movement. Noah's next decision is the layout verdict from the A0 screenshot;
-  gates remain in `gamejam/VALIDATION.md`.
+- Thursday: A4 ambient masking is next for lane A. Before CP1, Noah walks all
+  four surfaces and compares a lamp pool with dining shadow; gates remain in
+  `gamejam/VALIDATION.md`.
 
 ## Known blockers or risks
 
