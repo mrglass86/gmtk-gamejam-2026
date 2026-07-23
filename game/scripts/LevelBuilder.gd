@@ -7,6 +7,9 @@ extends Node3D
 @export var wall_height: float = 1.2
 @export var wall_thickness: float = 0.25
 @export var floor_thickness: float = 0.2
+@export var failsafe_floor_drop: float = 0.05
+@export var failsafe_floor_thickness: float = 0.2
+@export var failsafe_floor_size: Vector2 = Vector2(30.0, 12.8)
 @export var prop_height: float = 0.8
 @export var lamp_energy: float = 2.0
 @export var lamp_range: float = 7.0
@@ -37,21 +40,23 @@ func _ready() -> void:
 
 
 func _build_floors() -> void:
-	_add_floor("KidCarpet", Vector3(-11.1, 0.0, -3.95), Vector2(7.75, 4.9), carpet_color, "surface_carpet")
-	_add_floor("BathFloor", Vector3(-5.8, 0.0, -3.95), Vector2(2.9, 4.9), hardwood_color, "surface_hardwood")
-	_add_floor("LivingFloor", Vector3(1.25, 0.0, -4.0), Vector2(11.1, 4.8), hardwood_color, "surface_hardwood")
-	_add_floor("KitchenFloor", Vector3(10.9, 0.0, -2.1), Vector2(8.2, 8.6), hardwood_color, "surface_hardwood")
-	_add_floor("MiddleFloor", Vector3(-4.1, 0.0, 0.0), Vector2(21.8, 3.0), hardwood_color, "surface_hardwood")
+	_add_failsafe_floor()
+	_add_floor("KidCarpet", Vector3(-11.1, 0.0, -3.9), Vector2(7.8, 5.0), carpet_color, "surface_carpet")
+	_add_floor("BathFloor", Vector3(-5.75, 0.0, -3.9), Vector2(3.1, 5.0), hardwood_color, "surface_hardwood")
+	_add_floor("LivingFloor", Vector3(1.225, 0.0, -3.925), Vector2(11.25, 4.95), hardwood_color, "surface_hardwood")
+	_add_floor("KitchenFloor", Vector3(10.875, 0.0, -2.1), Vector2(8.25, 8.6), hardwood_color, "surface_hardwood")
+	_add_floor("MiddleFloor", Vector3(-4.1, 0.0, 0.0), Vector2(21.8, 3.2), hardwood_color, "surface_hardwood")
 	_add_floor("DiningSouthFloor", Vector3(1.275, 0.0, 2.475), Vector2(11.05, 1.95), hardwood_color, "surface_hardwood")
 	_add_floor("LivingThreshold", Vector3(3.6, 0.0, -1.55), Vector2(6.4, 0.2), hardwood_color, "surface_hardwood")
-	_add_floor("AdultBedroomFloor", Vector3(-11.15, 0.0, 3.95), Vector2(7.7, 4.9), hardwood_color, "surface_hardwood")
-	_add_floor("ApproachFloor", Vector3(-5.75, 0.0, 3.95), Vector2(3.05, 4.9), hardwood_color, "surface_hardwood")
-	_add_floor("CarpetFloor", Vector3(0.25, 0.0, 5.05), Vector2(9.5, 2.7), carpet_color, "surface_carpet")
+	_add_floor("AdultBedroomFloor", Vector3(-11.1, 0.0, 3.95), Vector2(7.8, 4.9), hardwood_color, "surface_hardwood")
+	_add_floor("ApproachFloor", Vector3(-5.75, 0.0, 3.95), Vector2(3.1, 4.9), hardwood_color, "surface_hardwood")
+	_add_floor("CarpetFloor", Vector3(0.25, 0.0, 4.925), Vector2(9.5, 2.95), carpet_color, "surface_carpet")
 	_add_floor("AlcoveFloor", Vector3(8.1, 0.0, 4.9), Vector2(6.2, 2.95), hardwood_color, "surface_hardwood")
 	_add_floor("CarpetAlcoveThreshold", Vector3(5.0, 0.0, 5.05), Vector2(0.4, 2.7), hardwood_color, "surface_hardwood")
 	_add_floor("AlcoveDiningThreshold", Vector3(5.9, 0.0, 3.45), Vector2(1.8, 0.4), hardwood_color, "surface_hardwood")
-	_add_floor("PantryFloor", Vector3(13.2, 0.0, 4.4), Vector2(3.6, 4.0), hardwood_color, "surface_hardwood")
-	_add_floor("PantryThreshold", Vector3(13.2, 0.0, 2.3), Vector2(3.6, 0.4), hardwood_color, "surface_hardwood")
+	_add_floor("EastHallFloor", Vector3(9.0, 0.0, 2.8125), Vector2(4.6, 1.425), hardwood_color, "surface_hardwood")
+	_add_floor("PantryFloor", Vector3(13.05, 0.0, 4.4), Vector2(3.9, 4.0), hardwood_color, "surface_hardwood")
+	_add_floor("PantryThreshold", Vector3(13.05, 0.0, 2.3), Vector2(3.9, 0.4), hardwood_color, "surface_hardwood")
 	_add_floor("HallRug", Vector3(-8.5, 0.02, 0.05), Vector2(9.0, 2.2), carpet_color, "surface_carpet")
 
 
@@ -159,6 +164,27 @@ func _add_floor(node_name: String, center: Vector3, dimensions: Vector2, color: 
 	_add_box_visual(floor, Vector3(dimensions.x, floor_thickness, dimensions.y), color)
 	_add_box_collision(floor, Vector3(dimensions.x, floor_thickness, dimensions.y))
 	add_child(floor)
+
+
+func _add_failsafe_floor() -> void:
+	var slab: StaticBody3D = StaticBody3D.new()
+	slab.name = "FailsafeSlab"
+	slab.position = Vector3(
+		0.0,
+		-failsafe_floor_drop - failsafe_floor_thickness * 0.5,
+		0.0
+	)
+	slab.add_to_group("surface_hardwood")
+	_add_box_visual(
+		slab,
+		Vector3(failsafe_floor_size.x, failsafe_floor_thickness, failsafe_floor_size.y),
+		hardwood_color
+	)
+	_add_box_collision(
+		slab,
+		Vector3(failsafe_floor_size.x, failsafe_floor_thickness, failsafe_floor_size.y)
+	)
+	add_child(slab)
 
 
 func _add_wall(node_name: String, center: Vector3, dimensions: Vector3) -> void:

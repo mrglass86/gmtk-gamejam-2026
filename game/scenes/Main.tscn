@@ -164,22 +164,22 @@ script = ExtResource("11_parent")
 routine_rows = [{
 "time": 0.0,
 "position": Vector3(-0.2, 0.7, -4.6),
-"dwell": 60.0,
+"dwell": 53.0,
 "facing": Vector3(-1, 0, 0)
 }, {
-"time": 90.0,
+"time": 60.0,
 "position": Vector3(9.5, 0.7, -3.8),
 "dwell": 15.0,
 "facing": Vector3(0, 0, -1)
 }, {
-"time": 130.0,
+"time": 82.0,
 "position": Vector3(-0.2, 0.7, -4.6),
-"dwell": 70.0,
+"dwell": 151.0,
 "facing": Vector3(-1, 0, 0)
 }, {
-"time": 240.0,
+"time": 242.0,
 "position": Vector3(-12.75, 0.7, -0.8),
-"dwell": 60.0,
+"dwell": 58.0,
 "facing": Vector3(0, 0, -1)
 }]
 
@@ -216,12 +216,13 @@ position = Vector3(13.75, 0.0, -4.1)
 script = ExtResource("9_door")
 door_kind = 2
 provides_snack = true
+open_rotation_degrees = Vector3(0, -90, 0)
 
 [node name="DoorVisual" type="StaticBody3D" parent="Fridge"]
-position = Vector3(-1.2, 0, 0)
+position = Vector3(1.2, 0, 0)
 
 [node name="Panel" type="MeshInstance3D" parent="Fridge/DoorVisual"]
-position = Vector3(1.2, 1.05, 0)
+position = Vector3(-1.2, 1.05, 0)
 scale = Vector3(2.4, 2.1, 0.12)
 mesh = SubResource("DoorPanelMesh")
 material_override = SubResource("DoorPanelMaterial")

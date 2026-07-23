@@ -49,6 +49,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a5"):
 		_verify_a5_clock_and_phases()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a51"):
+		_verify_a51_second_walk_fixes()
+		return
 	var capture_path: String = _capture_path_from_args()
 	if not capture_path.is_empty():
 		_capture_layout(capture_path)
@@ -348,6 +351,121 @@ func _verify_a5_clock_and_phases() -> void:
 	assert(($Level/TVGlow as Node3D).visible)
 	print("A5 verification passed: clock thresholds, pure phase restore, debug tools, and world clock.")
 	get_tree().quit()
+
+
+func _verify_a51_second_walk_fixes() -> void:
+	for settle_frame: int in range(12):
+		await get_tree().physics_frame
+
+	var failsafe: StaticBody3D = $Level/FailsafeSlab as StaticBody3D
+	assert(failsafe.is_in_group("surface_hardwood"))
+	assert(not failsafe.is_in_group("nav_source"))
+	var failsafe_mesh: MeshInstance3D = failsafe.get_child(0) as MeshInstance3D
+	var failsafe_aabb: AABB = failsafe_mesh.global_transform * failsafe_mesh.get_aabb()
+	assert(is_equal_approx(failsafe_aabb.size.x, 30.0))
+	assert(is_equal_approx(failsafe_aabb.size.z, 12.8))
+	assert(is_equal_approx(failsafe_aabb.end.y, -0.05))
+	assert(
+		not failsafe.find_children("*", "CollisionShape3D", true, false).is_empty(),
+		"Failsafe slab has no collision."
+	)
+	_verify_primary_floor_coverage()
+
+	var player: CharacterBody3D = $Player as CharacterBody3D
+	player.global_position = Vector3(9.0, 0.6, 2.8)
+	player.velocity = Vector3.ZERO
+	for fall_frame: int in range(12):
+		await get_tree().physics_frame
+	assert(player.global_position.y >= 0.5, "Player fell through the repaired east-hall floor.")
+	assert(player.is_on_floor(), "Player did not settle on the repaired east-hall floor.")
+
+	var fridge: Node3D = $Fridge
+	var fridge_hinge: Node3D = $Fridge/DoorVisual
+	var fridge_panel: MeshInstance3D = $Fridge/DoorVisual/Panel as MeshInstance3D
+	assert(is_equal_approx(fridge_hinge.position.x, 1.2))
+	assert(is_equal_approx(fridge_panel.position.x, -1.2))
+	fridge.set("openness", 1.0)
+	fridge.call("_apply_visual")
+	assert(is_equal_approx(fridge_hinge.rotation_degrees.y, -90.0))
+	var panel_aabb: AABB = fridge_panel.global_transform * fridge_panel.get_aabb()
+	var north_wall_aabb: AABB = _wall_world_aabb($Level/NorthWall as Node3D)
+	assert(
+		panel_aabb.intersects(north_wall_aabb),
+		"Open fridge panel does not reach the back wall."
+	)
+
+	var parent: Node3D = $Parent
+	var rows: Array = parent.get("routine_rows") as Array
+	var expected_times: PackedFloat32Array = [0.0, 60.0, 82.0, 242.0]
+	var expected_dwells: PackedFloat32Array = [53.0, 15.0, 151.0, 58.0]
+	assert(rows.size() == 4)
+	for row_index: int in range(rows.size()):
+		var row: Dictionary = rows[row_index]
+		assert(is_equal_approx(float(row["time"]), expected_times[row_index]))
+		assert(is_equal_approx(float(row["dwell"]), expected_dwells[row_index]))
+	for leg_index: int in range(rows.size() - 1):
+		var from_row: Dictionary = rows[leg_index]
+		var to_row: Dictionary = rows[leg_index + 1]
+		var travel_time: float = (
+			float(to_row["time"]) - float(from_row["time"]) - float(from_row["dwell"])
+		)
+		var travel_distance: float = (
+			(to_row["position"] as Vector3).distance_to(from_row["position"] as Vector3)
+		)
+		var authored_speed: float = travel_distance / travel_time
+		assert(
+			authored_speed >= 1.35 and authored_speed <= 1.5,
+			"Parent leg %d is %.2f m/s instead of about 1.4." % [leg_index, authored_speed]
+		)
+
+	print("A5.1 verification passed: floor coverage/failsafe, fridge hinge, and routine timing.")
+	get_tree().quit()
+
+
+func _verify_primary_floor_coverage() -> void:
+	var floor_names: PackedStringArray = [
+		"KidCarpet",
+		"BathFloor",
+		"LivingFloor",
+		"KitchenFloor",
+		"MiddleFloor",
+		"DiningSouthFloor",
+		"LivingThreshold",
+		"AdultBedroomFloor",
+		"ApproachFloor",
+		"CarpetFloor",
+		"AlcoveFloor",
+		"CarpetAlcoveThreshold",
+		"AlcoveDiningThreshold",
+		"EastHallFloor",
+		"PantryFloor",
+		"PantryThreshold",
+	]
+	var floor_aabbs: Array[AABB] = []
+	for floor_name: String in floor_names:
+		var floor_body: StaticBody3D = get_node("Level/%s" % floor_name) as StaticBody3D
+		var floor_mesh: MeshInstance3D = floor_body.get_child(0) as MeshInstance3D
+		floor_aabbs.append(
+			(floor_mesh.global_transform * floor_mesh.get_aabb()).grow(0.001)
+		)
+
+	var sample_step: float = 0.2
+	var sample_x: float = -14.9
+	while sample_x <= 14.9:
+		var sample_z: float = -6.3
+		while sample_z <= 6.3:
+			var covered: bool = false
+			var sample_point: Vector3 = Vector3(sample_x, -0.1, sample_z)
+			for floor_aabb: AABB in floor_aabbs:
+				if floor_aabb.has_point(sample_point):
+					covered = true
+					break
+			assert(
+				covered,
+				"Primary floor rectangles leave a hole near (%.2f, %.2f)." % [sample_x, sample_z]
+			)
+			sample_z += sample_step
+		sample_x += sample_step
 
 
 func _capture_path_from_args() -> String:
