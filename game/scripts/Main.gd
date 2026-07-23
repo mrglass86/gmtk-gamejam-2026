@@ -204,6 +204,8 @@ func _verify_ambient_masks() -> void:
 		tv_ring.max_radius < clear_ring.max_radius,
 		"Player ring did not visibly shrink inside the TV mask."
 	)
+	clear_ring.free()
+	tv_ring.free()
 
 	NoiseSystem.set_ambient_source_enabled("tv", false)
 	assert(is_zero_approx(NoiseSystem.get_mask_at(tv_position)))
@@ -735,6 +737,8 @@ func _verify_a8_tuning() -> void:
 		presentation.scale.is_equal_approx(Vector3.ONE),
 		"Player pickup scale-pop did not settle in 0.3 seconds."
 	)
+	if pickup_pop.is_valid():
+		pickup_pop.kill()
 
 	audio_director.end_audio_verification()
 	print(
