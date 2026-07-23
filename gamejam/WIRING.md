@@ -8,10 +8,10 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Open
 
-- [ ] (lane B) Remove `Parent.routine_rows` override from `Main.tscn` so the B5 table in `Parent.gd` is the single source. Exact `(time: x,z / dwell)` rows: `0: -0.2,-4.6 / 53`; `60: 9.5,-3.8 / 15`; `82: -0.2,-4.6 / 98`; `182.8: 0.8,-0.8 / 0`; `187.5: -5.8,-0.8 / 0`; `189.4: -5.8,-3.5 / 15`; `206.3: -5.8,-0.8 / 0`; `211: 0.8,-0.8 / 0`; `213.8: -0.2,-4.6 / 26.2`; `242.8: 0.8,-0.8 / 0`; `244.8: -2,-0.8 / 2`; `251.9: 5.2,-0.8 / 2`; `258: 10.5,-3 / 5`; `268.9: 8,4.8 / 5`; `289.3: -12.75,-0.8 / 10.7`.
-
 ## Done
 
+- [x] (lane B) Removed `Parent.routine_rows` override from `Main.tscn`; B5's
+  15-row bathroom/dining route in `Parent.gd` is authoritative (`--verify-a51`).
 - [x] (lane B) Attached `res://scripts/Player.gd` to `Player` in `Main.tscn`.
   The existing `Capsule`, collision shape, and tagged floor colliders satisfy B1.
 - [x] (lane B) Attached `Door.gd` to BedroomDoor, Pantry, and Fridge with

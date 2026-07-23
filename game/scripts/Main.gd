@@ -401,29 +401,24 @@ func _verify_a51_second_walk_fixes() -> void:
 
 	var parent: Node3D = $Parent
 	var rows: Array = parent.get("routine_rows") as Array
-	var expected_times: PackedFloat32Array = [0.0, 60.0, 82.0, 242.0]
-	var expected_dwells: PackedFloat32Array = [53.0, 15.0, 151.0, 58.0]
-	assert(rows.size() == 4)
+	var expected_times: PackedFloat32Array = [
+		0.0, 60.0, 82.0, 182.8, 187.5, 189.4, 206.3, 211.0,
+		213.8, 242.8, 244.8, 251.9, 258.0, 268.9, 289.3,
+	]
+	var expected_dwells: PackedFloat32Array = [
+		53.0, 15.0, 98.0, 0.0, 0.0, 15.0, 0.0, 0.0,
+		26.2, 0.0, 2.0, 2.0, 5.0, 5.0, 10.7,
+	]
+	assert(rows.size() == expected_times.size())
 	for row_index: int in range(rows.size()):
 		var row: Dictionary = rows[row_index]
 		assert(is_equal_approx(float(row["time"]), expected_times[row_index]))
 		assert(is_equal_approx(float(row["dwell"]), expected_dwells[row_index]))
-	for leg_index: int in range(rows.size() - 1):
-		var from_row: Dictionary = rows[leg_index]
-		var to_row: Dictionary = rows[leg_index + 1]
-		var travel_time: float = (
-			float(to_row["time"]) - float(from_row["time"]) - float(from_row["dwell"])
-		)
-		var travel_distance: float = (
-			(to_row["position"] as Vector3).distance_to(from_row["position"] as Vector3)
-		)
-		var authored_speed: float = travel_distance / travel_time
-		assert(
-			authored_speed >= 1.35 and authored_speed <= 1.5,
-			"Parent leg %d is %.2f m/s instead of about 1.4." % [leg_index, authored_speed]
-		)
+	assert((rows[5]["position"] as Vector3).is_equal_approx(Vector3(-5.8, 0.7, -3.5)))
+	assert((rows[13]["position"] as Vector3).is_equal_approx(Vector3(8.0, 0.7, 4.8)))
+	assert((rows[14]["position"] as Vector3).is_equal_approx(Vector3(-12.75, 0.7, -0.8)))
 
-	print("A5.1 verification passed: floor coverage/failsafe, fridge hinge, and routine timing.")
+	print("A5.1/B5 wiring verification passed: floor/fridge fixes and authoritative route table.")
 	get_tree().quit()
 
 

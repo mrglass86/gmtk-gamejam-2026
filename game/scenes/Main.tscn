@@ -166,27 +166,6 @@ shape = SubResource("CapsuleShape_player")
 [node name="Parent" type="Node3D" parent="."]
 position = Vector3(-0.2, 0.7, -4.6)
 script = ExtResource("11_parent")
-routine_rows = [{
-"time": 0.0,
-"position": Vector3(-0.2, 0.7, -4.6),
-"dwell": 53.0,
-"facing": Vector3(-1, 0, 0)
-}, {
-"time": 60.0,
-"position": Vector3(9.5, 0.7, -3.8),
-"dwell": 15.0,
-"facing": Vector3(0, 0, -1)
-}, {
-"time": 82.0,
-"position": Vector3(-0.2, 0.7, -4.6),
-"dwell": 151.0,
-"facing": Vector3(-1, 0, 0)
-}, {
-"time": 242.0,
-"position": Vector3(-12.75, 0.7, -0.8),
-"dwell": 58.0,
-"facing": Vector3(0, 0, -1)
-}]
 
 [node name="Capsule" type="MeshInstance3D" parent="Parent"]
 mesh = SubResource("CapsuleMesh_parent")
