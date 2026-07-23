@@ -12,7 +12,15 @@ extends Node3D
 @export var failsafe_floor_size: Vector2 = Vector2(30.0, 12.8)
 @export var prop_height: float = 0.8
 @export var lamp_energy: float = 2.0
-@export var lamp_range: float = 7.0
+@export_range(5.5, 6.0) var lamp_range: float = 5.8
+
+@export_group("Practical Light Fixtures")
+@export var fixture_stand_color: Color = Color("#3c4654")
+@export var fixture_glow_color: Color = Color("#dce9ff")
+@export var fixture_emission_energy: float = 1.35
+@export var fixture_base_size: Vector3 = Vector3(0.34, 0.08, 0.34)
+@export var fixture_pole_width: float = 0.07
+@export var fixture_shade_size: Vector3 = Vector3(0.54, 0.28, 0.54)
 
 @export_group("Ambient Masking")
 @export var tv_mask_radius: float = 3.2
@@ -101,11 +109,41 @@ func _build_props() -> void:
 
 
 func _build_lights() -> void:
-	_add_omni("KidLampVisual", "bedroom", Vector3(-11.1, 4.0, -3.9), 0.85)
-	_add_omni("LivingLampVisual", "living", Vector3(0.0, 4.0, -4.2), 0.9)
-	_add_omni("KitchenLampVisual", "kitchen", Vector3(10.5, 4.0, -3.0), 1.0)
-	_add_omni("MidLampVisual", "hall", Vector3(-0.5, 4.0, 0.5), 0.9)
-	_add_omni("AlcoveLampVisual", "hall", Vector3(8.0, 4.0, 4.8), 0.85)
+	_add_omni(
+		"KidLampVisual",
+		"bedroom",
+		Vector3(-10.2, 1.12, -5.6),
+		0.85,
+		0.72
+	)
+	_add_omni(
+		"LivingLampVisual",
+		"living",
+		Vector3(0.15, 1.48, -5.25),
+		0.9,
+		0.0
+	)
+	_add_omni(
+		"KitchenLampVisual",
+		"kitchen",
+		Vector3(9.8, 1.28, -5.05),
+		1.0,
+		0.92
+	)
+	_add_omni(
+		"MidLampVisual",
+		"hall",
+		Vector3(-0.5, 1.42, 0.5),
+		0.9,
+		0.0
+	)
+	_add_omni(
+		"AlcoveLampVisual",
+		"hall",
+		Vector3(8.0, 1.42, 4.8),
+		0.85,
+		0.0
+	)
 	_add_area_glow("TVGlow", Vector3(-2.75, 1.25, -4.1), Vector3(0.0, -90.0, 0.0), Color("#7ea5d8"))
 	_add_area_glow("WindowGlow", Vector3(-14.75, 2.4, -4.0), Vector3(0.0, -90.0, 0.0), Color("#c7d5e7"))
 	_add_area_glow("DoorStripGlow", Vector3(-12.75, 0.2, 1.3), Vector3(-90.0, 0.0, 0.0), Color("#d5dce8"))
@@ -227,16 +265,95 @@ func _add_ajar_bathroom_door() -> void:
 	add_child(hinge)
 
 
-func _add_omni(node_name: String, zone: String, position_value: Vector3, energy_scale: float) -> void:
+func _add_omni(
+	node_name: String,
+	zone: String,
+	position_value: Vector3,
+	energy_scale: float,
+	fixture_base_height: float
+) -> void:
+	var fixture: Node3D = Node3D.new()
+	fixture.name = node_name
+	fixture.position = Vector3(position_value.x, 0.0, position_value.z)
+	_add_fixture_visual(fixture, position_value.y, fixture_base_height)
+
 	var light: OmniLight3D = OmniLight3D.new()
-	light.name = node_name
-	light.position = position_value
+	light.name = "Light"
+	light.position = Vector3(0.0, position_value.y, 0.0)
 	light.light_color = Color("#d6e1f2")
 	light.light_energy = lamp_energy * energy_scale
 	light.omni_range = lamp_range
 	light.shadow_enabled = true
-	add_child(light)
-	LightSystem.register_light(node_name, zone, Vector3(position_value.x, 0.0, position_value.z), lamp_range)
+	fixture.add_child(light)
+	add_child(fixture)
+	LightSystem.register_light(
+		node_name,
+		zone,
+		Vector3(position_value.x, 0.0, position_value.z),
+		lamp_range
+	)
+
+
+func _add_fixture_visual(
+	fixture: Node3D,
+	source_height: float,
+	base_height: float
+) -> void:
+	var base_center_y: float = base_height + fixture_base_size.y * 0.5
+	_add_fixture_part(
+		fixture,
+		"Base",
+		Vector3(0.0, base_center_y, 0.0),
+		fixture_base_size,
+		fixture_stand_color,
+		false
+	)
+	var pole_bottom: float = base_height + fixture_base_size.y
+	var pole_height: float = maxf(
+		source_height - fixture_shade_size.y * 0.5 - pole_bottom,
+		0.08
+	)
+	_add_fixture_part(
+		fixture,
+		"Pole",
+		Vector3(0.0, pole_bottom + pole_height * 0.5, 0.0),
+		Vector3(fixture_pole_width, pole_height, fixture_pole_width),
+		fixture_stand_color,
+		false
+	)
+	_add_fixture_part(
+		fixture,
+		"Shade",
+		Vector3(0.0, source_height, 0.0),
+		fixture_shade_size,
+		fixture_glow_color,
+		true
+	)
+
+
+func _add_fixture_part(
+	parent: Node3D,
+	part_name: String,
+	local_position: Vector3,
+	dimensions: Vector3,
+	color: Color,
+	emissive: bool
+) -> void:
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	mesh_instance.name = part_name
+	mesh_instance.position = local_position
+	var mesh: BoxMesh = BoxMesh.new()
+	mesh.size = dimensions
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.75
+	if emissive:
+		material.emission_enabled = true
+		material.emission = fixture_glow_color
+		material.emission_energy_multiplier = fixture_emission_energy
+	mesh_instance.mesh = mesh
+	mesh_instance.material_override = material
+	parent.add_child(mesh_instance)
 
 
 func _add_area_glow(node_name: String, position_value: Vector3, rotation_degrees_value: Vector3, color: Color) -> void:

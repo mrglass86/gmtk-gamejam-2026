@@ -61,6 +61,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a8"):
 		_verify_a8_tuning()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a9"):
+		_verify_a9_practical_lighting()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -82,7 +85,7 @@ func _verify_input_map() -> void:
 
 
 func _verify_light_system() -> void:
-	var bedroom_anchor: Vector3 = Vector3(-11.1, 0.0, -3.9)
+	var bedroom_anchor: Vector3 = Vector3(-10.2, 0.0, -5.6)
 	assert(is_equal_approx(LightSystem.get_brightness_at(bedroom_anchor), 1.0))
 	assert(is_zero_approx(LightSystem.get_brightness_at(Vector3(-30.0, 0.0, 0.0))))
 
@@ -746,6 +749,86 @@ func _verify_a8_tuning() -> void:
 	print(
 		"A8 verification passed: tight nonzero masks, smaller TV rings, emissive "
 		+ "pulsing carried snack, louder pickup, pantry clearance, and pickup pop."
+	)
+	get_tree().quit()
+
+
+func _verify_a9_practical_lighting() -> void:
+	var environment: Environment = ($WorldEnvironment as WorldEnvironment).environment
+	assert(is_equal_approx(environment.ambient_light_energy, 0.08))
+
+	var level: Node3D = $Level as Node3D
+	var configured_range: float = float(level.get("lamp_range"))
+	assert(configured_range >= 5.5 and configured_range <= 6.0)
+	var fixture_names: PackedStringArray = [
+		"KidLampVisual",
+		"LivingLampVisual",
+		"KitchenLampVisual",
+		"MidLampVisual",
+		"AlcoveLampVisual",
+	]
+	for fixture_name: String in fixture_names:
+		var fixture: Node3D = level.get_node(fixture_name) as Node3D
+		var fixture_light: OmniLight3D = fixture.get_node("Light") as OmniLight3D
+		assert(is_equal_approx(fixture_light.omni_range, configured_range))
+		var fixture_parts: Array[Node] = fixture.find_children(
+			"*",
+			"MeshInstance3D",
+			true,
+			false
+		)
+		assert(fixture_parts.size() == 3)
+		var shade: MeshInstance3D = fixture.get_node("Shade") as MeshInstance3D
+		var shade_material: StandardMaterial3D = (
+			shade.material_override as StandardMaterial3D
+		)
+		assert(shade_material.emission_enabled)
+		assert(shade_material.emission.b >= shade_material.emission.r)
+		assert(
+			is_equal_approx(
+				LightSystem.get_brightness_at(
+					Vector3(fixture.global_position.x, 0.0, fixture.global_position.z)
+				),
+				1.0
+			)
+		)
+
+	var phase_director: PhaseDirector = $PhaseDirector as PhaseDirector
+	phase_director.apply_phase(0)
+	var player: DinnerPlayer = $Player as DinnerPlayer
+	var capsule_material: StandardMaterial3D = player.get(
+		"_capsule_material"
+	) as StandardMaterial3D
+	player.global_position = Vector3(-10.2, 0.6, -5.6)
+	player.call("_update_capsule_readout")
+	var lit_brightness: float = LightSystem.get_brightness_at(
+		player.global_position
+	)
+	assert(lit_brightness > 0.85)
+	var lit_capsule_energy: float = capsule_material.emission_energy_multiplier
+	var brightness_readout: CanvasLayer = $BrightnessReadout as CanvasLayer
+	brightness_readout.call("_process", 0.11)
+	assert(
+		($BrightnessReadout/Label as Label).text
+		== "Brightness: %.2f" % lit_brightness
+	)
+
+	player.global_position = Vector3(-5.75, 0.6, -3.9)
+	player.call("_update_capsule_readout")
+	var pocket_brightness: float = LightSystem.get_brightness_at(
+		player.global_position
+	)
+	assert(pocket_brightness > 0.0 and pocket_brightness < 0.5)
+	assert(capsule_material.emission_energy_multiplier < lit_capsule_energy)
+	brightness_readout.call("_process", 0.11)
+	assert(
+		($BrightnessReadout/Label as Label).text
+		== "Brightness: %.2f" % pocket_brightness
+	)
+
+	print(
+		"A9 verification passed: five cool emissive practicals, 5.8 m pools, "
+		+ "0.08 ambient contrast, and live capsule/HUD brightness tracking."
 	)
 	get_tree().quit()
 
