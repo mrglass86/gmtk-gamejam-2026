@@ -73,7 +73,12 @@ func _physics_process(delta: float) -> void:
 
 
 func _can_open() -> bool:
-	return openness < 1.0 and _is_player_in_range() and Input.is_action_pressed("interact")
+	return (
+		openness < 1.0
+		and _is_player_in_range()
+		and not _player.input_locked
+		and Input.is_action_pressed("interact")
+	)
 
 
 func _is_player_in_range() -> bool:

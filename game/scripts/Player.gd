@@ -43,6 +43,8 @@ var _snack_noise_elapsed: float = 0.0
 var _current_surface_multiplier: float = 1.0
 var _capsule_mesh: MeshInstance3D
 var _capsule_material: StandardMaterial3D
+var _carrier: Node3D
+var _carry_offset: Vector3
 
 
 func _ready() -> void:
@@ -52,6 +54,12 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _carrier != null:
+		velocity = Vector3.ZERO
+		global_position = _carrier.to_global(_carry_offset)
+		_emit_snack_noise(delta)
+		_update_capsule_readout()
+		return
 	_apply_movement(delta)
 	move_and_slide()
 	_update_surface_multiplier()
@@ -66,6 +74,21 @@ func set_input_locked(locked: bool) -> void:
 		velocity.x = 0.0
 		velocity.z = 0.0
 		_footstep_elapsed = 0.0
+
+
+func attach_to_carrier(carrier: Node3D, carry_offset: Vector3) -> void:
+	_carrier = carrier
+	_carry_offset = carry_offset
+	set_input_locked(true)
+	velocity = Vector3.ZERO
+	global_position = _carrier.to_global(_carry_offset)
+
+
+func detach_from_carrier(drop_position: Vector3) -> void:
+	_carrier = null
+	global_position = drop_position
+	velocity = Vector3.ZERO
+	set_input_locked(false)
 
 
 func set_carrying_snack(carrying: bool) -> void:
