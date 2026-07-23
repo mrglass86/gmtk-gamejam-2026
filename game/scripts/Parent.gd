@@ -64,6 +64,7 @@ enum State {
 @export var eye_height: float = 0.45
 @export var player_aim_height: float = 0.35
 @export var cone_floor_offset: float = -0.65
+@export_range(10, 12, 1) var cone_raycast_count: int = 11
 @export_flags_3d_physics var vision_collision_mask: int = 1
 
 @export_group("Suspicion")
@@ -75,7 +76,7 @@ enum State {
 @export var suspicion_decay_per_second: float = 8.0
 
 @export_group("Investigate")
-@export var investigate_speed: float = 1.8
+@export var investigate_speed: float = 2.2
 @export var investigate_alert_pause: float = 0.6
 @export var investigate_look_duration: float = 4.0
 @export var investigate_hard_timeout: float = 10.0
@@ -83,13 +84,13 @@ enum State {
 @export var repeat_cooldown_distance: float = 2.0
 
 @export_group("Found Chase")
-@export var found_speed: float = 3.2
+@export var found_speed: float = 3.8
 @export var grab_distance: float = 1.1
 @export var found_lose_sight_duration: float = 5.0
 @export var found_escape_suspicion: float = 60.0
 
 @export_group("Carry")
-@export var carry_speed: float = 2.6
+@export var carry_speed: float = 3.0
 @export var carry_arrival_distance: float = 0.5
 @export var carry_offset: Vector3 = Vector3(0.55, 0.35, 0.0)
 @export var crib_player_offset: Vector3 = Vector3(0.0, 0.65, 0.0)
@@ -113,7 +114,7 @@ var _last_navigation_target: Vector3
 var _has_navigation_target: bool = false
 var _sweep_time: float = 0.0
 var _cone_yaw_degrees: float = 0.0
-var _rendered_cone_angle: float = -1.0
+var _moved_along_path_this_frame: bool = false
 var _heard_since_last_tick: bool = false
 var _last_known_position: Vector3
 var _investigate_elapsed: float = 0.0
@@ -138,7 +139,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_repeat_cooldown_remaining = maxf(_repeat_cooldown_remaining - delta, 0.0)
-	_update_sweep(delta)
+	_moved_along_path_this_frame = false
 	_update_perception(delta)
 
 	match _state:
@@ -151,6 +152,7 @@ func _physics_process(delta: float) -> void:
 		State.CARRY:
 			_update_carry(delta)
 
+	_update_sweep(delta)
 	_update_readability()
 	_heard_since_last_tick = false
 
@@ -280,6 +282,7 @@ func _move_along_path(speed: float, delta: float) -> bool:
 	var movement_direction: Vector3 = movement.normalized()
 	global_position += movement_direction * movement_distance
 	_face_direction(movement_direction, delta)
+	_moved_along_path_this_frame = movement_distance > 0.0
 	return true
 
 
@@ -467,7 +470,11 @@ func _get_routine_time() -> float:
 
 
 func _update_sweep(delta: float) -> void:
-	if _state != State.ROUTINE or sweep_period_seconds <= 0.0:
+	if (
+		_state != State.ROUTINE
+		or not _moved_along_path_this_frame
+		or sweep_period_seconds <= 0.0
+	):
 		_cone_yaw_degrees = 0.0
 	else:
 		_sweep_time += delta
@@ -480,8 +487,7 @@ func _update_readability() -> void:
 	if _vision_cone == null or _cone_material == null:
 		return
 	var cone_angle: float = _get_current_cone_angle()
-	if not is_equal_approx(cone_angle, _rendered_cone_angle):
-		_build_cone_mesh(cone_angle)
+	_build_cone_mesh(cone_angle)
 	var suspicion_weight: float = clampf(suspicion / suspicion_max, 0.0, 1.0)
 	if _state == State.FOUND or _state == State.CARRY:
 		_cone_material.albedo_color = cone_found_color
@@ -516,15 +522,59 @@ func _setup_cone() -> void:
 func _build_cone_mesh(cone_angle_degrees: float) -> void:
 	if _vision_cone == null or _cone_material == null:
 		return
-	var half_width: float = tan(deg_to_rad(cone_angle_degrees * 0.5)) * vision_range
+	var ray_count: int = maxi(cone_raycast_count, 2)
+	var half_angle_radians: float = deg_to_rad(cone_angle_degrees * 0.5)
+	var ray_points: Array[Vector3] = []
+	for ray_index in range(ray_count):
+		var ray_weight: float = float(ray_index) / float(ray_count - 1)
+		var ray_angle: float = lerpf(-half_angle_radians, half_angle_radians, ray_weight)
+		var local_direction: Vector3 = Vector3.FORWARD.rotated(Vector3.UP, ray_angle)
+		var world_direction: Vector3 = _vision_cone.global_transform.basis * local_direction
+		world_direction.y = 0.0
+		world_direction = world_direction.normalized()
+		var clipped_distance: float = _get_static_hit_distance(world_direction)
+		ray_points.append(local_direction * clipped_distance)
+
 	var cone_mesh: ImmediateMesh = ImmediateMesh.new()
 	cone_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, _cone_material)
-	cone_mesh.surface_add_vertex(Vector3.ZERO)
-	cone_mesh.surface_add_vertex(Vector3(-half_width, 0.0, -vision_range))
-	cone_mesh.surface_add_vertex(Vector3(half_width, 0.0, -vision_range))
+	for point_index in range(ray_points.size() - 1):
+		cone_mesh.surface_add_vertex(Vector3.ZERO)
+		cone_mesh.surface_add_vertex(ray_points[point_index])
+		cone_mesh.surface_add_vertex(ray_points[point_index + 1])
 	cone_mesh.surface_end()
 	_vision_cone.mesh = cone_mesh
-	_rendered_cone_angle = cone_angle_degrees
+
+
+func _get_static_hit_distance(world_direction: Vector3) -> float:
+	var ray_start: Vector3 = global_position + Vector3.UP * eye_height
+	var ray_end: Vector3 = ray_start + world_direction * vision_range
+	var excluded_rids: Array[RID] = []
+	if _player is CollisionObject3D:
+		excluded_rids.append((_player as CollisionObject3D).get_rid())
+
+	while true:
+		var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(
+			ray_start, ray_end, vision_collision_mask
+		)
+		query.collide_with_areas = false
+		query.collide_with_bodies = true
+		query.exclude = excluded_rids
+		var result: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+		if result.is_empty():
+			return vision_range
+
+		var collider: Object = result.get("collider") as Object
+		if collider is StaticBody3D:
+			var hit_position: Vector3 = result.get("position", ray_end) as Vector3
+			return minf(ray_start.distance_to(hit_position), vision_range)
+		if collider is CollisionObject3D:
+			var collider_rid: RID = (collider as CollisionObject3D).get_rid()
+			if excluded_rids.has(collider_rid):
+				return vision_range
+			excluded_rids.append(collider_rid)
+			continue
+		return vision_range
+	return vision_range
 
 
 func _face_direction(direction: Vector3, delta: float) -> void:

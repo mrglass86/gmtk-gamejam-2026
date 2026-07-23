@@ -7,8 +7,8 @@ class_name DinnerPlayer
 signal snack_carrying_changed(carrying: bool)
 
 @export_group("Movement")
-@export var sneak_speed: float = 1.2
-@export var run_speed: float = 3.0
+@export var sneak_speed: float = 1.7
+@export var run_speed: float = 3.6
 @export var sneak_noise_multiplier: float = 0.4
 @export var run_noise_multiplier: float = 1.0
 @export var gravity: float = 18.0

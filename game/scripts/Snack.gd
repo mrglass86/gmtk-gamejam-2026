@@ -41,6 +41,11 @@ func reveal_for_pickup() -> void:
 	_refresh_visual()
 
 
+func reveal_at(reveal_position: Vector3) -> void:
+	global_position = reveal_position
+	reveal_for_pickup()
+
+
 func pick_up(player: DinnerPlayer) -> bool:
 	if not available_for_pickup or player == null:
 		return false
