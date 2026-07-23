@@ -52,11 +52,16 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a51"):
 		_verify_a51_second_walk_fixes()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a6"):
+		_verify_a6_game_flow()
+		return
 	var capture_path: String = _capture_path_from_args()
 	if not capture_path.is_empty():
 		_capture_layout(capture_path)
 		return
-	GameClock.start()
+	var a6_capture_path: String = _a6_capture_path_from_args()
+	if not a6_capture_path.is_empty():
+		_capture_layout(a6_capture_path)
 
 
 func _verify_input_map() -> void:
@@ -422,6 +427,72 @@ func _verify_a51_second_walk_fixes() -> void:
 	get_tree().quit()
 
 
+func _verify_a6_game_flow() -> void:
+	var flow: DinnerGameFlow = $GameFlow as DinnerGameFlow
+	var player: DinnerPlayer = $Player as DinnerPlayer
+	var title_card: Control = $GameFlow/TitleCard as Control
+	var result_card: Control = $GameFlow/ResultCard as Control
+	var start_audio: AudioStreamPlayer = $GameFlow/FirstInputAudio as AudioStreamPlayer
+
+	assert(flow.state == DinnerGameFlow.State.TITLE)
+	assert(title_card.visible and not result_card.visible)
+	assert(not GameClock.running and is_equal_approx(GameClock.time_remaining, 300.0))
+	assert(player.input_locked and get_tree().paused)
+	assert(
+		($GameFlow/TitleCard/Panel/Controls as Label).text.contains("WASD / ARROWS")
+	)
+	assert(($GameFlow/TitleCard/Panel/Controls as Label).text.contains("HOLD E"))
+	assert($GameFlow.find_children("*", "Button", true, false).is_empty())
+
+	var start_event: InputEventKey = InputEventKey.new()
+	start_event.pressed = true
+	start_event.physical_keycode = KEY_SPACE
+	flow.call("_input", start_event)
+	assert(flow.state == DinnerGameFlow.State.PLAYING)
+	assert(GameClock.running and not player.input_locked and not get_tree().paused)
+	assert(not title_card.visible and start_audio.playing)
+	assert(flow.qualifies_for_expiry_win(true, true))
+	assert(not flow.qualifies_for_expiry_win(true, false))
+	assert(not flow.qualifies_for_expiry_win(false, true))
+	await get_tree().create_timer(0.25).timeout
+
+	player.global_position = Vector3(-8.7, 0.6, -2.75)
+	player.set_carrying_snack(true)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	assert(
+		flow.state == DinnerGameFlow.State.WON,
+		"Crib goal missed player at %s; overlaps=%s." % [
+			player.global_position,
+			($Crib/WinArea as Area3D).get_overlapping_bodies(),
+		]
+	)
+	assert(result_card.visible and not GameClock.running and player.input_locked)
+	assert(($GameFlow/ResultCard/Panel/ResultHeading as Label).text == "BACK IN BED")
+
+	flow.reload_scene_on_restart = false
+	var restart_event: InputEventAction = InputEventAction.new()
+	restart_event.action = &"restart"
+	restart_event.pressed = true
+	flow.call("_input", restart_event)
+	assert(flow.restart_was_requested)
+
+	flow.prepare_verification_case()
+	flow.call("_input", start_event)
+	await get_tree().create_timer(0.25).timeout
+	player.global_position = Vector3(-12.4, 0.6, -4.0)
+	player.set_carrying_snack(false)
+	GameClock.time_expired.emit()
+	assert(flow.state == DinnerGameFlow.State.LOST)
+	assert(($GameFlow/ResultCard/Panel/ResultHeading as Label).text == "BEDTIME")
+	print("A6 verification passed: title gesture, clock/audio gate, outcomes, and restart.")
+	get_tree().paused = false
+	start_event = null
+	restart_event = null
+	await get_tree().process_frame
+	get_tree().quit()
+
+
 func _verify_primary_floor_coverage() -> void:
 	var floor_names: PackedStringArray = [
 		"KidCarpet",
@@ -472,6 +543,13 @@ func _capture_path_from_args() -> String:
 	for argument: String in OS.get_cmdline_user_args():
 		if argument.begins_with("--capture-layout="):
 			return argument.trim_prefix("--capture-layout=")
+	return ""
+
+
+func _a6_capture_path_from_args() -> String:
+	for argument: String in OS.get_cmdline_user_args():
+		if argument.begins_with("--capture-a6-title="):
+			return argument.trim_prefix("--capture-a6-title=")
 	return ""
 
 

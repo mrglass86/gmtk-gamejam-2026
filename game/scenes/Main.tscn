@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3]
+[gd_scene load_steps=31 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/LevelBuilder.gd" id="2_level"]
@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/PhaseDirector.gd" id="12_phase"]
 [ext_resource type="Script" path="res://scripts/NightstandClock.gd" id="13_clock"]
 [ext_resource type="Script" path="res://scripts/DebugTools.gd" id="14_debug"]
+[ext_resource type="Script" path="res://scripts/GameFlow.gd" id="15_game_flow"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -75,6 +76,13 @@ height = 0.5
 [sub_resource type="StandardMaterial3D" id="SnackMaterial"]
 albedo_color = Color(0.82, 0.87, 0.92, 1)
 roughness = 0.8
+
+[sub_resource type="BoxShape3D" id="BoxShape_crib_goal"]
+size = Vector3(3.2, 1.6, 3.8)
+
+[sub_resource type="AudioStreamGenerator" id="AudioStreamGenerator_first_input"]
+mix_rate = 22050.0
+buffer_length = 0.2
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
@@ -211,6 +219,15 @@ target_desired_distance = 0.3
 [node name="Crib" type="Node3D" parent="."]
 position = Vector3(-8.7, 0.45, -4.7)
 
+[node name="WinArea" type="Area3D" parent="Crib" groups=["crib_goal"]]
+position = Vector3(0, 0.3, 0)
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Crib/WinArea"]
+shape = SubResource("BoxShape_crib_goal")
+
 [node name="Fridge" type="Node3D" parent="."]
 position = Vector3(13.75, 0.0, -4.1)
 script = ExtResource("9_door")
@@ -296,3 +313,171 @@ offset_bottom = 62.0
 theme_override_colors/font_color = Color(0.8, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 24
 text = "Brightness: --"
+
+[node name="GameFlow" type="CanvasLayer" parent="."]
+layer = 20
+process_mode = 3
+script = ExtResource("15_game_flow")
+
+[node name="FirstInputAudio" type="AudioStreamPlayer" parent="GameFlow"]
+stream = SubResource("AudioStreamGenerator_first_input")
+volume_db = -18.0
+
+[node name="TitleCard" type="Control" parent="GameFlow"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dim" type="ColorRect" parent="GameFlow/TitleCard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.018, 0.024, 0.035, 0.94)
+
+[node name="Panel" type="ColorRect" parent="GameFlow/TitleCard"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -230.0
+offset_right = 340.0
+offset_bottom = 230.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.075, 0.09, 0.12, 0.98)
+
+[node name="Eyebrow" type="Label" parent="GameFlow/TitleCard/Panel"]
+layout_mode = 0
+offset_left = 44.0
+offset_top = 35.0
+offset_right = 636.0
+offset_bottom = 65.0
+theme_override_colors/font_color = Color(0.53, 0.66, 0.82, 1)
+theme_override_font_sizes/font_size = 18
+text = "ONE HOUSE  •  FIVE MINUTES  •  ONE LAST SNACK"
+horizontal_alignment = 1
+
+[node name="Title" type="Label" parent="GameFlow/TitleCard/Panel"]
+layout_mode = 0
+offset_left = 36.0
+offset_top = 72.0
+offset_right = 644.0
+offset_bottom = 130.0
+theme_override_colors/font_color = Color(0.96, 0.9, 0.72, 1)
+theme_override_font_sizes/font_size = 40
+text = "SHOULDA EATEN DINNER"
+horizontal_alignment = 1
+
+[node name="Objective" type="Label" parent="GameFlow/TitleCard/Panel"]
+layout_mode = 0
+offset_left = 55.0
+offset_top = 142.0
+offset_right = 625.0
+offset_bottom = 190.0
+theme_override_colors/font_color = Color(0.86, 0.89, 0.94, 1)
+theme_override_font_sizes/font_size = 20
+text = "Find a snack. Get back to the crib before bedtime."
+horizontal_alignment = 1
+
+[node name="Controls" type="Label" parent="GameFlow/TitleCard/Panel"]
+layout_mode = 0
+offset_left = 95.0
+offset_top = 210.0
+offset_right = 585.0
+offset_bottom = 322.0
+theme_override_colors/font_color = Color(0.75, 0.81, 0.9, 1)
+theme_override_font_sizes/font_size = 19
+text = "WASD / ARROWS     SNEAK\nHOLD SHIFT              RUN\nHOLD E                      OPEN"
+horizontal_alignment = 1
+
+[node name="StartPrompt" type="Label" parent="GameFlow/TitleCard/Panel"]
+layout_mode = 0
+offset_left = 55.0
+offset_top = 370.0
+offset_right = 625.0
+offset_bottom = 412.0
+theme_override_colors/font_color = Color(0.96, 0.58, 0.28, 1)
+theme_override_font_sizes/font_size = 23
+text = "PRESS ANY KEY TO START"
+horizontal_alignment = 1
+
+[node name="ResultCard" type="Control" parent="GameFlow"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dim" type="ColorRect" parent="GameFlow/ResultCard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.018, 0.024, 0.035, 0.9)
+
+[node name="Panel" type="ColorRect" parent="GameFlow/ResultCard"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -310.0
+offset_top = -160.0
+offset_right = 310.0
+offset_bottom = 160.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.075, 0.09, 0.12, 0.98)
+
+[node name="ResultHeading" type="Label" parent="GameFlow/ResultCard/Panel"]
+layout_mode = 0
+offset_left = 35.0
+offset_top = 50.0
+offset_right = 585.0
+offset_bottom = 105.0
+theme_override_colors/font_color = Color(0.96, 0.9, 0.72, 1)
+theme_override_font_sizes/font_size = 38
+text = "BACK IN BED"
+horizontal_alignment = 1
+
+[node name="ResultDetail" type="Label" parent="GameFlow/ResultCard/Panel"]
+layout_mode = 0
+offset_left = 35.0
+offset_top = 125.0
+offset_right = 585.0
+offset_bottom = 170.0
+theme_override_colors/font_color = Color(0.78, 0.84, 0.92, 1)
+theme_override_font_sizes/font_size = 19
+text = "Snack secured. Bedtime never saw it coming."
+horizontal_alignment = 1
+
+[node name="RestartPrompt" type="Label" parent="GameFlow/ResultCard/Panel"]
+layout_mode = 0
+offset_left = 35.0
+offset_top = 225.0
+offset_right = 585.0
+offset_bottom = 265.0
+theme_override_colors/font_color = Color(0.96, 0.58, 0.28, 1)
+theme_override_font_sizes/font_size = 22
+text = "PRESS R TO RESTART"
+horizontal_alignment = 1
