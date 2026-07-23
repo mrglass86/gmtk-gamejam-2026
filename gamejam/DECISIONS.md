@@ -316,3 +316,24 @@ Record decisions another session or tool would otherwise have to rediscover.
   bed misleading.
 - **Evidence / handoff:** `3def8f8`, `--verify-a7`, clean release Web
   canvas-click proof, renderer captures, and `CREDITS.md`.
+
+## 2026-07-23 — Actor acceptance uses live clocked SceneTree behavior
+
+- **Decision:** Actor verification starts `GameClock` and advances the real
+  SceneTree clock/physics loop, asserting visible outcomes rather than routine
+  table math or script scans. The dog sleeps on its bed for the first 30
+  seconds, then exits the bed and patrols. Parent sight gain stays 1x beyond
+  4 m and scales to 3x at or within 2.5 m.
+- **Why:** The director twice observed an immobile parent despite static route
+  checks passing. Live verification reproduced two physical faults: navigation
+  tolerances smaller than actor-to-navmesh height, and the dog bed baking as a
+  disconnected walkable island.
+- **Rejected / cut:** Treating table interpolation as proof of movement;
+  class/property scans as actor acceptance; immediate dog patrol; globally
+  accelerating distant sight gain.
+- **Owner:** Noah (director), lane B (implementation and verification)
+- **Revisit when:** CP4/CP5 shows the dog egress motion reads poorly or
+  point-blank detection is too abrupt.
+- **Evidence / handoff:** `acaed9d`, `--verify-b6`; live metrics: parent 9.33 m
+  displacement and 0.68 m kitchen approach, dog 0.00 m sleep drift and 3.27 m
+  patrol displacement, point-blank suspicion 100.

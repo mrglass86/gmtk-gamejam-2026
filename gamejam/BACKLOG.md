@@ -60,6 +60,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       table is authoritative (`538d697`, `--verify-a51`).
 - [ ] CP4 catch-loop gate — Claude validates, Noah plays the catch and the chase.
 - [x] B4 Pet.gd — lane B (`bd77d16`). Accept: S8 at CP5.
+- [x] B6 behavior fixpack — live SceneTree clock verification, parent
+      navigation repair, 30 s dog sleep plus bed egress/patrol, and proximity
+      sight scaling (`acaed9d`, `--verify-b6`). Accept: runtime assertions pass;
+      feel verdicts remain at CP4/CP5.
 - [x] A6 win/lose/title/restart — lane A (`d3a9d5d`, `0223b1b`). First title
       input starts play + clock; crib-with-snack wins immediately or at expiry,
       expiry otherwise loses, and R performs a real scene reload. S9 UI rows

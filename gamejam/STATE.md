@@ -24,9 +24,12 @@ a journal.
   15-row route is authoritative. `d34f4a8` adds the CC0 audio pass.
   `3def8f8` adds A7: 1920×1080 expand stretch, visible rate-driven fridge
   spill, TV flicker, rate-driven creak, actual dog cues, and snack pickup/drop
-  feedback plus reveal clearance. A5.1/B5, A6/A6.1, audio, A7, clean startup,
-  and release Web export pass. A real Web canvas click starts audio with zero
-  console warnings/errors; renderer captures prove the snack and fridge spill.
+  feedback plus reveal clearance. `acaed9d` adds B6's live-clock actor fixes:
+  the parent reaches the kitchen, the dog sleeps 30 s then patrols, and
+  point-blank sight accelerates suspicion. A5.1/B5, B6, A6/A6.1, audio, A7,
+  clean startup, and release Web export pass. A real Web canvas click starts
+  audio with zero console warnings/errors; renderer captures prove the snack
+  and fridge spill.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -46,6 +49,8 @@ a journal.
 - The scaffolded input map was hand-serialized — lane A verifies it in A0.
 - Route timing remains unmeasured in play; tune furniture/entrances only if the
   quiet route misses the 1.4–1.6× target.
+- The dog's exported bed-egress point works in the live verifier; CP5 still
+  needs a visual verdict that the rise-off-bed motion reads naturally.
 - Godot MCP for lane A: 30-minute hard abort rule (brief 9.2).
 - This Claude instance has no shell — validation runs through the web build in
   the browser pane plus Noah's terminal.
