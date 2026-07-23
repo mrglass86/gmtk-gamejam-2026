@@ -35,9 +35,6 @@ func _build_floors() -> void:
 	_add_floor("KitchenCarpet", Vector3(11.0, 0.0, 0.0), Vector2(6.0, 8.0), carpet_color, "surface_carpet")
 	_add_floor("DiningHardwood", Vector3(1.0, 0.0, -1.5), Vector2(14.0, 9.0), hardwood_color, "surface_hardwood")
 	_add_floor("LivingHardwood", Vector3(0.0, 0.0, -7.5), Vector2(8.0, 3.0), hardwood_color, "surface_hardwood")
-	_add_floor("CreakyTeacher", Vector3(-7.0, 0.02, 4.7), Vector2(1.4, 1.0), creaky_color, "surface_creaky")
-	_add_floor("DiningCreak", Vector3(-2.0, 0.02, -2.0), Vector2(1.4, 1.0), creaky_color, "surface_creaky")
-	_add_floor("ToyPatch", Vector3(2.0, 0.02, -2.5), Vector2(1.8, 1.8), toy_color, "surface_toys")
 
 
 func _build_walls() -> void:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/LevelBuilder.gd" id="2_level"]
@@ -6,6 +6,8 @@
 [ext_resource type="Script" path="res://scripts/AgentStub.gd" id="4_agent"]
 [ext_resource type="Script" path="res://scripts/BrightnessReadout.gd" id="5_readout"]
 [ext_resource type="Script" path="res://scripts/Player.gd" id="6_player"]
+[ext_resource type="Script" path="res://scripts/NoiseIndicatorManager.gd" id="7_indicator_manager"]
+[ext_resource type="PackedScene" path="res://scenes/NoiseSurface.tscn" id="8_noise_surface"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -82,6 +84,27 @@ script = ExtResource("2_level")
 navigation_mesh = SubResource("NavigationMesh_static")
 enabled = true
 
+[node name="CreakyTeacher" parent="Level" instance=ExtResource("8_noise_surface")]
+position = Vector3(-7.0, 0.06, 4.7)
+loudness_multiplier = 3.0
+radius = 0.7
+surface_group = &"surface_creaky"
+surface_color = Color(0.607843, 0.627451, 0.647059, 1)
+
+[node name="DiningCreak" parent="Level" instance=ExtResource("8_noise_surface")]
+position = Vector3(-2.0, 0.06, -2.0)
+loudness_multiplier = 3.0
+radius = 0.7
+surface_group = &"surface_creaky"
+surface_color = Color(0.607843, 0.627451, 0.647059, 1)
+
+[node name="ToyTeacher" parent="Level" instance=ExtResource("8_noise_surface")]
+position = Vector3(2.0, 0.06, -2.5)
+loudness_multiplier = 4.0
+radius = 0.9
+surface_group = &"surface_toys"
+surface_color = Color(0.768627, 0.788235, 0.807843, 1)
+
 [node name="Player" type="CharacterBody3D" parent="."]
 position = Vector3(-11, 0.6, 1.5)
 groups = ["player"]
@@ -140,6 +163,9 @@ position = Vector3(-9.0, 0.85, -2.0)
 
 [node name="BrightnessReadout" type="CanvasLayer" parent="."]
 script = ExtResource("5_readout")
+
+[node name="NoiseIndicatorManager" type="Node3D" parent="."]
+script = ExtResource("7_indicator_manager")
 
 [node name="Label" type="Label" parent="BrightnessReadout"]
 offset_left = 24.0

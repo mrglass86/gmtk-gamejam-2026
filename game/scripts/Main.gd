@@ -33,6 +33,9 @@ func _ready() -> void:
 		_verify_noise_system()
 		get_tree().quit()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a3"):
+		_verify_noise_indicators()
+		return
 	var capture_path: String = _capture_path_from_args()
 	if not capture_path.is_empty():
 		_capture_layout(capture_path)
@@ -88,6 +91,21 @@ func _verify_noise_system() -> void:
 
 func _capture_a2_noise(_pos: Vector3, loudness: float, _source: Node) -> void:
 	_a2_received_loudness = loudness
+
+
+func _verify_noise_indicators() -> void:
+	NoiseSystem.emit_noise(Vector3.ZERO, 0.08, self)
+	NoiseSystem.emit_noise(Vector3.ZERO, 0.40, self)
+	NoiseSystem.emit_noise(Vector3.ZERO, 1.0, self)
+	NoiseSystem.emit_noise(Vector3.ZERO, 1.2, self)
+	NoiseSystem.emit_noise(Vector3.ZERO, 4.0, self)
+	await get_tree().process_frame
+	var manager: Node3D = $NoiseIndicatorManager
+	assert(manager.get_child_count() == 4)
+	var loudest_indicator: Node = manager.get_child(3)
+	assert(is_equal_approx(float(loudest_indicator.get("max_radius")), 20.0))
+	print("A3 verification passed: absolute 0.25 gate and 20 m audibility cap.")
+	get_tree().quit()
 
 
 func _capture_path_from_args() -> String:
