@@ -69,6 +69,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a10"):
 		_verify_a10_presentation()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a11"):
+		_verify_a11_dress_pack()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -1038,6 +1041,215 @@ func _verify_a10_presentation() -> void:
 	print(
 		"A10 verification passed: quiet door, silhouettes, outward fridge, "
 		+ "TV cue, dark house, lamp tool, and carpet whisper."
+	)
+	get_tree().quit()
+
+
+func _verify_a11_dress_pack() -> void:
+	get_tree().paused = false
+	for settle_frame: int in range(12):
+		await get_tree().physics_frame
+
+	assert(
+		int(
+			ProjectSettings.get_setting(
+				"rendering/lights_and_shadows/positional_shadow/soft_shadow_filter_quality"
+			)
+		) == 4,
+		"Positional soft-shadow filter quality is not High."
+	)
+	var shadowed_lights: Array[Node] = find_children(
+		"*",
+		"Light3D",
+		true,
+		false
+	)
+	var shadowed_count: int = 0
+	var shadowed_omni_count: int = 0
+	for light_node: Node in shadowed_lights:
+		var light: Light3D = light_node as Light3D
+		if not light.shadow_enabled:
+			continue
+		shadowed_count += 1
+		assert(is_equal_approx(light.shadow_opacity, 0.8))
+		if light is OmniLight3D:
+			shadowed_omni_count += 1
+			assert(is_equal_approx(light.shadow_blur, 2.0))
+	assert(shadowed_count == 7)
+	assert(shadowed_omni_count == 6)
+
+	var level: Node3D = $Level as Node3D
+	var fixture_names: PackedStringArray = [
+		"KidLampVisual",
+		"LivingLampVisual",
+		"KitchenLampVisual",
+		"MidLampVisual",
+		"AlcoveLampVisual",
+	]
+	for fixture_name: String in fixture_names:
+		var fixture: Node3D = level.get_node(fixture_name) as Node3D
+		var shade: MeshInstance3D = fixture.get_node("Shade") as MeshInstance3D
+		var source: OmniLight3D = fixture.get_node("Light") as OmniLight3D
+		assert(is_equal_approx(source.global_position.y, 4.5))
+		assert(shade.global_position.y < 2.0)
+		assert(source.global_position.distance_to(shade.global_position) > 2.5)
+		assert(
+			Vector2(source.global_position.x, source.global_position.z)
+			.distance_to(Vector2(fixture.position.x, fixture.position.z))
+			> 0.4
+		)
+
+	var front_table: StaticBody3D = (
+		$Level/FrontDoorSideTable as StaticBody3D
+	)
+	assert(front_table.position.z > 5.5 and front_table.position.x > 9.2)
+	assert(
+		front_table.find_children(
+			"*",
+			"CollisionShape3D",
+			true,
+			false
+		).size() == 1
+	)
+	assert(
+		front_table.find_children("*", "MeshInstance3D", true, false).size()
+		== 5
+	)
+	var front_fixture: Node3D = $Level/AlcoveLampVisual as Node3D
+	assert(
+		Vector2(front_fixture.position.x, front_fixture.position.z)
+		.distance_to(Vector2(front_table.position.x, front_table.position.z))
+		< 0.01
+	)
+
+	var dog_body: MeshInstance3D = $Pet/Body as MeshInstance3D
+	assert(dog_body.mesh is CapsuleMesh)
+	assert(absf(absf(dog_body.rotation_degrees.x) - 90.0) < 0.01)
+	assert(absf(dog_body.rotation_degrees.z) < 0.01)
+	var dog_snout: MeshInstance3D = $Pet/Snout as MeshInstance3D
+	assert(dog_snout.position.z < -0.35 and dog_snout.position.y < 0.0)
+	for ear_name: String in ["EarLeft", "EarRight"]:
+		var ear: MeshInstance3D = $Pet.get_node(ear_name) as MeshInstance3D
+		assert(ear.mesh is BoxMesh)
+		assert(ear.position.z < 0.0 and ear.position.y > 0.0)
+
+	var table_expected_mesh_counts: Dictionary = {
+		"DiningTable": 13,
+		"KitchenTable": 11,
+	}
+	for table_name: String in table_expected_mesh_counts:
+		var table: StaticBody3D = level.get_node(table_name) as StaticBody3D
+		var table_collisions: Array[Node] = table.find_children(
+			"*",
+			"CollisionShape3D",
+			true,
+			false
+		)
+		assert(
+			table_collisions.size() == 1,
+			"%s needs one simplified collision box." % table_name
+		)
+		assert((table_collisions[0] as CollisionShape3D).shape is BoxShape3D)
+		assert(
+			table.find_children("*", "MeshInstance3D", true, false).size()
+			== int(table_expected_mesh_counts[table_name])
+		)
+
+	var navigation_mesh: NavigationMesh = (
+		$Level/NavigationRegion3D as NavigationRegion3D
+	).navigation_mesh
+	var navigation_polygon_count: int = navigation_mesh.get_polygon_count()
+	assert(navigation_polygon_count == 157)
+	var navigation_map: RID = get_world_3d().navigation_map
+	var route_path: PackedVector3Array = NavigationServer3D.map_get_path(
+		navigation_map,
+		Vector3(-12.4, 0.0, -4.0),
+		Vector3(13.2, 0.0, 4.4),
+		true
+	)
+	assert(route_path.size() > 2)
+
+	var hardwood_luminance: float = (
+		level.get("hardwood_color") as Color
+	).get_luminance()
+	for creak_name: String in [
+		"CreakTeacher",
+		"CreakKitchen",
+		"CreakAdult",
+	]:
+		var creak: NoiseSurface = level.get_node(creak_name) as NoiseSurface
+		var plank_meshes: Array[Node] = creak.find_children(
+			"*",
+			"MeshInstance3D",
+			true,
+			false
+		)
+		assert(plank_meshes.size() == 3)
+		assert(
+			creak.find_children(
+				"*",
+				"CollisionShape3D",
+				true,
+				false
+			).size() == 1
+		)
+		var first_material: StandardMaterial3D = (
+			(plank_meshes[0] as MeshInstance3D).material_override
+			as StandardMaterial3D
+		)
+		var second_material: StandardMaterial3D = (
+			(plank_meshes[1] as MeshInstance3D).material_override
+			as StandardMaterial3D
+		)
+		assert(first_material.albedo_color != second_material.albedo_color)
+		for material: StandardMaterial3D in [first_material, second_material]:
+			var plank_luminance: float = material.albedo_color.get_luminance()
+			assert(plank_luminance > hardwood_luminance)
+			assert(plank_luminance - hardwood_luminance < 0.12)
+			assert(not material.emission_enabled)
+	for toy_name: String in ["ToyHallRug", "ToyDining", "ToyCarpet"]:
+		assert(
+			(level.get_node(toy_name) as NoiseSurface).find_children(
+				"*",
+				"MeshInstance3D",
+				true,
+				false
+			).size() == 1
+		)
+
+	var debug_tools: DinnerDebugTools = $DebugTools as DinnerDebugTools
+	var screen_center: Vector2 = get_viewport().get_visible_rect().size * 0.5
+	var trial_lamp: Node3D = debug_tools.spawn_trial_lamp_at_screen_point(
+		screen_center
+	)
+	assert(trial_lamp != null)
+	var trial_source: OmniLight3D = trial_lamp.get_node("Light") as OmniLight3D
+	var trial_shade: MeshInstance3D = (
+		trial_lamp.get_node("Shade") as MeshInstance3D
+	)
+	assert(is_equal_approx(trial_source.global_position.y, 4.5))
+	assert(trial_shade.global_position.y < 2.0)
+	assert(is_equal_approx(trial_source.shadow_blur, 2.0))
+	assert(is_equal_approx(trial_source.shadow_opacity, 0.8))
+	assert(
+		debug_tools.remove_nearest_trial_lamp_at_screen_point(screen_center)
+	)
+
+	print(
+		(
+			"A11 metrics: %d nav polygons, %d shadowed lights "
+			+ "(%d omnis), sources y=4.50, dining 4 chairs, "
+			+ "kitchen 3 chairs, creaks 3 planks."
+		)
+		% [
+			navigation_polygon_count,
+			shadowed_count,
+			shadowed_omni_count,
+		]
+	)
+	print(
+		"A11 verification passed: soft high lights, leading dog silhouette, "
+		+ "table groups, front-door lamp, and subtle creaky planks."
 	)
 	get_tree().quit()
 
