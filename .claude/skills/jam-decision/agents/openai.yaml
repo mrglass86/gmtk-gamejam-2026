@@ -1,0 +1,4 @@
+interface:
+  display_name: "Record Decision"
+  short_description: "Record a durable game-jam decision."
+  default_prompt: "Record this game-jam decision with rationale and cuts."

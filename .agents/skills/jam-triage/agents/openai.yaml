@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jam Triage"
+  short_description: "Prioritize the jam backlog and cut list."
+  default_prompt: "Triage the game-jam backlog and choose the next playable checkpoint."

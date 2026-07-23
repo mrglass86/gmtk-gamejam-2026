@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jam Status"
+  short_description: "Show the current jam state and next action."
+  default_prompt: "Summarize the GMTK jam status and identify the next action."

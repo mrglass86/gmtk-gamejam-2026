@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jam Handoff"
+  short_description: "Prepare a concise cross-tool handoff."
+  default_prompt: "Prepare a handoff for the next game-jam work session."

@@ -1,0 +1,4 @@
+.DS_Store
+game/.godot/
+game/export/
+.claude/settings.local.json
