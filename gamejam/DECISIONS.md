@@ -152,6 +152,28 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Evidence / handoff:** `docs/BRIEF_RISK_CHECK.md`, `docs/GODOT_REFERENCE.md`,
   lane briefs + VALIDATION.md updated same day
 
+## 2026-07-23 — Directorial relayout (A0.2): Noah's floor plan replaces the brief 7 arrangement
+
+- **Decision:** Adopt the director's mockup as the level layout (translation:
+  `gamejam/codex/a02-layout-spec.md`; mockup archive owed to
+  `gamejam/brief/layout-mockup-v2.png`). The five locked layout properties are
+  preserved and mostly strengthened: goals split to opposite corners (fridge
+  kitchen NE, pantry closet SE) so goal choice = route choice; the quiet
+  carpet corridor passes the adult bedroom door with the light strip (the
+  adult door IS the parent's door — closes the deferred fix-5 question); the
+  teaching creak sits outside the kid door with an added carpet runner for the
+  creak→silence lesson; new bathroom = dark pocket + routine destination; dog
+  bed anchors the pet patrol. Zone names stay bedroom/hall/living/kitchen per
+  the locked interface — `hall` now means the middle band + alcove lamps.
+- **Why:** Director rejected the first greybox as not matching intent; the
+  brief explicitly leaves apartment dimensions open to change, and the mockup
+  satisfies every locked constraint.
+- **Rejected / cut:** Keeping the brief section 7 literal arrangement.
+- **Owner:** Noah (layout), Claude (spec), lane A (build A0.2)
+- **Revisit when:** Route timing at F3 misses the 1.4–1.6× target (S10) —
+  tune with furniture and entrances, not by reopening the layout.
+- **Evidence / handoff:** Mockup PNG, `a02-layout-spec.md`, A0.2 commit
+
 ## 2026-07-23 — Static-collider navigation bake at startup
 
 - **Decision:** Replace A0's unsafe hand-authored navigation polygons with one
@@ -202,3 +224,36 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** CP4 shows cone edges disagreeing with detection, or CP5
   shows a blocker size does not match its doorway.
 - **Evidence / handoff:** Director's first-walk B3.1+B3.2 fixpack.
+
+## 2026-07-23 — Second-walk floor safety and fridge hinge ruling
+
+- **Decision:** Every authored floor rectangle deliberately overlaps its
+  neighbors, backed by a 30 × 12.8 m hardwood collision slab whose top is
+  0.05 m below the playable floor and which is excluded from `nav_source`.
+  The fridge door hinges at its far/east edge and opens north against the back
+  wall. Interim Parent rows are 0/60/82/242 s with 53/15/151/58 s dwells.
+- **Why:** The second director walk found a real east-hall floor hole, an
+  implausible fridge swing, and routine travel windows too short for walking.
+- **Rejected / cut:** Relying only on visually abutting rectangles; keeping the
+  near-edge fridge hinge; teleport-like routine timing.
+- **Owner:** Noah (director), lane A (scene implementation)
+- **Revisit when:** B5 adds the bathroom trip or changes the Friday routine.
+- **Evidence / handoff:** A5.1 commit `003e714` and `--verify-a51`.
+
+## 2026-07-23 — A6 game flow owns the Web gesture and all terminal states
+
+- **Decision:** One `DinnerGameFlow` controller owns TITLE/PLAYING/WON/LOST.
+  The first pressed keyboard, mouse, touch, or joypad event hides the title,
+  unlocks the player, starts a direct generated audio cue, and starts
+  `GameClock` in the same callback. A non-blocking crib goal volume wins when
+  occupied with the snack; expiry applies the same crib-plus-snack predicate.
+  Terminal states pause play, and R unpauses before reloading the scene.
+- **Why:** A single transition point satisfies Web autoplay rules and prevents
+  actor/UI work from starting the clock or audio independently.
+- **Rejected / cut:** Auto-starting in `Main._ready`; separate title/audio/clock
+  gates; adding a menu stack or changing the solid approved crib greybox.
+- **Owner:** Noah (rules), lane A (implementation)
+- **Revisit when:** CP5 finds the crib goal too generous or the first-input cue
+  conflicts with the Saturday audio pass.
+- **Evidence / handoff:** Commit `d3a9d5d`, `--verify-a6`, and
+  `gamejam/handoffs/2026-07-23-a6-title-card.png`.
