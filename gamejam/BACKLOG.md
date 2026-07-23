@@ -94,8 +94,9 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [x] B9 run-five behavior — ring-true hearing, smoothed honest cone, bathroom
       close/dwell/open staging, endgame carpet-to-kid-door patrol, and dog bowl
       visits (`a9efbae`, `--verify-b9`).
-- [ ] B10 sprint-bot follow-up — couch glances, HUNT at 75 suspicion, and 1.2
-      run multiplier; gate director run six.
+- [x] B10 sprint-bot follow-up — couch glances, HUNT at 75 suspicion, newest
+      noise retargeting, and 1.2 run multiplier (`bb1dc61`, `--verify-b10`).
+      Live bot: HUNT at 7.56 s, 0.18 m return closest, glance at 15.03 s.
 - [ ] Snack round trip wired end to end — lanes A+B. Pickup/drop feedback and
       reveal clearance are verified; accept the complete interaction in S9.
 - [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.

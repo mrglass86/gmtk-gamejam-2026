@@ -435,3 +435,23 @@ Record decisions another session or tool would otherwise have to rediscover.
   bathroom passage, or 0.05 ambient floor unreadable in live play.
 - **Evidence / handoff:** `6436fdd`–`606a627`, combined head `a9efbae`,
   `--verify-a10`, `--verify-b9`, and the three A10 labeled renderer captures.
+
+## 2026-07-23 — Run-six actors make visible reach and haste truthful
+
+- **Decision:** (1) A noise ring is exactly the parent's hearing reach:
+  `min(loudness × 8 m, 20 m)` with linear falloff. (2) The bathroom door
+  closes for the parent's dwell and opens on exit; the late route crosses the
+  carpet band and ends facing the kid door around 292 s; the dog periodically
+  visits its bowl. (3) Dwelling parents glance 100–160° every ~15 s. Noise
+  accumulation at 75 without sight enters amber-red HUNT toward the newest
+  heard event; HUNT uses found speed/cone and exits below 60 or after 8 s.
+  Player run noise is 1.2.
+- **Why:** The hard 8 m listener contradicted visible rings, while a naive
+  40-second sprint bypassed the routine's tension.
+- **Rejected / cut:** Invisible fixed-radius hearing; a passive couch dwell;
+  escalating unseen noise directly to omniscient FOUND.
+- **Owner:** Noah (direction), lane B (actors), lane A (bathroom/bowl props)
+- **Revisit when:** Director run six finds HUNT unavoidable, unreadable, or
+  still too easy to outrun.
+- **Evidence / handoff:** `a9efbae`, `bb1dc61`, clean-HEAD `--verify-b9` and
+  `--verify-b10`.

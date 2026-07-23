@@ -9,9 +9,9 @@ a journal.
 - Direction: Shoulda Eaten Dinner (toddler stealth; the countdown is the
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Friday — director-run behavior and presentation fixpacks
-- Next playable checkpoint: director run six after B10 — exercise the combined
-  B8/B9 catch, ring-true hearing, bathroom staging, dog bowl visit, A10 fridge,
-  darker lighting, and full win/lose loop.
+- Next playable checkpoint: director run six — exercise the combined B8–B10
+  catch, ring-true hearing, bathroom staging, dog bowl visit, couch glances,
+  HUNT response, A10 presentation, and full win/lose loop.
 
 ## Working build
 
@@ -49,6 +49,8 @@ a journal.
   `a9efbae` adds B9 on top with ring-true hearing, bathroom routine staging,
   cone smoothing, endgame hall patrol, and dog bowl visits. Clean committed-tree
   startup plus A10/B9/A4.1/A7/A8/A9/audio gates pass on the combined head.
+  `bb1dc61` adds B10 couch glances, 75-suspicion HUNT with newest-noise
+  retargeting, and 1.2 run noise. Clean committed-tree startup and B6–B10 pass.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -58,9 +60,9 @@ a journal.
 
 ## Current focus
 
-- Lane B lands B10, then Noah runs the authoritative CP4/CP5 route: catch-time
-  snack drop, capture epilogue, dog/toy alarm, bathroom staging, snack round
-  trip, fridge swing, and lighting/listening verdicts against S7/S8/S9/S10.
+- Noah runs the authoritative CP4/CP5 route: catch-time snack drop, capture
+  epilogue, dog/toy alarm, bathroom staging, naive sprint round trip, couch
+  glance, fridge swing, and lighting/listening verdicts against S7/S8/S9/S10.
 
 ## Known blockers or risks
 
@@ -75,6 +77,8 @@ a journal.
 - B8's post-deposit sequence is live-verified but needs a director verdict that
   the immediate close, hall walk, slow crack-open peek, and reclose read clearly
   at gameplay camera scale.
+- B10 mechanically defeats the scripted sprint; director run six must judge
+  whether HUNT feels threatening rather than predetermined.
 - Godot MCP for lane A: 30-minute hard abort rule (brief 9.2).
 - This Claude instance has no shell — validation runs through the web build in
   the browser pane plus Noah's terminal.
