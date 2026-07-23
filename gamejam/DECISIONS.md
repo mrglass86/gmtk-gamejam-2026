@@ -455,3 +455,27 @@ Record decisions another session or tool would otherwise have to rediscover.
   still too easy to outrun.
 - **Evidence / handoff:** `a9efbae`, `bb1dc61`, clean-HEAD `--verify-b9` and
   `--verify-b10`.
+
+## 2026-07-23 — A11 separates visual detail from lighting and navigation cost
+
+- **Decision:** Low emissive shades remain visible practical fixtures, while
+  their rendered Omni sources sit at y 4.5 and bias toward room centers.
+  Positional shadow filtering is High; shadowed Omnis use blur 2.0 and every
+  shadowed light uses opacity 0.8. Furniture may use many primitive silhouette
+  meshes, but each table-and-chair group contributes one simplified nav
+  collider. The dog's local front is `-Z`, matching Pet movement facing.
+  Creak hazards use three alternating hardwood-family planks and one collider.
+- **Why:** Run six found hard black wall wedges, unreadable block tables, a
+  directionless dog, a front-door walkway obstruction, and beacon-bright
+  creaks. Separation preserves readable dressing without destabilizing
+  gameplay brightness or nav complexity.
+- **Rejected / cut:** Lights at shade height; one-block table visuals; per-leg
+  or per-chair collision; a walkway floor lamp; emissive or high-contrast
+  creak markers.
+- **Owner:** Noah (art direction), lane A (scene implementation), lane B
+  (authoritative Pet facing).
+- **Revisit when:** The director's next renderer walk finds a room unreadable,
+  shadows still wedge-shaped, or table collision too broad.
+- **Evidence / handoff:** `6df8cff`, `6b48552`, combined head `23ffd7c`,
+  clean committed-tree `--verify-a11`, B6/B9/B10 regressions, and
+  `gamejam/handoffs/2026-07-23-a11-lighting.png`.

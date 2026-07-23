@@ -15,9 +15,9 @@ a journal.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A9 plus A4.1/A5.1 and the CC0
+- Godot version: 4.7.1-stable — A0.2 through A11 plus A4.1/A5.1 and the CC0
   audio pass are in `game/` (Compatibility renderer). The approved director
-  layout bakes a connected 156-polygon navmesh; input, lighting, noise,
+  layout bakes a connected 157-polygon navmesh; input, lighting, noise,
   indicator, route, ambient-mask, countdown, game-flow, audio, and A9
   presentation/tuning checks pass.
 - Entry scene: `res://scenes/Main.tscn`
@@ -51,6 +51,11 @@ a journal.
   startup plus A10/B9/A4.1/A7/A8/A9/audio gates pass on the combined head.
   `bb1dc61` adds B10 couch glances, 75-suspicion HUNT with newest-noise
   retargeting, and 1.2 run noise. Clean committed-tree startup and B6–B10 pass.
+  `6df8cff`/`6b48552` add A11: High positional shadow filtering, 4.5 m
+  room-biased Omni sources decoupled from low emissive fixtures, 2.0 blur/0.8
+  opacity, forward-aligned dog silhouette, primitive tables/chairs with one
+  nav collider per group, front-door side-table lamp, and subtle three-plank
+  creaks. Clean committed-tree A11/A10/A9/A4.1/A7/A8/audio/B9/B10 gates pass.
   A11/B11 author the dog snout along local -Z and retain Pet's smooth root yaw
   for patrol, investigate, and bowl travel. Clean committed-tree startup plus
   A11, B6, and B9 pass on the combined head.
@@ -69,8 +74,8 @@ a journal.
 
 ## Known blockers or risks
 
-- A10 is functionally and Compatibility-renderer verified but awaits the
-  director's run-six lighting/fridge verdict; the darkest adult/pantry pockets
+- A11 is functionally and Compatibility-renderer verified but awaits the
+  director's run-six shadow/dress verdict; the darkest adult/pantry pockets
   remain intentionally readable.
 - The scaffolded input map was hand-serialized — lane A verifies it in A0.
 - Route timing remains unmeasured in play; tune furniture/entrances only if the

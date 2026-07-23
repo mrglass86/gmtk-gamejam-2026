@@ -97,6 +97,11 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [x] B10 sprint-bot follow-up — couch glances, HUNT at 75 suspicion, newest
       noise retargeting, and 1.2 run multiplier (`bb1dc61`, `--verify-b10`).
       Live bot: HUNT at 7.56 s, 0.18 m return closest, glance at 15.03 s.
+- [x] A11 run-six dress pack — High soft positional shadows, 4.5 m
+      room-biased sources decoupled from fixtures, forward dog silhouette,
+      table/chair groups with one nav collider each, front-door table lamp,
+      and subtle three-plank creaks (`6df8cff`, `6b48552`,
+      `--verify-a11`; 157 nav polygons).
 - [x] B11 dog travel facing — the A11 snout is authored along local -Z and
       Pet's smooth root yaw makes the snout lead during patrol, investigate,
       and bowl travel (`6544f54`, `6df8cff`, `--verify-a11`, B6/B9 live gates).
