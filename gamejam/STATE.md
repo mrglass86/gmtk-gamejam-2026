@@ -8,9 +8,9 @@ a journal.
 - Jam: GMTK26 — theme: Countdown
 - Direction: Shoulda Eaten Dinner (toddler stealth; the countdown is the
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
-- Current phase: build day 1 (Thursday) — systems complete
-- Next playable checkpoint: CP4 — play B5's authoritative route, catch, and
-  chase, with the pulled-forward audio pass audible in the same run.
+- Current phase: Friday — director-run behavior and presentation fixpacks
+- Next playable checkpoint: CP4 replay — exercise B7's catch/deposit epilogue
+  and bark alarm alongside the concurrent A8 snack/mask polish.
 
 ## Working build
 
@@ -26,10 +26,11 @@ a journal.
   spill, TV flicker, rate-driven creak, actual dog cues, and snack pickup/drop
   feedback plus reveal clearance. `acaed9d` adds B6's live-clock actor fixes:
   the parent reaches the kitchen, the dog sleeps 30 s then patrols, and
-  point-blank sight accelerates suspicion. A5.1/B5, B6, A6/A6.1, audio, A7,
-  clean startup, and release Web export pass. A real Web canvas click starts
-  audio with zero console warnings/errors; renderer captures prove the snack
-  and fridge spill.
+  point-blank sight accelerates suspicion. `3e2e650` adds B7's reachable-crib
+  deposit, 20 s carry failsafe, door-close/hall-watch/peek epilogue, and raw
+  dog-bark alarm. A5.1/B5, B6/B7, A6/A6.1, audio, A7, clean startup, and
+  release Web export pass. A real Web canvas click starts audio with zero
+  console warnings/errors; renderer captures prove the snack and fridge spill.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -39,8 +40,9 @@ a journal.
 
 ## Current focus
 
-- Friday/CP4 next: Noah plays the authoritative route, catch/chase, snack round
-  trip, and A7 listening/readability pass against S7/S9/S10.
+- Friday/CP4 replay: Noah plays the authoritative route, catch/chase/deposit
+  epilogue, dog alarm, snack round trip, and listening/readability pass against
+  S7/S8/S9/S10.
 
 ## Known blockers or risks
 
@@ -51,6 +53,8 @@ a journal.
   quiet route misses the 1.4–1.6× target.
 - The dog's exported bed-egress point works in the live verifier; CP5 still
   needs a visual verdict that the rise-off-bed motion reads naturally.
+- B7's post-deposit sequence is live-verified but needs a director verdict that
+  the close, 3.5 s hall watch, and peek read clearly at gameplay camera scale.
 - Godot MCP for lane A: 30-minute hard abort rule (brief 9.2).
 - This Claude instance has no shell — validation runs through the web build in
   the browser pane plus Noah's terminal.

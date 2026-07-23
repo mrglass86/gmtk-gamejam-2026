@@ -64,6 +64,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       navigation repair, 30 s dog sleep plus bed egress/patrol, and proximity
       sight scaling (`acaed9d`, `--verify-b6`). Accept: runtime assertions pass;
       feel verdicts remain at CP4/CP5.
+- [x] B7 third-run behavior fixpack — reachable-path crib deposit, 20 s
+      force-release, close/watch/peek epilogue, and raw dog-bark alarm
+      (`3e2e650`, `--verify-b7`). Accept: 6.88 s live carry cycle, 20.09 s
+      forced release, closed door, and 35.5 bark suspicion under a 0.7 mask.
 - [x] A6 win/lose/title/restart — lane A (`d3a9d5d`, `0223b1b`). First title
       input starts play + clock; crib-with-snack wins immediately or at expiry,
       expiry otherwise loses, and R performs a real scene reload. S9 UI rows
