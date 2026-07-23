@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3]
+[gd_scene load_steps=28 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/LevelBuilder.gd" id="2_level"]
@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" path="res://scenes/NoiseSurface.tscn" id="8_noise_surface"]
 [ext_resource type="Script" path="res://scripts/Door.gd" id="9_door"]
 [ext_resource type="Script" path="res://scripts/Snack.gd" id="10_snack"]
+[ext_resource type="Script" path="res://scripts/Parent.gd" id="11_parent"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -166,11 +167,35 @@ shape = SubResource("CapsuleShape_player")
 
 [node name="Parent" type="Node3D" parent="."]
 position = Vector3(-0.2, 0.7, -4.6)
-script = ExtResource("4_agent")
+script = ExtResource("11_parent")
+routine_rows = [{
+"time": 0.0,
+"position": Vector3(-0.2, 0.7, -4.6),
+"dwell": 60.0,
+"facing": Vector3(-1, 0, 0)
+}, {
+"time": 90.0,
+"position": Vector3(9.5, 0.7, -3.8),
+"dwell": 15.0,
+"facing": Vector3(0, 0, -1)
+}, {
+"time": 130.0,
+"position": Vector3(-0.2, 0.7, -4.6),
+"dwell": 70.0,
+"facing": Vector3(-1, 0, 0)
+}, {
+"time": 240.0,
+"position": Vector3(-12.75, 0.7, -0.8),
+"dwell": 60.0,
+"facing": Vector3(0, 0, -1)
+}]
 
 [node name="Capsule" type="MeshInstance3D" parent="Parent"]
 mesh = SubResource("CapsuleMesh_parent")
 material_override = SubResource("ParentMaterial")
+
+[node name="VisionCone" type="MeshInstance3D" parent="Parent"]
+cast_shadow = 0
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="Parent"]
 path_height_offset = 0.0

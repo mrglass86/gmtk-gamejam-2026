@@ -39,6 +39,10 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a02"):
 		_verify_a02_navigation()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a4"):
+		_verify_ambient_masks()
+		get_tree().quit()
+		return
 	var capture_path: String = _capture_path_from_args()
 	if not capture_path.is_empty():
 		_capture_layout(capture_path)
@@ -142,6 +146,26 @@ func _verify_a02_navigation() -> void:
 	assert(used_pantry_door, "Navigation path crossed PantryWest instead of using the north opening.")
 	print("A0.2 navigation verification passed: L-wall and pantry-wall detours.")
 	get_tree().quit()
+
+
+func _verify_ambient_masks() -> void:
+	var tv_position: Vector3 = Vector3(-2.75, 0.0, -4.1)
+	var speaker_position: Vector3 = Vector3(8.5, 0.0, -5.3)
+	var tv_mask: float = NoiseSystem.get_mask_at(tv_position)
+	var speaker_mask: float = NoiseSystem.get_mask_at(speaker_position)
+	assert(tv_mask > 0.0)
+	assert(speaker_mask > 0.0)
+
+	NoiseSystem.set_ambient_source_enabled("tv", false)
+	assert(is_zero_approx(NoiseSystem.get_mask_at(tv_position)))
+	NoiseSystem.set_ambient_source_enabled("tv", true)
+	assert(is_equal_approx(NoiseSystem.get_mask_at(tv_position), tv_mask))
+
+	NoiseSystem.set_ambient_source_enabled("kitchen_speaker", false)
+	assert(is_zero_approx(NoiseSystem.get_mask_at(speaker_position)))
+	NoiseSystem.set_ambient_source_enabled("kitchen_speaker", true)
+	assert(is_equal_approx(NoiseSystem.get_mask_at(speaker_position), speaker_mask))
+	print("A4 verification passed: TV/speaker masks register and vanish when disabled.")
 
 
 func _capture_path_from_args() -> String:

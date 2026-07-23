@@ -11,6 +11,12 @@ extends Node3D
 @export var lamp_energy: float = 2.0
 @export var lamp_range: float = 7.0
 
+@export_group("Ambient Masking")
+@export var tv_mask_radius: float = 5.5
+@export_range(0.0, 1.0) var tv_mask_strength: float = 0.7
+@export var speaker_mask_radius: float = 4.5
+@export_range(0.0, 1.0) var speaker_mask_strength: float = 0.6
+
 @export var wall_color: Color = Color("#6d727a")
 @export var carpet_color: Color = Color("#353a42")
 @export var hardwood_color: Color = Color("#72777d")
@@ -24,6 +30,7 @@ func _ready() -> void:
 	_build_walls()
 	_build_props()
 	_build_lights()
+	_register_ambient_sources()
 	_bake_navigation_once()
 	if _is_layout_capture():
 		_add_review_labels()
@@ -92,6 +99,18 @@ func _build_lights() -> void:
 	_add_area_glow("TVGlow", Vector3(-2.75, 1.25, -4.1), Vector3(0.0, -90.0, 0.0), Color("#7ea5d8"))
 	_add_area_glow("WindowGlow", Vector3(-14.75, 2.4, -4.0), Vector3(0.0, -90.0, 0.0), Color("#c7d5e7"))
 	_add_area_glow("DoorStripGlow", Vector3(-12.75, 0.2, 1.3), Vector3(-90.0, 0.0, 0.0), Color("#d5dce8"))
+
+
+func _register_ambient_sources() -> void:
+	NoiseSystem.register_ambient_source(
+		"tv", Vector3(-2.75, 0.0, -4.1), tv_mask_radius, tv_mask_strength
+	)
+	NoiseSystem.register_ambient_source(
+		"kitchen_speaker",
+		Vector3(8.5, 0.0, -5.3),
+		speaker_mask_radius,
+		speaker_mask_strength
+	)
 
 
 func _is_layout_capture() -> bool:
