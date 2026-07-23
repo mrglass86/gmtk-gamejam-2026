@@ -82,6 +82,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       player rings visibly shrink without vanishing, and the snack is larger,
       emissive, pulsing, carried, louder on pickup, camera-clear at the pantry,
       with a 0.3 s player pop (`33b7832`–`ed2c253`, `--verify-a8`).
+- [x] A9 practical-lighting pass — five cool emissive fixture sources, 5.8 m
+      Omni pools, 0.08 ambient contrast, live capsule/HUD tracking, and labeled
+      Compatibility capture (`8812b29`, `89187fe`, `9435c0a`,
+      `--verify-a9`).
 - [ ] Snack round trip wired end to end — lanes A+B. Pickup/drop feedback and
       reveal clearance are verified; accept the complete interaction in S9.
 - [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.

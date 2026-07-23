@@ -14,10 +14,10 @@ a journal.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A8 plus A4.1/A5.1 and the CC0
+- Godot version: 4.7.1-stable — A0.2 through A9 plus A4.1/A5.1 and the CC0
   audio pass are in `game/` (Compatibility renderer). The approved director
   layout bakes a connected 156-polygon navmesh; input, lighting, noise,
-  indicator, route, ambient-mask, countdown, game-flow, audio, and A8
+  indicator, route, ambient-mask, countdown, game-flow, audio, and A9
   presentation/tuning checks pass.
 - Entry scene: `res://scenes/Main.tscn`
 - Run/build status: `538d697` clears the stale Parent scene override so B5's
@@ -32,8 +32,11 @@ a journal.
   masks, smaller TV-side player rings, and larger emissive pulsing snack with
   carried display, louder pickup, 0.3 s player pop, and camera-clear pantry
   placement. A5.1/B5, B6/B7, A6/A6.1, audio, A7/A8, clean startup, and release
-  Web export pass. A real Web canvas click starts audio with zero console
-  warnings/errors; renderer captures prove the snack and fridge spill.
+  Web export pass. `8812b29`/`89187fe` add five cool emissive practical
+  fixtures, tighten pools to 5.8 m, and lower ambient energy to 0.08 while
+  preserving capsule/HUD brightness tracking. A real Web canvas click starts
+  audio with zero console warnings/errors; labeled renderer captures prove
+  snack, fridge spill, practical-light hierarchy, and dark-floor readability.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -49,8 +52,8 @@ a journal.
 
 ## Known blockers or risks
 
-- A8 is functionally and renderer verified but awaits the director's replay;
-  tune exported direct volumes only if a tell or masking bed misleads.
+- A9 is functionally and renderer verified but awaits the director's lighting
+  verdict; the darkest adult/pantry pockets remain intentionally readable.
 - The scaffolded input map was hand-serialized — lane A verifies it in A0.
 - Route timing remains unmeasured in play; tune furniture/entrances only if the
   quiet route misses the 1.4–1.6× target.

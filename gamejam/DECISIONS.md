@@ -337,3 +337,20 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Evidence / handoff:** `acaed9d`, `--verify-b6`; live metrics: parent 9.33 m
   displacement and 0.68 m kitchen approach, dog 0.00 m sleep drift and 3.27 m
   patrol displacement, point-blank suspicion 100.
+
+## 2026-07-23 — Practical lights own the neutral-cool hierarchy
+
+- **Decision:** Every static zone light is a visible primitive fixture whose
+  emissive shade and child Omni shut off together by phase. Fixture glow stays
+  neutral-to-cool; warm hues remain exclusive to alerts. Static Omni range is
+  5.8 m and environment ambient energy is 0.08.
+- **Why:** Visible sources make countdown shutoffs legible, while localized
+  pools and lower ambient give lit-versus-unlit floor meaningful contrast
+  without changing the analytic brightness system.
+- **Rejected / cut:** Invisible ceiling Omnis; warm domestic bulbs that compete
+  with alert language; global darkness that hides room structure.
+- **Owner:** Noah (art direction), lane A (implementation)
+- **Revisit when:** The CP4 lighting replay finds a route unreadably black or a
+  phase shutoff visually ambiguous.
+- **Evidence / handoff:** `8812b29`, `89187fe`, `--verify-a9`, and
+  `gamejam/handoffs/2026-07-23-a9-lighting.png`.
