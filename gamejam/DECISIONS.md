@@ -398,3 +398,18 @@ Record decisions another session or tool would otherwise have to rediscover.
   phase shutoff visually ambiguous.
 - **Evidence / handoff:** `8812b29`, `89187fe`, `--verify-a9`, and
   `gamejam/handoffs/2026-07-23-a9-lighting.png`.
+
+## 2026-07-23 — Verification reports prove the committed tree
+
+- **Decision:** Every lane A/B verification report must run its editor startup
+  check and package verifier from a clean working tree whose tested files match
+  `HEAD`. Stash unrelated pending work before the gate, commit the candidate,
+  then test that exact commit.
+- **Why:** A working-directory pass can include an uncommitted helper or fix
+  absent from the reviewed commit, allowing a parse-dead actor into the build.
+- **Rejected / cut:** Reporting checks run before the candidate commit or from
+  a dirty worktree without proving the on-disk blobs equal `HEAD`.
+- **Owner:** Lanes A and B
+- **Revisit when:** Never during the jam; a later CI gate may automate it.
+- **Evidence / handoff:** Director's B8 parse report; reconciliation commit
+  `556aa4c`; clean-HEAD Godot 4.7.1 editor startup and `--verify-b8`.
