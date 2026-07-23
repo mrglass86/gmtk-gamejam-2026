@@ -1199,9 +1199,6 @@ func _configure_a10_fridge_capture(is_open: bool) -> void:
 	var hinge_label: Label3D = Label3D.new()
 	hinge_label.name = "A10HingeLabel"
 	hinge_label.text = "HINGE"
-	hinge_label.global_position = (
-		$Fridge/DoorVisual as Node3D
-	).global_position + Vector3.UP * 1.65
 	hinge_label.font_size = 28
 	hinge_label.outline_size = 7
 	hinge_label.pixel_size = 0.003
@@ -1209,3 +1206,6 @@ func _configure_a10_fridge_capture(is_open: bool) -> void:
 	hinge_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	hinge_label.no_depth_test = true
 	add_child(hinge_label)
+	hinge_label.global_position = (
+		$Fridge/DoorVisual as Node3D
+	).global_position + Vector3.UP * 1.65
