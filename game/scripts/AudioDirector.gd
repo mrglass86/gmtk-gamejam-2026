@@ -30,11 +30,14 @@ const SPEAKER_MUSIC_STREAM: AudioStream = preload(
 )
 const FRIDGE_HUM_STREAM: AudioStream = preload("res://audio/ambience/fridge_hum.ogg")
 const CLOCK_TICK_STREAM: AudioStream = preload("res://audio/ambience/clock_tick.ogg")
+const SNACK_PICKUP_STREAM: AudioStream = preload("res://audio/sfx/snack_pickup.ogg")
+const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 
 @export_group("Scene References")
 @export_node_path("DinnerPlayer") var player_path: NodePath = NodePath("../Player")
 @export_node_path("DinnerParent") var parent_path: NodePath = NodePath("../Parent")
 @export_node_path("DinnerPet") var pet_path: NodePath = NodePath("../Pet")
+@export_node_path("DinnerSnack") var snack_path: NodePath = NodePath("../Snack")
 @export_node_path("DinnerGameFlow") var game_flow_path: NodePath = NodePath("../GameFlow")
 @export_node_path("AudioListener3D") var listener_path: NodePath = NodePath(
 	"../Player/AudioListener3D"
@@ -67,6 +70,11 @@ const CLOCK_TICK_STREAM: AudioStream = preload("res://audio/ambience/clock_tick.
 @export var pet_max_distance: float = 12.0
 @export var sting_volume_db: float = -4.0
 
+@export_group("Snack")
+@export var snack_pickup_volume_db: float = -6.0
+@export var snack_drop_volume_db: float = -10.0
+@export var snack_drop_max_distance: float = 8.0
+
 @export_group("Ambient Beds")
 @export var tv_bed_volume_db: float = -15.0
 @export var speaker_bed_volume_db: float = -18.0
@@ -85,6 +93,7 @@ const CLOCK_TICK_STREAM: AudioStream = preload("res://audio/ambience/clock_tick.
 @onready var _player: DinnerPlayer = get_node_or_null(player_path) as DinnerPlayer
 @onready var _parent: DinnerParent = get_node_or_null(parent_path) as DinnerParent
 @onready var _pet: DinnerPet = get_node_or_null(pet_path) as DinnerPet
+@onready var _snack: DinnerSnack = get_node_or_null(snack_path) as DinnerSnack
 @onready var _game_flow: DinnerGameFlow = (
 	get_node_or_null(game_flow_path) as DinnerGameFlow
 )
@@ -105,6 +114,8 @@ const CLOCK_TICK_STREAM: AudioStream = preload("res://audio/ambience/clock_tick.
 @onready var _fridge_hum: AudioStreamPlayer3D = $FridgeHum
 @onready var _clock_tick: AudioStreamPlayer3D = $ClockTick
 @onready var _door_creak: AudioStreamPlayer3D = $DoorCreak
+@onready var _snack_pickup: AudioStreamPlayer = $SnackPickup
+@onready var _snack_drop: AudioStreamPlayer3D = $SnackDrop
 
 var _doors: Array[DinnerDoor] = []
 var _door_previous_openness: Dictionary = {}
@@ -127,7 +138,7 @@ func _ready() -> void:
 		_last_parent_position = _parent.global_position
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not _game_active:
 		_stop_door_creak()
 		return
@@ -143,7 +154,7 @@ func verify_configuration() -> void:
 	audio_players.append_array(
 		find_children("*", "AudioStreamPlayer3D", true, false)
 	)
-	assert(audio_players.size() == 13)
+	assert(audio_players.size() == 15)
 	for audio_player: Node in audio_players:
 		assert(audio_player.get("stream") != null)
 	assert(_listener != null and _listener.is_current())
@@ -188,6 +199,10 @@ func begin_audio_verification() -> void:
 	verification_door.openness += 0.01
 	_update_door_creak(1.0 / 60.0)
 	assert(_door_creak.playing)
+	_on_snack_picked_up(_player)
+	assert(_snack_pickup.playing)
+	_on_snack_dropped(_snack.global_position)
+	assert(_snack_drop.playing)
 
 
 func end_audio_verification() -> void:
@@ -243,6 +258,12 @@ func _wire_streams_and_tuning() -> void:
 	_door_creak.stream = DOOR_CREAK_STREAM
 	_door_creak.max_distance = door_creak_max_distance
 
+	_snack_pickup.stream = SNACK_PICKUP_STREAM
+	_snack_pickup.volume_db = snack_pickup_volume_db
+	_snack_drop.stream = SNACK_DROP_STREAM
+	_snack_drop.volume_db = snack_drop_volume_db
+	_snack_drop.max_distance = snack_drop_max_distance
+
 
 func _collect_doors() -> void:
 	for door_path: NodePath in [bedroom_door_path, pantry_door_path]:
@@ -255,7 +276,11 @@ func _collect_doors() -> void:
 
 func _connect_gameplay_signals() -> void:
 	assert(
-		_player != null and _parent != null and _pet != null and _game_flow != null,
+		_player != null
+		and _parent != null
+		and _pet != null
+		and _snack != null
+		and _game_flow != null,
 		"AudioDirector is missing an actor or GameFlow reference."
 	)
 	if not _game_flow.game_started.is_connected(_on_game_started):
@@ -272,6 +297,10 @@ func _connect_gameplay_signals() -> void:
 		_pet.alert_started.connect(_on_pet_alert_started)
 	if not _pet.bark_started.is_connected(_on_pet_bark_started):
 		_pet.bark_started.connect(_on_pet_bark_started)
+	if not _snack.picked_up.is_connected(_on_snack_picked_up):
+		_snack.picked_up.connect(_on_snack_picked_up)
+	if not _snack.dropped.is_connected(_on_snack_dropped):
+		_snack.dropped.connect(_on_snack_dropped)
 	if not _tv_bed.finished.is_connected(_on_tv_bed_finished):
 		_tv_bed.finished.connect(_on_tv_bed_finished)
 	if not _speaker_bed.finished.is_connected(_on_speaker_bed_finished):
@@ -457,6 +486,18 @@ func _on_pet_bark_started() -> void:
 		return
 	_pet_bark.global_position = _pet.global_position
 	_pet_bark.play()
+
+
+func _on_snack_picked_up(_carrier: DinnerPlayer) -> void:
+	if _game_active:
+		_snack_pickup.play()
+
+
+func _on_snack_dropped(drop_position: Vector3) -> void:
+	if not _game_active:
+		return
+	_snack_drop.global_position = drop_position
+	_snack_drop.play()
 
 
 func _on_tv_bed_finished() -> void:

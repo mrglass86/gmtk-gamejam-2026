@@ -55,6 +55,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a6"):
 		_verify_a6_game_flow()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a7"):
+		_verify_a7_presentation()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -526,12 +529,137 @@ func _verify_audio_pass() -> void:
 	)
 	print(
 		"Audio verification passed: first-input beds, countdown tells, footsteps, "
-		+ "pet/result cues, positional sources, and zero bus effects."
+		+ "pet/result/snack cues, positional sources, and zero bus effects."
 	)
 	audio_director.end_audio_verification()
 	for settle_frame: int in range(8):
 		await get_tree().process_frame
 	get_tree().quit()
+
+
+func _verify_a7_presentation() -> void:
+	assert(
+		int(ProjectSettings.get_setting("display/window/size/viewport_width")) == 1920
+	)
+	assert(
+		int(ProjectSettings.get_setting("display/window/size/viewport_height")) == 1080
+	)
+	assert(bool(ProjectSettings.get_setting("display/window/size/resizable")))
+	assert(
+		String(ProjectSettings.get_setting("display/window/stretch/mode"))
+		== "canvas_items"
+	)
+	assert(
+		String(ProjectSettings.get_setting("display/window/stretch/aspect"))
+		== "expand"
+	)
+
+	var phase_director: PhaseDirector = $PhaseDirector as PhaseDirector
+	var fridge: DinnerDoor = $Fridge as DinnerDoor
+	var fridge_light: OmniLight3D = $Fridge/SpillLight as OmniLight3D
+	phase_director.apply_fridge_open_rate(0.25)
+	assert(
+		is_equal_approx(
+			fridge_light.light_energy,
+			0.25 * fridge.fridge_spill_energy_per_open_rate
+		)
+	)
+	assert(
+		is_equal_approx(
+			fridge_light.omni_range,
+			0.25 * fridge.fridge_spill_radius_per_open_rate
+		)
+	)
+	phase_director.apply_fridge_open_rate(0.0)
+	assert(is_zero_approx(fridge_light.light_energy))
+
+	var tv_glow: AreaLight3D = $Level/TVGlow as AreaLight3D
+	phase_director.apply_phase(1)
+	phase_director.set("_tv_flicker_time", 0.35)
+	phase_director.apply_tv_flicker()
+	var tv_base_energy: float = float(phase_director.get("_tv_base_energy"))
+	assert(not is_equal_approx(tv_glow.light_energy, tv_base_energy))
+	assert(
+		tv_glow.light_energy
+		>= tv_base_energy * (1.0 - phase_director.tv_flicker_amount)
+		and tv_glow.light_energy
+		<= tv_base_energy * (1.0 + phase_director.tv_flicker_amount)
+	)
+	phase_director.apply_phase(2)
+	assert(not tv_glow.visible)
+
+	var audio_director: DinnerAudioDirector = $AudioDirector as DinnerAudioDirector
+	audio_director.call("_on_game_started")
+	var bedroom_door: DinnerDoor = $BedroomDoor as DinnerDoor
+	bedroom_door.openness += 0.2 / 60.0
+	audio_director.call("_update_door_creak", 1.0 / 60.0)
+	var door_creak_player: AudioStreamPlayer3D = (
+		$AudioDirector/DoorCreak as AudioStreamPlayer3D
+	)
+	assert(
+		door_creak_player.playing,
+		"Door creak player must play while openness changes."
+	)
+	var slow_creak_volume: float = door_creak_player.volume_db
+	audio_director.call("_update_door_creak", 1.0 / 60.0)
+	assert(not door_creak_player.playing)
+	bedroom_door.openness += 1.0 / 60.0
+	audio_director.call("_update_door_creak", 1.0 / 60.0)
+	assert(door_creak_player.playing)
+	assert(door_creak_player.volume_db > slow_creak_volume)
+
+	var snack: DinnerSnack = $Snack as DinnerSnack
+	var player: DinnerPlayer = $Player as DinnerPlayer
+	var snack_visual: SnackVisualPresenter = (
+		$Snack/Visual as SnackVisualPresenter
+	)
+	var snack_mesh: SphereMesh = snack_visual.mesh as SphereMesh
+	fridge.openness = 0.6
+	fridge.call("_apply_visual")
+	snack.reveal_at(fridge.global_position)
+	snack_visual.apply_reveal_clearance()
+	assert(snack_visual.visible)
+	assert(snack_mesh.radius >= 0.3 and snack_visual.position.y > snack_mesh.radius)
+	_assert_snack_clear_of_panel(snack_visual, $Fridge/DoorVisual/Panel)
+	assert(snack.pick_up(player))
+	assert(($AudioDirector/SnackPickup as AudioStreamPlayer).playing)
+
+	var drop_position: Vector3 = Vector3(0.0, 0.0, 0.0)
+	snack.drop_at(drop_position)
+	assert(snack_visual.visible)
+	assert(($AudioDirector/SnackDrop as AudioStreamPlayer3D).playing)
+	var pantry: DinnerDoor = $Pantry as DinnerDoor
+	pantry.openness = 0.6
+	pantry.call("_apply_visual")
+	snack.reveal_at(pantry.global_position)
+	snack_visual.apply_reveal_clearance()
+	_assert_snack_clear_of_panel(snack_visual, $Pantry/DoorVisual/Panel)
+
+	audio_director.end_audio_verification()
+	phase_director.apply_fridge_open_rate(0.0)
+	for settle_frame: int in range(8):
+		await get_tree().process_frame
+	print(
+		"A7 verification passed: display stretch, visible fridge spill, TV flicker, "
+		+ "rate-driven creak, snack audio, and clear revealed snack mesh."
+	)
+	get_tree().quit()
+
+
+func _assert_snack_clear_of_panel(
+	snack_visual: MeshInstance3D,
+	panel: MeshInstance3D
+) -> void:
+	var snack_world_aabb: AABB = (
+		snack_visual.global_transform * snack_visual.get_aabb()
+	)
+	var panel_world_aabb: AABB = panel.global_transform * panel.get_aabb()
+	assert(
+		not snack_world_aabb.intersects(panel_world_aabb),
+		"Revealed snack mesh overlaps door panel: snack=%s panel=%s"
+		% [snack_world_aabb, panel_world_aabb]
+	)
+	assert(snack_world_aabb.position.y >= 0.0)
 
 
 func _verify_primary_floor_coverage() -> void:
@@ -595,7 +723,25 @@ func _a6_capture_path_from_args() -> String:
 
 
 func _capture_layout(capture_path: String) -> void:
+	var capture_fridge_light: bool = OS.get_cmdline_user_args().has(
+		"--capture-a7-fridge"
+	)
+	if OS.get_cmdline_user_args().has("--capture-a7-snack"):
+		var pantry: DinnerDoor = $Pantry as DinnerDoor
+		pantry.openness = 0.6
+		pantry.call("_apply_visual")
+		var snack: DinnerSnack = $Snack as DinnerSnack
+		snack.reveal_at(pantry.global_position)
+		($Snack/Visual as SnackVisualPresenter).apply_reveal_clearance()
 	for frame: int in range(capture_warmup_frames):
+		await get_tree().process_frame
+	if capture_fridge_light:
+		var fridge: DinnerDoor = $Fridge as DinnerDoor
+		fridge.openness = 0.6
+		fridge.call("_apply_visual")
+		var phase_director: PhaseDirector = $PhaseDirector as PhaseDirector
+		phase_director.set_physics_process(false)
+		phase_director.apply_fridge_open_rate(1.0)
 		await get_tree().process_frame
 	var image: Image = get_viewport().get_texture().get_image()
 	var result: Error = image.save_png(capture_path)

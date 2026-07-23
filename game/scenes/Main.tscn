@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3]
+[gd_scene load_steps=32 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/LevelBuilder.gd" id="2_level"]
@@ -16,6 +16,7 @@
 [ext_resource type="Script" path="res://scripts/DebugTools.gd" id="14_debug"]
 [ext_resource type="Script" path="res://scripts/GameFlow.gd" id="15_game_flow"]
 [ext_resource type="Script" path="res://scripts/AudioDirector.gd" id="16_audio"]
+[ext_resource type="Script" path="res://scripts/SnackVisualPresenter.gd" id="17_snack_visual"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -71,11 +72,11 @@ albedo_color = Color(0.44, 0.47, 0.51, 1)
 roughness = 0.9
 
 [sub_resource type="SphereMesh" id="SnackMesh"]
-radius = 0.25
-height = 0.5
+radius = 0.3
+height = 0.6
 
 [sub_resource type="StandardMaterial3D" id="SnackMaterial"]
-albedo_color = Color(0.82, 0.87, 0.92, 1)
+albedo_color = Color(0.95, 0.69, 0.24, 1)
 roughness = 0.8
 
 [sub_resource type="BoxShape3D" id="BoxShape_crib_goal"]
@@ -224,6 +225,13 @@ scale = Vector3(2.4, 2.1, 0.12)
 mesh = SubResource("DoorPanelMesh")
 material_override = SubResource("DoorPanelMaterial")
 
+[node name="SpillLight" type="OmniLight3D" parent="Fridge"]
+position = Vector3(0, 1.05, 0.15)
+light_color = Color(0.78, 0.88, 1, 1)
+light_energy = 0.0
+omni_range = 0.0
+shadow_enabled = true
+
 [node name="Pantry" type="Node3D" parent="."]
 position = Vector3(13.2, 0.0, 2.5)
 script = ExtResource("9_door")
@@ -258,8 +266,10 @@ position = Vector3(13.5, 0.3, 0.0)
 script = ExtResource("10_snack")
 
 [node name="Visual" type="MeshInstance3D" parent="Snack"]
+position = Vector3(0, 0.36, 0)
 mesh = SubResource("SnackMesh")
 material_override = SubResource("SnackMaterial")
+script = ExtResource("17_snack_visual")
 
 [node name="NightstandClock" type="Label3D" parent="."]
 position = Vector3(-10.2, 1.0, -5.6)
@@ -307,6 +317,10 @@ position = Vector3(-10.2, 1, -5.6)
 
 [node name="DoorCreak" type="AudioStreamPlayer3D" parent="AudioDirector"]
 
+[node name="SnackPickup" type="AudioStreamPlayer" parent="AudioDirector"]
+
+[node name="SnackDrop" type="AudioStreamPlayer3D" parent="AudioDirector"]
+
 [node name="BrightnessReadout" type="CanvasLayer" parent="."]
 script = ExtResource("5_readout")
 
@@ -314,6 +328,7 @@ script = ExtResource("5_readout")
 script = ExtResource("7_indicator_manager")
 
 [node name="PhaseDirector" type="Node" parent="."]
+process_mode = 3
 script = ExtResource("12_phase")
 
 [node name="DebugTools" type="Node" parent="."]
