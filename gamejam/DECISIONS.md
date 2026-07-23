@@ -130,6 +130,50 @@ Record decisions another session or tool would otherwise have to rediscover.
   costs a block.
 - **Evidence / handoff:** `gamejam/PLAN.md` sections 1, 1.1, 6; lane briefs
 
+## 2026-07-23 — Identity pass: construction-paper menus + family voice acting
+
+- **Decision:** (1) Menu chrome (title/win/lose only) adopts the director's
+  hand-drawn construction-paper-and-crayon style, built from his Photoshop
+  mockup exported as layered transparent PNGs — the in-game world's
+  greyscale+hue language stays locked; the contrast is intentional framing.
+  (2) The brief's "do not record anything" rule is overruled for ORIGINAL
+  family voice clips (operator's daughter + operator), capped at one ~20 min
+  phone session, wired as swaps over the retained CC0 fallbacks. The parent's
+  "hm?"/"what was that?" doubles as an investigate voice tell (readability).
+  Publishing the child's voice is the operator-parent's explicit call; no
+  names appear anywhere.
+- **Why:** Highest charm-per-minute assets available; gives the game an
+  identity beyond mechanics; the no-recording rule was a time-budget rule and
+  the time now exists.
+- **Rejected / cut:** Restyling the in-game world or adding HUD; unbounded
+  recording/re-recording sessions.
+- **Owner:** Noah (assets), lane A (integration post-freeze), Claude (boundary)
+- **Revisit when:** Assets miss the Saturday-morning integration window —
+  CC0 + plain menus ship fine without them.
+- **Evidence / handoff:** BACKLOG "Director's parallel art track".
+
+## 2026-07-23 — Third-run rulings: masking scope, bark alarm, capture epilogue
+
+- **Decision:** (1) Ambient masking applies ONLY to player-caused noise
+  (footsteps, wrapper) — the pet's bark emits unmasked; it is the house's
+  alarm and must summon the parent even beside the TV. (2) TV/speaker masks
+  reduce, never erase — strength ≈ 0.6 cap, tight radii. (3) Capture epilogue
+  (directorial): after depositing the player, the parent exits the kid
+  bedroom, closes the BedroomDoor (re-arming the creak-open opening move),
+  waits ~3.5 s in the hall, peeks back once, then resumes the routine at now.
+  (4) Carry gets a hard 20 s force-deposit failsafe — soft-locks must be
+  structurally impossible. (5) The carried snack is a first-class visual:
+  larger, emissive, pulsing, with pickup sting and pop — the wrapper-ring
+  mechanic only reads once carrying is visible.
+- **Why:** Director's third run: deaf parent (mask overtune + masked bark),
+  a carry soft-lock, and a still-invisible snack. All observed live.
+- **Rejected / cut:** Masking door creaks differently (pantry sits outside
+  mask range anyway); silencing the wrapper while standing (it IS the
+  return-leg mechanic).
+- **Owner:** Noah (behavior beats), lanes A/B (B7/A8), Claude (verify gates)
+- **Revisit when:** CP4/CP5 replay verdicts.
+- **Evidence / handoff:** B7/A8 work orders in chat + BACKLOG.
+
 ## 2026-07-23 — Character-art stretch ruling: sprites maybe, rigs never (this jam)
 
 - **Decision:** Rigged 3D characters (the parked `assets/*.glb`) are out for

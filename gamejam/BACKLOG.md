@@ -104,6 +104,20 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [ ] Submission page: screenshots, GIF of a ring resolving, controls, the
       theme-reading sentence — Claude drafts, Noah posts.
 
+## Director's parallel art track (Noah's hands — costs the lanes nothing)
+
+- [ ] Construction-paper UI mockup — 1920×1080 Photoshop; three screens (title,
+      win, lose); separate transparent PNGs: paper bg, wordmark, snack doodles,
+      controls block, press-any-key; hand-drawn lettering. Menus only — the
+      in-game world language stays locked.
+- [ ] Family voice session (~20 min cap) — daughter: "no no no, I hungry!"
+      (carry), "uh oh" (drop), giggle (win), "night night"; Noah: carry grumble,
+      "hm?" + "what was that?" (investigate voice tells). AirDrop to
+      assets/voice/; CC0 clips remain fallbacks.
+- [ ] Integration (bounded lane tasks, AFTER the Friday freeze is banked):
+      lane A assembles the menu PNGs as Control screens + wires voice swaps
+      with normalized levels.
+
 ## Could — only if everything above is green by Saturday 15:00
 
 - [ ] Dithering post-process per brief 11 (band edge at brightness 0.35, actors excluded).
@@ -113,6 +127,11 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       timer, existing hue/brightness language preserved. Rigged 3D GLBs stay
       parked post-jam (brief scope lock).
 - [ ] Extra hazard placement and routine rows beyond the minimums — from Noah's play notes.
+- [ ] Post-jam refactor list (docs only, zero jam-code changes) — Claude
+      background: read-only health review of game/scripts + autoloads, findings
+      into docs/POST-JAM-REFACTOR.md. Standing rule: only a repeat bug-factory
+      file earns a surgical in-jam tidy (Parent.gd on watch); nothing structural
+      after the Friday tag.
 
 ## Cut / parked — invoke via PLAN.md section 4 trip-wires, in this order
 
