@@ -55,6 +55,19 @@ routine, never a timer bar.
 | Hold E | Open doors — hold Shift too to rush them |
 | R | Restart after the end screen |
 
+## Cover thumbnail — locked concept (630x500)
+
+Construction-paper + crayon, matching the menu. Left-to-right size gradient
+carrying the eye big-to-small: LARGE purple parent lunging in from the LEFT,
+arm outstretched → MEDIUM blue toddler running through the CENTER, head
+twisted back over the shoulder at the parent → SMALL chip bag held out to the
+RIGHT, landing the eye beside a glowing red countdown clock (goal + pressure
+together). Title crayon-lettered across the top with the tagline beneath.
+Warm paper ground, dark house band along the bottom, magenta motion swooshes
+trailing the kid. Production: Noah hand-draws over the composition mockup
+(preferred), or poses it in-engine (scrub clock to ~0:30) and crayon-frames
+the screenshot.
+
 ## Screenshots / GIF checklist (capture on the frozen build)
 
 - [ ] Title card
