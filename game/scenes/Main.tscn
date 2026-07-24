@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3]
+[gd_scene load_steps=34 format=3]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/LevelBuilder.gd" id="2_level"]
@@ -17,13 +17,15 @@
 [ext_resource type="Script" path="res://scripts/GameFlow.gd" id="15_game_flow"]
 [ext_resource type="Script" path="res://scripts/AudioDirector.gd" id="16_audio"]
 [ext_resource type="Script" path="res://scripts/SnackVisualPresenter.gd" id="17_snack_visual"]
+[ext_resource type="Script" path="res://scripts/InteractHUD.gd" id="18_interact_hud"]
+[ext_resource type="Script" path="res://scripts/TVNoteEmitter.gd" id="19_tv_notes"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
 background_color = Color(0.045, 0.055, 0.07, 1)
 ambient_light_source = 3
 ambient_light_color = Color(0.38, 0.42, 0.5, 1)
-ambient_light_energy = 0.04
+ambient_light_energy = 0.05
 tonemap_mode = 2
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_static"]
@@ -98,13 +100,6 @@ script = ExtResource("1_main")
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_main")
 
-[node name="Sun" type="DirectionalLight3D" parent="."]
-rotation_degrees = Vector3(-55, -25, 0)
-light_color = Color(0.76, 0.83, 0.95, 1)
-light_energy = 0.15
-shadow_enabled = true
-shadow_opacity = 0.8
-
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("3_camera")
 
@@ -170,6 +165,10 @@ loudness_multiplier = 4.0
 surface_size = Vector2(1.8, 1.0)
 surface_group = &"surface_toys"
 surface_color = Color(0.768627, 0.788235, 0.807843, 1)
+
+[node name="TVNotes" type="Node3D" parent="Level"]
+position = Vector3(-2.75, 1.35, -4.1)
+script = ExtResource("19_tv_notes")
 
 [node name="Player" type="CharacterBody3D" parent="." groups=["player"]]
 position = Vector3(-12.4, 0.6, -4.0)
@@ -248,25 +247,25 @@ monitorable = false
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Crib/WinArea"]
 shape = SubResource("BoxShape_crib_goal")
 
-[node name="Fridge" type="Node3D" parent="."]
-position = Vector3(12.48, 0.0, -5.2)
+[node name="Fridge" type="Node3D" parent="." groups=["interactable"]]
+position = Vector3(12.55, 0.0, -4.2)
 script = ExtResource("9_door")
 door_kind = 2
 provides_snack = true
 open_rotation_degrees = Vector3(0, -90, 0)
-fridge_blocker_size = Vector3(0.12, 2.1, 2.2)
+fridge_blocker_size = Vector3(2.4, 2.1, 0.12)
+blocker_center_offset = Vector3(1.2, 0, 0)
 
 [node name="DoorVisual" type="StaticBody3D" parent="Fridge"]
-position = Vector3(0, 0, -1.1)
 
 [node name="Panel" type="MeshInstance3D" parent="Fridge/DoorVisual"]
-position = Vector3(0, 1.05, 1.1)
-scale = Vector3(0.12, 2.1, 2.2)
+position = Vector3(1.2, 1.05, 0)
+scale = Vector3(2.4, 2.1, 0.12)
 mesh = SubResource("DoorPanelMesh")
 material_override = SubResource("DoorPanelMaterial")
 
 [node name="SpillLight" type="OmniLight3D" parent="Fridge"]
-position = Vector3(-0.15, 1.05, 0)
+position = Vector3(0, 1.05, 0)
 light_color = Color(0.78, 0.88, 1, 1)
 light_energy = 0.0
 omni_range = 0.0
@@ -274,7 +273,7 @@ shadow_enabled = true
 shadow_blur = 2.0
 shadow_opacity = 0.8
 
-[node name="Pantry" type="Node3D" parent="."]
+[node name="Pantry" type="Node3D" parent="." groups=["interactable"]]
 position = Vector3(13.2, 0.0, 2.5)
 script = ExtResource("9_door")
 door_kind = 1
@@ -289,7 +288,7 @@ scale = Vector3(3.4, 2.0, 0.12)
 mesh = SubResource("DoorPanelMesh")
 material_override = SubResource("DoorPanelMaterial")
 
-[node name="BedroomDoor" type="Node3D" parent="."]
+[node name="BedroomDoor" type="Node3D" parent="." groups=["interactable"]]
 position = Vector3(-12.75, 0.0, -1.5)
 script = ExtResource("9_door")
 door_kind = 0
@@ -303,7 +302,7 @@ scale = Vector3(2.3, 1.2, 0.12)
 mesh = SubResource("DoorPanelMesh")
 material_override = SubResource("DoorPanelMaterial")
 
-[node name="BathroomDoor" type="Node3D" parent="Level"]
+[node name="BathroomDoor" type="Node3D" parent="Level" groups=["interactable"]]
 position = Vector3(-5.85, 0.0, -1.5)
 script = ExtResource("9_door")
 player_path = NodePath("../../Player")
@@ -349,7 +348,7 @@ script = ExtResource("16_audio")
 
 [node name="LightSwitch" type="AudioStreamPlayer3D" parent="AudioDirector"]
 
-[node name="PlayerFootsteps" type="AudioStreamPlayer" parent="AudioDirector"]
+[node name="PlayerFootsteps" type="AudioStreamPlayer3D" parent="AudioDirector"]
 
 [node name="ParentFootsteps" type="AudioStreamPlayer3D" parent="AudioDirector"]
 
@@ -375,16 +374,16 @@ position = Vector3(-10.2, 1, -5.6)
 
 [node name="DoorCreak" type="AudioStreamPlayer3D" parent="AudioDirector"]
 
-[node name="SnackPickup" type="AudioStreamPlayer" parent="AudioDirector"]
+[node name="SnackPickup" type="AudioStreamPlayer3D" parent="AudioDirector"]
 
 [node name="SnackDrop" type="AudioStreamPlayer3D" parent="AudioDirector"]
 
 [node name="Voice" type="AudioStreamPlayer" parent="AudioDirector"]
 
-[node name="WrapperFoley" type="AudioStreamPlayer" parent="AudioDirector"]
+[node name="WrapperFoley" type="AudioStreamPlayer3D" parent="AudioDirector"]
 
 [node name="FridgePop" type="AudioStreamPlayer3D" parent="AudioDirector"]
-position = Vector3(13.75, 1.1, -5.3)
+position = Vector3(12.55, 1.05, -4.2)
 
 [node name="BathroomFoley" type="AudioStreamPlayer3D" parent="AudioDirector"]
 position = Vector3(-5.8, 1, -3.5)
@@ -415,6 +414,16 @@ text = "Brightness: --"
 layer = 20
 process_mode = 3
 script = ExtResource("15_game_flow")
+
+[node name="InteractHUD" type="Control" parent="GameFlow"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("18_interact_hud")
 
 [node name="TitleCard" type="Control" parent="GameFlow"]
 layout_mode = 3

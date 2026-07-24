@@ -111,7 +111,7 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 
 @onready var _tv_click: AudioStreamPlayer3D = $TVClickOff
 @onready var _light_switch: AudioStreamPlayer3D = $LightSwitch
-@onready var _player_footsteps: AudioStreamPlayer = $PlayerFootsteps
+@onready var _player_footsteps: AudioStreamPlayer3D = $PlayerFootsteps
 @onready var _parent_footsteps: AudioStreamPlayer3D = $ParentFootsteps
 @onready var _win_sting: AudioStreamPlayer = $WinSting
 @onready var _caught_sting: AudioStreamPlayer = $CaughtSting
@@ -122,10 +122,10 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 @onready var _fridge_hum: AudioStreamPlayer3D = $FridgeHum
 @onready var _clock_tick: AudioStreamPlayer3D = $ClockTick
 @onready var _door_creak: AudioStreamPlayer3D = $DoorCreak
-@onready var _snack_pickup: AudioStreamPlayer = $SnackPickup
+@onready var _snack_pickup: AudioStreamPlayer3D = $SnackPickup
 @onready var _snack_drop: AudioStreamPlayer3D = $SnackDrop
 @onready var _voice: AudioStreamPlayer = $Voice
-@onready var _wrapper_foley: AudioStreamPlayer = $WrapperFoley
+@onready var _wrapper_foley: AudioStreamPlayer3D = $WrapperFoley
 @onready var _fridge_pop: AudioStreamPlayer3D = $FridgePop
 @onready var _bathroom_foley: AudioStreamPlayer3D = $BathroomFoley
 
@@ -293,6 +293,7 @@ func _wire_streams_and_tuning() -> void:
 
 	_player_footsteps.stream = _select_pool_stream(&"footstep_wood")
 	_player_footsteps.volume_db = hardwood_step_volume_db
+	_player_footsteps.max_distance = 8.0
 
 	_parent_footsteps.stream = _select_pool_stream(&"parent_footstep")
 	_parent_footsteps.volume_db = parent_step_volume_db
@@ -328,6 +329,7 @@ func _wire_streams_and_tuning() -> void:
 
 	_snack_pickup.stream = SNACK_PICKUP_STREAM
 	_snack_pickup.volume_db = snack_pickup_volume_db
+	_snack_pickup.max_distance = 8.0
 	_snack_drop.stream = SNACK_DROP_STREAM
 	_snack_drop.volume_db = snack_drop_volume_db
 	_snack_drop.max_distance = snack_drop_max_distance
@@ -336,6 +338,7 @@ func _wire_streams_and_tuning() -> void:
 	_voice.volume_db = voice_volume_db
 	_wrapper_foley.stream = _select_pool_stream(&"wrapper_crinkle")
 	_wrapper_foley.volume_db = wrapper_volume_db
+	_wrapper_foley.max_distance = 8.0
 	_fridge_pop.stream = _select_pool_stream(&"fridge_open_pop")
 	_fridge_pop.volume_db = fridge_pop_volume_db
 	_fridge_pop.max_distance = fridge_pop_max_distance
@@ -349,6 +352,7 @@ func _collect_doors() -> void:
 		bedroom_door_path,
 		pantry_door_path,
 		bathroom_door_path,
+		fridge_path,
 	]:
 		var door: DinnerDoor = get_node_or_null(door_path) as DinnerDoor
 		if door == null:
@@ -494,6 +498,7 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 
 
 func _play_player_footstep(surface_multiplier: float) -> void:
+	_player_footsteps.global_position = _player.global_position
 	if surface_multiplier >= _player.toys_surface_multiplier - 0.01:
 		_player_footsteps.stream = TOY_SQUEAK_STREAM
 		_player_footsteps.volume_db = toy_squeak_volume_db
@@ -556,7 +561,7 @@ func _update_door_creak(delta: float) -> void:
 	if moving_door == null:
 		_stop_door_creak()
 		return
-	_door_creak.global_position = moving_door.global_position
+	_door_creak.global_position = _get_door_hinge_position(moving_door)
 	var rush_weight: float = clampf(
 		inverse_lerp(0.2, 1.0, fastest_rate),
 		0.0,
@@ -616,6 +621,7 @@ func _on_pet_bark_started() -> void:
 
 func _on_snack_picked_up(_carrier: DinnerPlayer) -> void:
 	if _game_active:
+		_snack_pickup.global_position = _carrier.global_position
 		_snack_pickup.play()
 
 
@@ -771,6 +777,8 @@ func _play_pool(pool_id: StringName) -> bool:
 				return false
 			_wrapper_foley.stream = stream
 			_wrapper_foley.pitch_scale = pitch
+			if _player != null:
+				_wrapper_foley.global_position = _player.global_position
 			_wrapper_foley.play()
 		&"bathroom":
 			_bathroom_foley.stream = stream
@@ -779,6 +787,11 @@ func _play_pool(pool_id: StringName) -> bool:
 		_:
 			return false
 	return true
+
+
+func _get_door_hinge_position(door: DinnerDoor) -> Vector3:
+	var visual: Node3D = door.get_node_or_null(door.door_visual_path) as Node3D
+	return visual.global_position if visual != null else door.global_position
 
 
 func _select_pool_stream(pool_id: StringName) -> AudioStream:
@@ -820,6 +833,7 @@ func _update_fridge_pop(delta: float) -> void:
 	_fridge_previous_openness = current_openness
 	var is_opening: bool = opening_rate > 0.01
 	if is_opening and not _fridge_was_opening:
+		_fridge_pop.global_position = _get_door_hinge_position(_fridge)
 		_play_pool(&"fridge_open_pop")
 	_fridge_was_opening = is_opening
 

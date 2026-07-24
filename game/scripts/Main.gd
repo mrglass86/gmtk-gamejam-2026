@@ -75,6 +75,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a12"):
 		_verify_a12_lighting_contrast()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a16"):
+		_verify_a16_world_pack()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -573,7 +576,7 @@ func _verify_audio_pass() -> void:
 	await get_tree().process_frame
 	assert(
 		$AudioDirector/TVClickOff is AudioStreamPlayer3D
-		and $AudioDirector/PlayerFootsteps is AudioStreamPlayer
+		and $AudioDirector/PlayerFootsteps is AudioStreamPlayer3D
 		and $AudioDirector/TVBed is AudioStreamPlayer3D
 	)
 	print(
@@ -770,7 +773,7 @@ func _verify_a8_tuning() -> void:
 
 func _verify_a9_practical_lighting() -> void:
 	var environment: Environment = ($WorldEnvironment as WorldEnvironment).environment
-	assert(is_equal_approx(environment.ambient_light_energy, 0.04))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
 
 	var level: Node3D = $Level as Node3D
 	var configured_range: float = float(level.get("lamp_range"))
@@ -848,7 +851,7 @@ func _verify_a9_practical_lighting() -> void:
 
 	print(
 		"A9 verification passed: five cool emissive practicals, 5.8 m pools, "
-		+ "0.04 ambient contrast, and live capsule/HUD brightness tracking."
+		+ "A16 0.05 ambient floor, and live capsule/HUD brightness tracking."
 	)
 	get_tree().quit()
 
@@ -859,7 +862,7 @@ func _verify_a10_presentation() -> void:
 		await get_tree().physics_frame
 
 	var environment: Environment = ($WorldEnvironment as WorldEnvironment).environment
-	assert(is_equal_approx(environment.ambient_light_energy, 0.04))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
 
 	var bathroom_door: DinnerDoor = $Level/BathroomDoor as DinnerDoor
 	assert(bathroom_door != null)
@@ -1084,8 +1087,8 @@ func _verify_a11_dress_pack() -> void:
 		if light is OmniLight3D:
 			shadowed_omni_count += 1
 			assert(is_equal_approx(light.shadow_blur, 2.0))
-	assert(shadowed_count == 7)
-	assert(shadowed_omni_count == 6)
+	assert(shadowed_count == 8)
+	assert(shadowed_omni_count == 8)
 
 	var level: Node3D = $Level as Node3D
 	var fixture_names: PackedStringArray = [
@@ -1169,7 +1172,7 @@ func _verify_a11_dress_pack() -> void:
 		$Level/NavigationRegion3D as NavigationRegion3D
 	).navigation_mesh
 	var navigation_polygon_count: int = navigation_mesh.get_polygon_count()
-	assert(navigation_polygon_count == 157)
+	assert(navigation_polygon_count == 150)
 	var navigation_map: RID = get_world_3d().navigation_map
 	var route_path: PackedVector3Array = NavigationServer3D.map_get_path(
 		navigation_map,
@@ -1224,7 +1227,7 @@ func _verify_a11_dress_pack() -> void:
 				"MeshInstance3D",
 				true,
 				false
-			).size() == 1
+			).size() >= 1
 		)
 
 	var debug_tools: DinnerDebugTools = $DebugTools as DinnerDebugTools
@@ -1270,14 +1273,14 @@ func _verify_a12_lighting_contrast() -> void:
 		await get_tree().physics_frame
 
 	var environment: Environment = ($WorldEnvironment as WorldEnvironment).environment
-	assert(is_equal_approx(environment.ambient_light_energy, 0.04))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
 
 	var level: Node3D = $Level as Node3D
 	var configured_attenuation: float = float(
 		level.get("omni_visual_attenuation")
 	)
 	var configured_energy: float = float(level.get("lamp_energy"))
-	assert(is_equal_approx(configured_attenuation, 1.8))
+	assert(is_equal_approx(configured_attenuation, 2.0))
 	assert(is_equal_approx(configured_energy, 2.2))
 
 	var fixture_names: PackedStringArray = [
@@ -1413,6 +1416,155 @@ func _verify_a12_lighting_contrast() -> void:
 	get_tree().quit()
 
 
+func _verify_a16_world_pack() -> void:
+	get_tree().paused = false
+	for settle_frame: int in range(12):
+		await get_tree().physics_frame
+
+	var level: Node3D = $Level as Node3D
+	assert(not level.has_node("LivingSouth"))
+	var nav_region: NavigationRegion3D = (
+		$Level/NavigationRegion3D as NavigationRegion3D
+	)
+	var polygon_count: int = nav_region.navigation_mesh.get_polygon_count()
+	assert(polygon_count > 0)
+
+	var switches: Array[Node] = get_tree().get_nodes_in_group("world_switch")
+	assert(switches.size() == 5)
+	var expected_switch_ids: Array[StringName] = [
+		&"dining",
+		&"kitchen",
+		&"foyer",
+		&"bathroom",
+		&"kid_hall",
+	]
+	for switch_id: StringName in expected_switch_ids:
+		var found: bool = false
+		for node: Node in switches:
+			if node.get("switch_id") == switch_id:
+				found = true
+				assert(is_equal_approx(float(node.get("click_loudness")), 1.5))
+				assert(node.get_node("Click") is AudioStreamPlayer3D)
+		assert(found, "Missing A16 switch %s." % switch_id)
+	var kid_hall_switch: DinnerWorldSwitch = (
+		$Level/KidHallSwitch as DinnerWorldSwitch
+	)
+	assert(not kid_hall_switch.is_on)
+	assert(not ($Level/HallDoorLampVisual as Node3D).visible)
+	kid_hall_switch.set_state(true, false)
+	assert(($Level/HallDoorLampVisual as Node3D).visible)
+	assert(LightSystem.is_light_enabled("HallDoorLampVisual"))
+	kid_hall_switch.set_state(false, false)
+
+	assert(not has_node("Sun"))
+	var environment: Environment = (
+		$WorldEnvironment as WorldEnvironment
+	).environment
+	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
+	for fixture_name: String in [
+		"KidLampVisual",
+		"LivingLampVisual",
+		"KitchenLampVisual",
+		"MidLampVisual",
+		"AlcoveLampVisual",
+		"BathroomLampVisual",
+		"HallDoorLampVisual",
+	]:
+		var light: OmniLight3D = (
+			level.get_node("%s/Light" % fixture_name) as OmniLight3D
+		)
+		assert(is_equal_approx(light.omni_attenuation, 2.0))
+
+	# Renderer falloff changed; locked analytic linear falloff did not.
+	LightSystem.register_light(
+		"a16_analytic_guard",
+		"bedroom",
+		Vector3(50.0, 0.0, 0.0),
+		10.0
+	)
+	assert(
+		is_equal_approx(
+			LightSystem.get_brightness_at(Vector3(56.5, 0.0, 0.0)),
+			0.35
+		)
+	)
+	LightSystem.unregister_light("a16_analytic_guard")
+
+	var fridge: DinnerDoor = $Fridge as DinnerDoor
+	var hinge: Node3D = $Fridge/DoorVisual as Node3D
+	var panel: MeshInstance3D = $Fridge/DoorVisual/Panel as MeshInstance3D
+	assert(
+		hinge.global_position.distance_to(Vector3(12.55, 0.0, -4.2))
+		< 0.01
+	)
+	for openness_sample: float in [0.0, 0.25, 0.5, 0.75, 1.0]:
+		fridge.openness = openness_sample
+		fridge.call("_apply_visual")
+		assert(panel.global_position.x >= hinge.global_position.x - 0.01)
+		assert(panel.global_position.z >= hinge.global_position.z - 0.01)
+	assert(absf(panel.global_position.x - hinge.global_position.x) < 0.02)
+	assert(panel.global_position.z > hinge.global_position.z + 1.1)
+	fridge.openness = 0.0
+	fridge.call("_apply_visual")
+
+	var audio_director: DinnerAudioDirector = (
+		$AudioDirector as DinnerAudioDirector
+	)
+	for child: Node in audio_director.get_children():
+		if child.name in [&"WinSting", &"CaughtSting", &"Voice"]:
+			continue
+		assert(
+			child is AudioStreamPlayer3D,
+			"Gameplay SFX must be positional: %s." % child.name
+		)
+	for door: Node in get_tree().get_nodes_in_group("interactable"):
+		if door is DinnerDoor:
+			var door_hinge: Vector3 = audio_director.call(
+				"_get_door_hinge_position",
+				door
+			)
+			var door_visual: Node3D = door.get_node(
+				(door as DinnerDoor).door_visual_path
+			) as Node3D
+			assert(door_hinge.distance_to(door_visual.global_position) < 0.001)
+
+	assert($GameFlow/InteractHUD is DinnerInteractHUD)
+	var tv_notes: TVNoteEmitter = $Level/TVNotes as TVNoteEmitter
+	($PhaseDirector as PhaseDirector).apply_phase(1)
+	assert(tv_notes.visible)
+	tv_notes.call("_spawn_note")
+	assert(tv_notes.get_child_count() == 1)
+	($PhaseDirector as PhaseDirector).apply_phase(2)
+	assert(not tv_notes.visible)
+
+	for toy_name: String in ["ToyHallRug", "ToyDining", "ToyCarpet"]:
+		var toy: NoiseSurface = level.get_node(toy_name) as NoiseSurface
+		assert(toy.surface_height <= 0.03)
+		assert(
+			toy.find_children("*", "CollisionShape3D", true, false).size()
+			== 1
+		)
+		assert(
+			toy.find_children("*", "MeshInstance3D", true, false).size()
+			>= 1
+		)
+	var dog_bed: StaticBody3D = $Level/DogBed as StaticBody3D
+	assert(
+		dog_bed.find_children("*", "CollisionShape3D", true, false).size()
+		== 1
+	)
+	assert(($Level/DogBed/RoundBed as MeshInstance3D).mesh is CylinderMesh)
+	assert(($Level/KitchenBowl as Node3D).position.z > dog_bed.position.z)
+
+	print(
+		"A16 verification passed: nav=%d polygons, switches=%d, "
+		% [polygon_count, switches.size()]
+		+ "inverse-square practicals, south-sweep fridge, positional SFX, "
+		+ "interaction HUD, TV notes, and dressed hazard/pet props."
+	)
+	get_tree().quit()
+
+
 func _assert_snack_clear_of_panel(
 	snack_visual: MeshInstance3D,
 	panel: MeshInstance3D
@@ -1499,8 +1651,21 @@ func _capture_layout(capture_path: String) -> void:
 	var capture_a10_fridge_closed: bool = OS.get_cmdline_user_args().has(
 		"--capture-a10-fridge-closed"
 	)
-	if capture_a10_fridge_open or capture_a10_fridge_closed:
-		_configure_a10_fridge_capture(capture_a10_fridge_open)
+	var capture_a16_fridge_open: bool = OS.get_cmdline_user_args().has(
+		"--capture-a16-fridge-open"
+	)
+	var capture_a16_fridge_closed: bool = OS.get_cmdline_user_args().has(
+		"--capture-a16-fridge-closed"
+	)
+	if (
+		capture_a10_fridge_open
+		or capture_a10_fridge_closed
+		or capture_a16_fridge_open
+		or capture_a16_fridge_closed
+	):
+		_configure_a16_fridge_capture(
+			capture_a10_fridge_open or capture_a16_fridge_open
+		)
 	if OS.get_cmdline_user_args().has("--capture-a7-snack"):
 		var pantry: DinnerDoor = $Pantry as DinnerDoor
 		pantry.openness = 0.6
@@ -1527,14 +1692,14 @@ func _capture_layout(capture_path: String) -> void:
 	get_tree().quit()
 
 
-func _configure_a10_fridge_capture(is_open: bool) -> void:
+func _configure_a16_fridge_capture(is_open: bool) -> void:
 	var fridge: DinnerDoor = $Fridge as DinnerDoor
 	fridge.provides_snack = false
 	fridge.openness = 1.0 if is_open else 0.0
 	fridge.call("_apply_visual")
-	var camera_target: Vector3 = Vector3(12.3, 0.8, -5.1)
+	var camera_target: Vector3 = Vector3(13.2, 0.2, -4.5)
 	var camera_rig: Node3D = $CameraRig as Node3D
-	camera_rig.global_position = camera_target + Vector3(0.0, 16.0, 6.0)
+	camera_rig.global_position = camera_target + Vector3(0.0, 18.0, 0.01)
 	camera_rig.look_at(camera_target, Vector3.UP)
 	($CameraRig/OrthoCamera as Camera3D).size = 9.0
 
@@ -1545,9 +1710,9 @@ func _configure_a10_fridge_capture(is_open: bool) -> void:
 	var state_label: Label = Label.new()
 	state_label.name = "State"
 	state_label.text = (
-		"FRIDGE OPEN — OUTWARD SWEEP / NORTH-WALL REST"
+		"FRIDGE OPEN — SOUTH-WEST HINGE / PANEL POINTS SOUTH"
 		if is_open
-		else "FRIDGE CLOSED — WALL-SIDE HINGE"
+		else "FRIDGE CLOSED — SOUTH FACE / SOUTH-WEST HINGE"
 	)
 	state_label.position = Vector2(32.0, 82.0)
 	state_label.add_theme_font_size_override("font_size", 30)
@@ -1557,9 +1722,9 @@ func _configure_a10_fridge_capture(is_open: bool) -> void:
 	state_layer.add_child(state_label)
 
 	var wall_label: Label3D = Label3D.new()
-	wall_label.name = "A10NorthWallLabel"
-	wall_label.text = "NORTH WALL"
-	wall_label.position = Vector3(10.8, 0.5, -6.15)
+	wall_label.name = "A16SouthDirectionLabel"
+	wall_label.text = "SOUTH / DOWN-SCREEN"
+	wall_label.position = Vector3(13.2, 0.5, -1.5)
 	wall_label.font_size = 30
 	wall_label.outline_size = 7
 	wall_label.pixel_size = 0.003
@@ -1569,15 +1734,13 @@ func _configure_a10_fridge_capture(is_open: bool) -> void:
 	add_child(wall_label)
 
 	var hinge_label: Label3D = Label3D.new()
-	hinge_label.name = "A10HingeLabel"
+	hinge_label.name = "A16HingeLabel"
 	hinge_label.text = "HINGE"
-	hinge_label.font_size = 28
+	hinge_label.position = Vector3(12.55, 0.35, -4.2)
+	hinge_label.font_size = 30
 	hinge_label.outline_size = 7
 	hinge_label.pixel_size = 0.003
-	hinge_label.modulate = Color("#dce9ff")
+	hinge_label.modulate = Color("#d889de")
 	hinge_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	hinge_label.no_depth_test = true
 	add_child(hinge_label)
-	hinge_label.global_position = (
-		$Fridge/DoorVisual as Node3D
-	).global_position + Vector3.UP * 1.65

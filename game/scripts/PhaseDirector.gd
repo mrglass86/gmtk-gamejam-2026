@@ -59,7 +59,9 @@ func _physics_process(delta: float) -> void:
 
 func apply_phase(current_phase: int) -> void:
 	var clamped_phase: int = clampi(current_phase, 0, 4)
+	var hall_door_enabled: bool = _get_switch_state(&"kid_hall", false)
 	LightSystem.set_zone_enabled("bedroom", true)
+	LightSystem.set_zone_enabled("bathroom", true)
 	LightSystem.set_zone_enabled("living", clamped_phase < 1)
 	LightSystem.set_zone_enabled("kitchen", clamped_phase < 3)
 	LightSystem.set_zone_enabled("hall", clamped_phase < 4)
@@ -69,11 +71,27 @@ func apply_phase(current_phase: int) -> void:
 	_set_level_node_visible("KidLampVisual", true)
 	_set_level_node_visible("LivingLampVisual", clamped_phase < 1)
 	_set_level_node_visible("TVGlow", clamped_phase < 2)
+	_set_level_node_visible("TVNotes", clamped_phase < 2)
 	_set_level_node_visible("KitchenLampVisual", clamped_phase < 3)
 	_set_level_node_visible("MidLampVisual", clamped_phase < 4)
 	_set_level_node_visible("AlcoveLampVisual", clamped_phase < 4)
+	_set_level_node_visible("BathroomLampVisual", true)
+	# The kid-door hall practical is player/parent controlled and starts dark.
+	# It is not part of the countdown hall-zone sweep.
+	LightSystem.set_light_enabled("HallDoorLampVisual", hall_door_enabled)
+	_set_level_node_visible("HallDoorLampVisual", hall_door_enabled)
 	if _tv_glow != null and clamped_phase < 2:
 		apply_tv_flicker()
+	for node: Node in get_tree().get_nodes_in_group("world_switch"):
+		if node.has_method("sync_state_from_target"):
+			node.call("sync_state_from_target")
+
+
+func _get_switch_state(switch_id: StringName, fallback: bool) -> bool:
+	for node: Node in get_tree().get_nodes_in_group("world_switch"):
+		if node.get("switch_id") == switch_id:
+			return bool(node.get("is_on"))
+	return fallback
 
 
 func apply_tv_flicker() -> void:

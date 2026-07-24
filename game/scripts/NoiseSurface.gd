@@ -34,6 +34,8 @@ func _build_surface() -> void:
 		shape = box_shape
 		if surface_group == &"surface_creaky":
 			_build_creaky_planks()
+		elif surface_group == &"surface_toys":
+			_build_toy_shapes()
 		else:
 			var box_mesh: BoxMesh = BoxMesh.new()
 			box_mesh.size = Vector3(
@@ -64,6 +66,56 @@ func _build_surface() -> void:
 	collision.shape = shape
 	collision.position.y = surface_height * 0.5
 	add_child(collision)
+
+
+func _build_toy_shapes() -> void:
+	var material: StandardMaterial3D = _make_surface_material(surface_color)
+	if name.contains("Dining"):
+		_add_toy_box(
+			"TrainBody",
+			Vector3(-0.18, 0.11, 0.0),
+			Vector3(0.72, 0.18, 0.28),
+			material
+		)
+		_add_toy_box(
+			"TrainCab",
+			Vector3(0.27, 0.18, 0.0),
+			Vector3(0.28, 0.32, 0.3),
+			material
+		)
+		_add_toy_box(
+			"TrainNose",
+			Vector3(-0.55, 0.13, 0.0),
+			Vector3(0.22, 0.22, 0.24),
+			material
+		)
+		return
+	var pill: MeshInstance3D = MeshInstance3D.new()
+	pill.name = "ToyPill"
+	pill.position = Vector3(0.0, 0.12, 0.0)
+	pill.rotation_degrees = Vector3(0.0, 0.0, 90.0)
+	var pill_mesh: CapsuleMesh = CapsuleMesh.new()
+	pill_mesh.radius = 0.18
+	pill_mesh.height = 0.78
+	pill.mesh = pill_mesh
+	pill.material_override = material
+	add_child(pill)
+
+
+func _add_toy_box(
+	node_name: String,
+	local_position: Vector3,
+	size: Vector3,
+	material: Material
+) -> void:
+	var part: MeshInstance3D = MeshInstance3D.new()
+	part.name = node_name
+	part.position = local_position
+	var mesh: BoxMesh = BoxMesh.new()
+	mesh.size = size
+	part.mesh = mesh
+	part.material_override = material
+	add_child(part)
 
 
 func _build_creaky_planks() -> void:

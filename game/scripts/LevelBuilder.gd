@@ -4,6 +4,8 @@ extends Node3D
 ## collision for the authored floor and walls. The completed collider set is
 ## baked exactly once at startup into the NavigationRegion3D below this node.
 
+const WORLD_SWITCH_SCRIPT: Script = preload("res://scripts/WorldSwitch.gd")
+
 @export var wall_height: float = 1.2
 @export var wall_thickness: float = 0.25
 @export var floor_thickness: float = 0.2
@@ -13,7 +15,7 @@ extends Node3D
 @export var prop_height: float = 0.8
 @export var lamp_energy: float = 2.2
 @export_range(5.5, 6.0) var lamp_range: float = 5.8
-@export_range(0.0, 10.0) var omni_visual_attenuation: float = 1.8
+@export_range(0.0, 10.0) var omni_visual_attenuation: float = 2.0
 @export var omni_source_height: float = 4.5
 @export var omni_shadow_blur: float = 2.0
 @export_range(0.0, 1.0) var shadow_opacity: float = 0.8
@@ -45,6 +47,7 @@ func _ready() -> void:
 	_build_walls()
 	_build_props()
 	_build_lights()
+	_build_switches()
 	_register_ambient_sources()
 	_bake_navigation_once()
 	if _is_layout_capture():
@@ -83,7 +86,6 @@ func _build_walls() -> void:
 	_add_wall("KidSouthB", Vector3(-9.3625, wall_height * 0.5, -1.5), Vector3(4.475, wall_height, wall_thickness))
 	_add_wall("KidBathDivider", Vector3(-7.25, wall_height * 0.5, -3.95), Vector3(wall_thickness, wall_height, 5.15))
 	_add_wall("BathLivingDivider", Vector3(-4.3, wall_height * 0.5, -4.05), Vector3(wall_thickness, wall_height, 4.95))
-	_add_wall("LivingSouth", Vector3(-2.0125, wall_height * 0.5, -1.7), Vector3(4.825, wall_height, wall_thickness))
 	_add_wall("DogKitchenDivider", Vector3(6.8, wall_height * 0.5, -3.9625), Vector3(wall_thickness, wall_height, 5.125))
 	_add_wall("AdultNorthA", Vector3(-14.5125, wall_height * 0.5, 1.5), Vector3(1.225, wall_height, wall_thickness))
 	_add_wall("AdultNorthB", Vector3(-9.3875, wall_height * 0.5, 1.5), Vector3(4.425, wall_height, wall_thickness))
@@ -98,7 +100,7 @@ func _build_props() -> void:
 	_add_prop("Nightstand", Vector3(-10.2, 0.35, -5.6), Vector3(0.8, 0.7, 0.8), prop_color)
 	_add_prop("TVConsole", Vector3(-3.2, 0.75, -4.1), Vector3(0.8, 1.5, 4.0), Color("#627b92"))
 	_add_couch()
-	_add_prop("DogBed", Vector3(5.5, 0.15, -4.75), Vector3(1.8, 0.3, 2.7), prop_color)
+	_add_dog_station()
 	_add_prop("KitchenCounter", Vector3(9.8, 0.45, -5.35), Vector3(5.4, 0.9, 2.1), prop_color)
 	_add_prop("FridgeBlock", Vector3(13.75, 1.1, -5.3), Vector3(2.4, 2.2, 2.2), Color("#9aa5b0"))
 	_add_kitchen_table()
@@ -160,6 +162,26 @@ func _build_lights() -> void:
 		-1.0,
 		Vector3(8.3, 4.5, 4.7)
 	)
+	_add_omni(
+		"BathroomLampVisual",
+		"bathroom",
+		Vector3(-5.75, 2.15, -3.9),
+		0.78,
+		0.0,
+		-1.0,
+		Vector3(-5.75, 4.5, -3.9)
+	)
+	_add_omni(
+		"HallDoorLampVisual",
+		"hall",
+		Vector3(-10.8, 2.0, 0.0),
+		0.76,
+		0.0,
+		5.6,
+		Vector3(-9.8, 4.5, 0.0),
+		Vector3(-10.8, 0.0, 0.0),
+		false
+	)
 	_add_area_glow(
 		"TVGlow",
 		Vector3(-2.75, 1.25, -4.1),
@@ -171,6 +193,44 @@ func _build_lights() -> void:
 	tv_glow.look_at(Vector3(1.55, 0.4, -4.4), Vector3.UP)
 	_add_area_glow("WindowGlow", Vector3(-14.75, 2.4, -4.0), Vector3(0.0, -90.0, 0.0), Color("#c7d5e7"))
 	_add_area_glow("DoorStripGlow", Vector3(-12.75, 0.2, 1.3), Vector3(-90.0, 0.0, 0.0), Color("#d5dce8"))
+
+
+func _build_switches() -> void:
+	_add_world_switch(
+		"DiningSwitch",
+		&"dining",
+		Vector3(-4.05, 1.0, 0.85),
+		"MidLampVisual",
+		true
+	)
+	_add_world_switch(
+		"KitchenSwitch",
+		&"kitchen",
+		Vector3(6.95, 1.0, -1.15),
+		"KitchenLampVisual",
+		true
+	)
+	_add_world_switch(
+		"FoyerSwitch",
+		&"foyer",
+		Vector3(8.75, 1.0, 6.2),
+		"AlcoveLampVisual",
+		true
+	)
+	_add_world_switch(
+		"BathroomSwitch",
+		&"bathroom",
+		Vector3(-4.48, 1.0, -2.15),
+		"BathroomLampVisual",
+		true
+	)
+	_add_world_switch(
+		"KidHallSwitch",
+		&"kid_hall",
+		Vector3(-11.25, 1.0, -1.34),
+		"HallDoorLampVisual",
+		false
+	)
 
 
 func _register_ambient_sources() -> void:
@@ -338,7 +398,7 @@ func _add_couch() -> void:
 func _add_kitchen_bowl() -> void:
 	var bowl: Node3D = Node3D.new()
 	bowl.name = "KitchenBowl"
-	bowl.position = Vector3(8.0, 0.08, -1.8)
+	bowl.position = Vector3(5.5, 0.08, -3.05)
 	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
 	mesh_instance.name = "Bowl"
 	var mesh: CylinderMesh = CylinderMesh.new()
@@ -352,6 +412,33 @@ func _add_kitchen_bowl() -> void:
 	mesh_instance.material_override = material
 	bowl.add_child(mesh_instance)
 	add_child(bowl)
+
+
+func _add_dog_station() -> void:
+	var station: StaticBody3D = StaticBody3D.new()
+	station.name = "DogBed"
+	station.position = Vector3(5.5, 0.0, -4.75)
+	station.add_to_group("nav_source")
+	_add_box_collision(
+		station,
+		Vector3(1.9, 0.28, 2.8),
+		Vector3(0.0, 0.14, 0.0)
+	)
+	var bed: MeshInstance3D = MeshInstance3D.new()
+	bed.name = "RoundBed"
+	bed.position.y = 0.14
+	var mesh: CylinderMesh = CylinderMesh.new()
+	mesh.top_radius = 1.05
+	mesh.bottom_radius = 1.18
+	mesh.height = 0.28
+	mesh.radial_segments = 32
+	bed.mesh = mesh
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = prop_color.lightened(0.08)
+	material.roughness = 1.0
+	bed.material_override = material
+	station.add_child(bed)
+	add_child(station)
 
 
 func _add_dining_table() -> void:
@@ -491,7 +578,8 @@ func _add_omni(
 	fixture_base_height: float,
 	range_override: float = -1.0,
 	light_world_position: Vector3 = Vector3.ZERO,
-	analytic_floor_position: Vector3 = Vector3.ZERO
+	analytic_floor_position: Vector3 = Vector3.ZERO,
+	starts_enabled: bool = true
 ) -> void:
 	var fixture: Node3D = Node3D.new()
 	fixture.name = node_name
@@ -520,6 +608,7 @@ func _add_omni(
 	light.shadow_opacity = shadow_opacity
 	fixture.add_child(light)
 	add_child(fixture)
+	fixture.visible = starts_enabled
 	var resolved_analytic_position: Vector3 = analytic_floor_position
 	if resolved_analytic_position.is_zero_approx():
 		resolved_analytic_position = Vector3(
@@ -531,8 +620,43 @@ func _add_omni(
 		node_name,
 		zone,
 		resolved_analytic_position,
-		effective_range
+		effective_range,
+		starts_enabled
 	)
+
+
+func _add_world_switch(
+	node_name: String,
+	switch_id: StringName,
+	position_value: Vector3,
+	target_fixture_name: String,
+	starts_on: bool
+) -> void:
+	var wall_switch: Node3D = WORLD_SWITCH_SCRIPT.new() as Node3D
+	wall_switch.name = node_name
+	wall_switch.position = position_value
+	wall_switch.set("switch_id", switch_id)
+	wall_switch.set("target_light_id", target_fixture_name)
+	wall_switch.set(
+		"target_fixture_path",
+		NodePath("../%s" % target_fixture_name)
+	)
+	wall_switch.set("starts_on", starts_on)
+	_add_box_visual(
+		wall_switch,
+		Vector3(0.24, 0.34, 0.12),
+		Color("#8d96a2")
+	)
+	var toggle: MeshInstance3D = MeshInstance3D.new()
+	toggle.name = "Toggle"
+	toggle.position = Vector3(0.0, 0.0, -0.08)
+	toggle.rotation_degrees.x = -18.0 if starts_on else 18.0
+	var toggle_mesh: BoxMesh = BoxMesh.new()
+	toggle_mesh.size = Vector3(0.08, 0.17, 0.06)
+	toggle.mesh = toggle_mesh
+	toggle.material_override = _make_material(Color("#dbe3ee"))
+	wall_switch.add_child(toggle)
+	add_child(wall_switch)
 
 
 func _add_fixture_visual(
@@ -645,6 +769,13 @@ func _add_box_visual(parent: Node3D, dimensions: Vector3, color: Color) -> void:
 	mesh_instance.mesh = mesh
 	mesh_instance.material_override = material
 	parent.add_child(mesh_instance)
+
+
+func _make_material(color: Color) -> StandardMaterial3D:
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 1.0
+	return material
 
 
 func _add_box_collision(

@@ -11,7 +11,13 @@ extends Node
 
 signal lighting_changed()
 
-const VALID_ZONES: PackedStringArray = ["bedroom", "hall", "living", "kitchen"]
+const VALID_ZONES: PackedStringArray = [
+	"bedroom",
+	"bathroom",
+	"hall",
+	"living",
+	"kitchen",
+]
 
 ## Static sources are registered by LevelBuilder when it creates each named
 ## ceiling lamp. Each source stores an analytic floor anchor, independent of
@@ -40,6 +46,22 @@ func register_light(id: String, zone: String, pos: Vector3, radius: float, enabl
 func unregister_light(id: String) -> void:
 	if _lights.erase(id):
 		lighting_changed.emit()
+
+
+## A16 additive control for physical wall switches. Zone scheduling remains
+## authoritative at phase boundaries; this method changes only one practical.
+func set_light_enabled(id: String, on: bool) -> void:
+	if not _lights.has(id):
+		push_error("LightSystem cannot toggle missing light: %s" % id)
+		return
+	var light_data: Dictionary = _lights[id]
+	light_data["enabled"] = on
+	_lights[id] = light_data
+	lighting_changed.emit()
+
+
+func is_light_enabled(id: String) -> bool:
+	return _lights.has(id) and bool((_lights[id] as Dictionary)["enabled"])
 
 
 ## Dynamic lights are intentionally outside VALID_ZONES: the fridge is a
