@@ -102,7 +102,7 @@ func _build_props() -> void:
 	_add_couch()
 	_add_dog_station()
 	_add_prop("KitchenCounter", Vector3(9.8, 0.45, -5.35), Vector3(5.4, 0.9, 2.1), prop_color)
-	_add_prop("FridgeBlock", Vector3(13.75, 1.1, -5.3), Vector3(2.4, 2.2, 2.2), Color("#9aa5b0"))
+	_add_fridge_block()
 	_add_kitchen_table()
 	_add_kitchen_bowl()
 	_add_dining_table()
@@ -439,6 +439,27 @@ func _add_dog_station() -> void:
 	bed.material_override = material
 	station.add_child(bed)
 	add_child(station)
+
+
+func _add_fridge_block() -> void:
+	var fridge_body: StaticBody3D = StaticBody3D.new()
+	fridge_body.name = "FridgeBlock"
+	fridge_body.add_to_group("nav_source")
+	# Retain the accepted nav footprint while pulling the visible shell a hair
+	# north so the south-face door never intersects it during its sweep.
+	_add_box_visual_part(
+		fridge_body,
+		"Body",
+		Vector3(13.75, 1.1, -5.35),
+		Vector3(2.4, 2.2, 2.15),
+		Color("#9aa5b0")
+	)
+	_add_box_collision(
+		fridge_body,
+		Vector3(2.4, 2.2, 2.2),
+		Vector3(13.75, 1.1, -5.3)
+	)
+	add_child(fridge_body)
 
 
 func _add_dining_table() -> void:

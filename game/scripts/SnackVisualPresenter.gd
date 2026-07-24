@@ -9,7 +9,7 @@ class_name SnackVisualPresenter
 @export_node_path("DinnerDoor") var fridge_path: NodePath = NodePath("../../Fridge")
 @export_node_path("DinnerDoor") var pantry_path: NodePath = NodePath("../../Pantry")
 @export var default_offset: Vector3 = Vector3(0.0, 0.42, 0.0)
-@export var fridge_reveal_offset: Vector3 = Vector3(0.0, 0.42, 0.72)
+@export var fridge_reveal_offset: Vector3 = Vector3(2.2, 0.42, 0.95)
 @export var pantry_reveal_offset: Vector3 = Vector3(1.0, 0.42, 0.9)
 @export var door_match_tolerance: float = 0.1
 @export_group("Carried Presentation")

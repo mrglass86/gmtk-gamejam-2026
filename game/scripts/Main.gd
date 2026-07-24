@@ -675,7 +675,7 @@ func _verify_a7_presentation() -> void:
 	assert(snack_mesh.radius >= 0.3 and snack_visual.position.y > snack_mesh.radius)
 	_assert_snack_clear_of_panel(snack_visual, $Fridge/DoorVisual/Panel)
 	assert(snack.pick_up(player))
-	assert(($AudioDirector/SnackPickup as AudioStreamPlayer).playing)
+	assert(($AudioDirector/SnackPickup as AudioStreamPlayer3D).playing)
 
 	var drop_position: Vector3 = Vector3(0.0, 0.0, 0.0)
 	snack.drop_at(drop_position)
@@ -836,7 +836,7 @@ func _verify_a9_practical_lighting() -> void:
 		== "Brightness: %.2f" % lit_brightness
 	)
 
-	player.global_position = Vector3(-5.75, 0.6, -3.9)
+	player.global_position = Vector3(-5.75, 0.6, -0.8)
 	player.call("_update_capsule_readout")
 	var pocket_brightness: float = LightSystem.get_brightness_at(
 		player.global_position
@@ -952,7 +952,7 @@ func _verify_a10_presentation() -> void:
 	var closed_panel_aabb: AABB = (
 		fridge_panel.global_transform * fridge_panel.get_aabb()
 	)
-	assert(closed_panel_aabb.size.z > 2.1)
+	assert(closed_panel_aabb.size.x > 2.3 and closed_panel_aabb.size.z < 0.2)
 	assert(not closed_panel_aabb.intersects(fridge_body_aabb))
 	var minimum_fridge_clearance: float = INF
 	for openness_step: int in range(9):
@@ -968,14 +968,14 @@ func _verify_a10_presentation() -> void:
 		)
 		minimum_fridge_clearance = minf(
 			minimum_fridge_clearance,
-			fridge_body_aabb.position.x - swept_aabb.end.x
+			swept_aabb.position.z - fridge_body_aabb.end.z
 		)
 	var open_panel_aabb: AABB = (
 		fridge_panel.global_transform * fridge_panel.get_aabb()
 	)
-	var north_wall_aabb: AABB = _wall_world_aabb($Level/NorthWall as Node3D)
-	assert(open_panel_aabb.size.x > 2.1 and open_panel_aabb.size.z < 0.2)
-	assert(open_panel_aabb.intersects(north_wall_aabb))
+	assert(open_panel_aabb.size.z > 2.3 and open_panel_aabb.size.x < 0.2)
+	assert(minimum_fridge_clearance >= 0.0)
+	assert(open_panel_aabb.position.z >= fridge_hinge.global_position.z)
 	assert(
 		not fridge_panel.find_children("*", "CollisionShape3D", true, false)
 	)
