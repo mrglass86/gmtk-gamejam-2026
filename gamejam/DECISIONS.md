@@ -790,3 +790,22 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** Export play finds plain sneak inaudible to the player
   rather than merely low-risk, or trap surfaces fail to read.
 - **Evidence / handoff:** B19 work order and live `--verify-b19`, 2026-07-24.
+
+## 2026-07-24 — Parent perception tells only what the parent can know
+
+- **Decision:** The wall-clipped cone is split into floor-brightness cells:
+  brightness at or above 0.35 uses the vivid threat colour, while darker cells
+  are faint. Non-parent light changes are noticed only when their fixture is
+  currently in the cone with line of sight, or enters it within a two-second
+  memory window; switch-click noise is ignored by Parent. A player-authored
+  single-shot of at least 3.0 loudness gets the 30-point big-event floor, and
+  base visual suspicion rises at 40/s.
+- **Why:** Threat graphics and reactions must expose the same stealth rules;
+  omniscient light detection, quiet-looking danger, and four-second far-cone
+  sight contradicted the director's QA play.
+- **Rejected / cut:** Uniform cone opacity; hearing switch clicks; persistent
+  expected-zone scans; retaining 25/s far-cone sight; weakening quiet steps.
+- **Owner:** Noah (director), lane B (Parent behavior and presentation)
+- **Revisit when:** Web profiling finds the segmented fan expensive, or play
+  finds 1.2-second far-cone registration too harsh.
+- **Evidence / handoff:** `b9dfecf`, live `--verify-b21`, 2026-07-24.

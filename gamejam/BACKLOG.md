@@ -124,6 +124,12 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 ## Must — Saturday regression gate
 
+- [x] B21 perception honesty — wall-clipped cone cells expose the live 0.35
+      floor-brightness boundary; light changes require current sight or a
+      two-second cone encounter; switch clicks are unheard; one solid
+      toy/creak stomp investigates; far-cone lit sight reaches 50 suspicion
+      within 1.5 s. Accept: live `--verify-b21` plus B6/B8–B15/B18/B20 and
+      adversarial QA regression (`b9dfecf`).
 - [x] B20 caught-snack exploit — capture atomically clears snack ownership,
       input-locked/carried players cannot auto-recollect it, and CARRY
       defensively preserves the catch-point drop. Accept: live
