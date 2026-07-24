@@ -23,7 +23,7 @@ background_mode = 1
 background_color = Color(0.045, 0.055, 0.07, 1)
 ambient_light_source = 3
 ambient_light_color = Color(0.38, 0.42, 0.5, 1)
-ambient_light_energy = 0.05
+ambient_light_energy = 0.04
 tonemap_mode = 2
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_static"]

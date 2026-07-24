@@ -72,6 +72,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a11"):
 		_verify_a11_dress_pack()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a12"):
+		_verify_a12_lighting_contrast()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -766,7 +769,7 @@ func _verify_a8_tuning() -> void:
 
 func _verify_a9_practical_lighting() -> void:
 	var environment: Environment = ($WorldEnvironment as WorldEnvironment).environment
-	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.04))
 
 	var level: Node3D = $Level as Node3D
 	var configured_range: float = float(level.get("lamp_range"))
@@ -795,11 +798,16 @@ func _verify_a9_practical_lighting() -> void:
 		)
 		assert(shade_material.emission_enabled)
 		assert(shade_material.emission.b >= shade_material.emission.r)
+		var analytic_anchor: Vector3 = Vector3(
+			fixture.global_position.x,
+			0.0,
+			fixture.global_position.z
+		)
+		if fixture_name == "MidLampVisual":
+			analytic_anchor = Vector3(-0.5, 0.0, 0.5)
 		assert(
 			is_equal_approx(
-				LightSystem.get_brightness_at(
-					Vector3(fixture.global_position.x, 0.0, fixture.global_position.z)
-				),
+				LightSystem.get_brightness_at(analytic_anchor),
 				1.0
 			)
 		)
@@ -839,7 +847,7 @@ func _verify_a9_practical_lighting() -> void:
 
 	print(
 		"A9 verification passed: five cool emissive practicals, 5.8 m pools, "
-		+ "0.05 ambient contrast, and live capsule/HUD brightness tracking."
+		+ "0.04 ambient contrast, and live capsule/HUD brightness tracking."
 	)
 	get_tree().quit()
 
@@ -850,7 +858,7 @@ func _verify_a10_presentation() -> void:
 		await get_tree().physics_frame
 
 	var environment: Environment = ($WorldEnvironment as WorldEnvironment).environment
-	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.04))
 
 	var bathroom_door: DinnerDoor = $Level/BathroomDoor as DinnerDoor
 	assert(bathroom_door != null)
@@ -1093,11 +1101,12 @@ func _verify_a11_dress_pack() -> void:
 		assert(is_equal_approx(source.global_position.y, 4.5))
 		assert(shade.global_position.y < 2.0)
 		assert(source.global_position.distance_to(shade.global_position) > 2.5)
-		assert(
-			Vector2(source.global_position.x, source.global_position.z)
-			.distance_to(Vector2(fixture.position.x, fixture.position.z))
-			> 0.4
-		)
+		if fixture_name != "MidLampVisual":
+			assert(
+				Vector2(source.global_position.x, source.global_position.z)
+				.distance_to(Vector2(fixture.position.x, fixture.position.z))
+				> 0.4
+			)
 
 	var front_table: StaticBody3D = (
 		$Level/FrontDoorSideTable as StaticBody3D
@@ -1250,6 +1259,155 @@ func _verify_a11_dress_pack() -> void:
 	print(
 		"A11 verification passed: soft high lights, leading dog silhouette, "
 		+ "table groups, front-door lamp, and subtle creaky planks."
+	)
+	get_tree().quit()
+
+
+func _verify_a12_lighting_contrast() -> void:
+	get_tree().paused = false
+	for settle_frame: int in range(12):
+		await get_tree().physics_frame
+
+	var environment: Environment = ($WorldEnvironment as WorldEnvironment).environment
+	assert(is_equal_approx(environment.ambient_light_energy, 0.04))
+
+	var level: Node3D = $Level as Node3D
+	var configured_attenuation: float = float(
+		level.get("omni_visual_attenuation")
+	)
+	var configured_energy: float = float(level.get("lamp_energy"))
+	assert(is_equal_approx(configured_attenuation, 1.8))
+	assert(is_equal_approx(configured_energy, 2.2))
+
+	var fixture_names: PackedStringArray = [
+		"KidLampVisual",
+		"LivingLampVisual",
+		"KitchenLampVisual",
+		"MidLampVisual",
+		"AlcoveLampVisual",
+	]
+	for fixture_name: String in fixture_names:
+		var fixture_light: OmniLight3D = (
+			level.get_node("%s/Light" % fixture_name) as OmniLight3D
+		)
+		assert(
+			is_equal_approx(
+				fixture_light.omni_attenuation,
+				configured_attenuation
+			)
+		)
+		assert(fixture_light.light_energy >= configured_energy * 0.85)
+
+	var dining_table: StaticBody3D = $Level/DiningTable as StaticBody3D
+	var dining_fixture: Node3D = $Level/MidLampVisual as Node3D
+	var dining_source: OmniLight3D = (
+		$Level/MidLampVisual/Light as OmniLight3D
+	)
+	var dining_center: Vector2 = Vector2(
+		dining_table.global_position.x,
+		dining_table.global_position.z
+	)
+	assert(
+		Vector2(
+			dining_fixture.global_position.x,
+			dining_fixture.global_position.z
+		).distance_to(dining_center) < 0.01
+	)
+	assert(
+		Vector2(
+			dining_source.global_position.x,
+			dining_source.global_position.z
+		).distance_to(dining_center) < 0.01
+	)
+
+	# The rendered source moved to the table, but the locked analytic source
+	# remains at its pre-A12 floor anchor and keeps its linear falloff.
+	var analytic_mid_anchor: Vector3 = Vector3(-0.5, 0.0, 0.5)
+	var analytic_dining_probe: Vector3 = Vector3(0.95, 0.0, 0.9)
+	var configured_range: float = float(level.get("lamp_range"))
+	var expected_dining_brightness: float = 1.0 - (
+		analytic_mid_anchor.distance_to(analytic_dining_probe)
+		/ configured_range
+	)
+	assert(
+		is_equal_approx(
+			LightSystem.get_brightness_at(analytic_mid_anchor),
+			1.0
+		)
+	)
+	assert(
+		is_equal_approx(
+			LightSystem.get_brightness_at(analytic_dining_probe),
+			expected_dining_brightness
+		)
+	)
+
+	var player: DinnerPlayer = $Player as DinnerPlayer
+	var capsule_material: StandardMaterial3D = player.get(
+		"_capsule_material"
+	) as StandardMaterial3D
+	player.global_position = Vector3(-10.2, 0.6, -5.6)
+	player.call("_update_capsule_readout")
+	var capsule_brightness: float = LightSystem.get_brightness_at(
+		player.global_position
+	)
+	var expected_capsule_energy: float = lerpf(
+		float(player.get("shadow_emission_energy")),
+		float(player.get("lit_emission_energy")),
+		capsule_brightness
+	)
+	assert(
+		is_equal_approx(
+			capsule_material.emission_energy_multiplier,
+			expected_capsule_energy
+		)
+	)
+	var brightness_readout: CanvasLayer = $BrightnessReadout as CanvasLayer
+	brightness_readout.call("_process", 0.11)
+	assert(
+		($BrightnessReadout/Label as Label).text
+		== "Brightness: %.2f" % capsule_brightness
+	)
+
+	var parent_threshold: float = float($Parent.get("brightness_threshold"))
+	assert(is_equal_approx(parent_threshold, 0.35))
+	for zone: String in LightSystem.VALID_ZONES:
+		LightSystem.set_zone_enabled(zone, false)
+	var threshold_anchor: Vector3 = Vector3(40.0, 0.0, 0.0)
+	LightSystem.register_dynamic_light("a12_threshold_probe", threshold_anchor)
+	LightSystem.set_dynamic_light("a12_threshold_probe", 10.0, 1.0)
+	var exact_threshold_brightness: float = LightSystem.get_brightness_at(
+		threshold_anchor + Vector3(6.5, 0.0, 0.0)
+	)
+	var just_visible_brightness: float = LightSystem.get_brightness_at(
+		threshold_anchor + Vector3(6.49, 0.0, 0.0)
+	)
+	assert(is_equal_approx(exact_threshold_brightness, parent_threshold))
+	assert(exact_threshold_brightness <= parent_threshold)
+	assert(just_visible_brightness > parent_threshold)
+	LightSystem.unregister_dynamic_light("a12_threshold_probe")
+	for zone: String in LightSystem.VALID_ZONES:
+		LightSystem.set_zone_enabled(zone, true)
+
+	print(
+		(
+			"A12 metrics: ambient=%.2f, attenuation=%.1f, energy=%.1f, "
+			+ "dining analytic=%.3f, capsule=%.3f, threshold=%.3f/%.3f."
+		)
+		% [
+			environment.ambient_light_energy,
+			configured_attenuation,
+			configured_energy,
+			expected_dining_brightness,
+			capsule_brightness,
+			exact_threshold_brightness,
+			just_visible_brightness,
+		]
+	)
+	print(
+		"A12 verification passed: steeper visual pools and centered dining "
+		+ "fixture preserve analytic brightness, capsule feedback, and the "
+		+ "0.35 visibility boundary."
 	)
 	get_tree().quit()
 

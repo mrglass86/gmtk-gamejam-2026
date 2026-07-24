@@ -33,6 +33,7 @@ const NOISE_SURFACE_SCENE: PackedScene = preload("res://scenes/NoiseSurface.tscn
 @export var trial_lamp_radius_max: float = 10.0
 @export var trial_lamp_radius_step: float = 0.25
 @export var trial_lamp_energy: float = 1.8
+@export_range(0.0, 10.0) var trial_lamp_visual_attenuation: float = 1.8
 @export var trial_lamp_analytic_energy: float = 1.0
 @export var trial_lamp_shadow_blur: float = 2.0
 @export_range(0.0, 1.0) var trial_lamp_shadow_opacity: float = 0.8
@@ -279,6 +280,7 @@ func _add_trial_lamp_visual(lamp: Node3D) -> void:
 	light.light_color = Color("#d6e1f2")
 	light.light_energy = trial_lamp_energy
 	light.omni_range = trial_lamp_radius_default
+	light.omni_attenuation = trial_lamp_visual_attenuation
 	light.shadow_enabled = true
 	light.shadow_blur = trial_lamp_shadow_blur
 	light.shadow_opacity = trial_lamp_shadow_opacity

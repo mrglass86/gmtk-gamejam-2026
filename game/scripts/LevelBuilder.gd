@@ -11,8 +11,9 @@ extends Node3D
 @export var failsafe_floor_thickness: float = 0.2
 @export var failsafe_floor_size: Vector2 = Vector2(30.0, 12.8)
 @export var prop_height: float = 0.8
-@export var lamp_energy: float = 2.0
+@export var lamp_energy: float = 2.2
 @export_range(5.5, 6.0) var lamp_range: float = 5.8
+@export_range(0.0, 10.0) var omni_visual_attenuation: float = 1.8
 @export var omni_source_height: float = 4.5
 @export var omni_shadow_blur: float = 2.0
 @export_range(0.0, 1.0) var shadow_opacity: float = 0.8
@@ -143,11 +144,12 @@ func _build_lights() -> void:
 	_add_omni(
 		"MidLampVisual",
 		"hall",
-		Vector3(-0.5, 1.42, 0.5),
+		Vector3(0.95, 1.42, 0.9),
 		0.9,
 		0.0,
 		-1.0,
-		Vector3(-1.0, 4.5, 0.4)
+		Vector3(0.95, 4.5, 0.9),
+		Vector3(-0.5, 0.0, 0.5)
 	)
 	_add_omni(
 		"AlcoveLampVisual",
@@ -488,7 +490,8 @@ func _add_omni(
 	energy_scale: float,
 	fixture_base_height: float,
 	range_override: float = -1.0,
-	light_world_position: Vector3 = Vector3.ZERO
+	light_world_position: Vector3 = Vector3.ZERO,
+	analytic_floor_position: Vector3 = Vector3.ZERO
 ) -> void:
 	var fixture: Node3D = Node3D.new()
 	fixture.name = node_name
@@ -511,15 +514,23 @@ func _add_omni(
 		range_override if range_override > 0.0 else lamp_range
 	)
 	light.omni_range = effective_range
+	light.omni_attenuation = omni_visual_attenuation
 	light.shadow_enabled = true
 	light.shadow_blur = omni_shadow_blur
 	light.shadow_opacity = shadow_opacity
 	fixture.add_child(light)
 	add_child(fixture)
+	var resolved_analytic_position: Vector3 = analytic_floor_position
+	if resolved_analytic_position.is_zero_approx():
+		resolved_analytic_position = Vector3(
+			position_value.x,
+			0.0,
+			position_value.z
+		)
 	LightSystem.register_light(
 		node_name,
 		zone,
-		Vector3(position_value.x, 0.0, position_value.z),
+		resolved_analytic_position,
 		effective_range
 	)
 
