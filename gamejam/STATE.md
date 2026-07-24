@@ -147,7 +147,8 @@ a journal.
   `cebba87` adds A24: wall switches keep their soft positional click but emit
   zero gameplay noise, while the existing visual light-anomaly path remains
   green. All three squeaky-toy hazards widen to one flat 2.6 × 1.4 m overlay
-  with spread pill/train/block silhouettes; nav remains 164.
+  with spread pill/train/block silhouettes. Exact editor, startup, and all 39
+  flags pass (41/41 functional gates); nav remains 164.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.

@@ -127,7 +127,7 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [x] A24 silent switches + toy piles — switch flips retain a soft positional
       click but emit zero gameplay noise; all three toy hazards are flat
       2.6 × 1.4 m overlays with separated pill/train/block silhouettes and one
-      collider (`cebba87`, `--verify-a24`; nav 164).
+      collider (`cebba87`, `--verify-a24`; exact 41/41 battery, nav 164).
 - [x] A22 hallway light + fixture restyle — two switch-linked overhead
       corridor practicals produce west/center/east analytic brightness
       0.72/0.58/0.72 on and 0.05/0.30/0.31 off, crossing the unchanged 0.35
