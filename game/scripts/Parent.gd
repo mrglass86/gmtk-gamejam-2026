@@ -41,9 +41,6 @@ enum State {
 @export_node_path("DinnerWorldSwitch") var kid_hall_switch_path: NodePath = NodePath(
 	"../Level/KidHallSwitch"
 )
-@export_node_path("AudioStreamPlayer") var parent_voice_player_path: NodePath = NodePath(
-	"../AudioDirector/Voice"
-)
 
 @export_group("Routine")
 ## Zero follows GameClock.run_length. Set positive only to override/cap the routine timeline.
@@ -391,7 +388,6 @@ var _bedroom_door: DinnerDoor
 var _bathroom_door: DinnerDoor
 var _level: Node3D
 var _kid_hall_switch: DinnerWorldSwitch
-var _parent_voice_player: AudioStreamPlayer
 var _cone_material: StandardMaterial3D
 var _cone_ray_distances: Array[float] = []
 var _glance_rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -441,7 +437,6 @@ var _post_deposit_protest_emitted: bool = false
 var _voice_indicator: MeshInstance3D
 var _voice_indicator_elapsed: float = 0.0
 var _voice_indicator_active: bool = false
-var _voice_was_playing: bool = false
 var _verify_b14_visual_noise_count: int = 0
 
 
@@ -456,9 +451,6 @@ func _ready() -> void:
 	_level = get_node_or_null(level_path) as Node3D
 	_kid_hall_switch = (
 		get_node_or_null(kid_hall_switch_path) as DinnerWorldSwitch
-	)
-	_parent_voice_player = (
-		get_node_or_null(parent_voice_player_path) as AudioStreamPlayer
 	)
 	_glance_rng.seed = glance_random_seed
 	_setup_cone()
@@ -1099,7 +1091,6 @@ func _update_post_deposit_room_enter(delta: float) -> void:
 	_post_deposit_elapsed = 0.0
 	_post_deposit_protest_emitted = false
 	_set_state(State.POST_DEPOSIT_ROOM_DWELL)
-	show_parent_voice_indicator()
 	epilogue_room_check_started.emit()
 
 
@@ -1708,21 +1699,6 @@ func show_parent_voice_indicator(duration: float = -1.0) -> void:
 
 
 func _update_voice_indicator(delta: float) -> void:
-	var voice_playing: bool = (
-		_parent_voice_player != null and _parent_voice_player.playing
-	)
-	if (
-		voice_playing
-		and not _voice_was_playing
-		and (
-			_state == State.ROUTINE
-			or _state == State.INVESTIGATE
-			or _state == State.HUNT
-			or _state == State.FOUND
-		)
-	):
-		show_parent_voice_indicator()
-	_voice_was_playing = voice_playing
 	if not _voice_indicator_active or _voice_indicator == null:
 		return
 	_voice_indicator_elapsed -= delta
@@ -3445,6 +3421,9 @@ func _run_b14_live_verification() -> void:
 	var tv_bed: AudioStreamPlayer3D = (
 		get_node_or_null("../AudioDirector/TVBed") as AudioStreamPlayer3D
 	)
+	var audio_director: DinnerAudioDirector = (
+		get_node_or_null("../AudioDirector") as DinnerAudioDirector
+	)
 	var tv_glow: Node3D = (
 		_level.get_node_or_null(tv_glow_node_name) as Node3D
 		if _level != null
@@ -3558,6 +3537,9 @@ func _run_b14_live_verification() -> void:
 	var room_exit_observed: bool = false
 	var room_check_completed: bool = false
 	var room_dwell_elapsed: float = 0.0
+	var room_parent_voice_observed: bool = false
+	var room_parent_icon_observed: bool = false
+	var room_kid_voice_observed: bool = false
 	if _player != null and _bedroom_door != null:
 		_player.global_position = verify_observer_parking_position
 		global_position = _get_post_deposit_hall_target()
@@ -3576,6 +3558,21 @@ func _run_b14_live_verification() -> void:
 				if not room_dwell_observed:
 					room_check_start = elapsed
 				room_dwell_observed = true
+				if audio_director != null:
+					room_parent_voice_observed = (
+						room_parent_voice_observed
+						or audio_director.is_voice_pool_playing(
+							&"parent_bed_check"
+						)
+					)
+				room_parent_icon_observed = (
+					room_parent_icon_observed
+					or (
+						room_parent_voice_observed
+						and _voice_indicator != null
+						and _voice_indicator.visible
+					)
+				)
 				room_dwell_elapsed = maxf(
 					room_dwell_elapsed,
 					elapsed - room_check_start
@@ -3583,6 +3580,13 @@ func _run_b14_live_verification() -> void:
 				room_protest_observed = (
 					room_protest_observed or _post_deposit_protest_emitted
 				)
+				if audio_director != null and _post_deposit_protest_emitted:
+					room_kid_voice_observed = (
+						room_kid_voice_observed
+						or audio_director.is_voice_pool_playing(
+							&"kid_room_protest"
+						)
+					)
 			elif _state == State.POST_DEPOSIT_ROOM_EXIT:
 				room_exit_observed = true
 			elif room_entered and _state == State.ROUTINE:
@@ -3628,6 +3632,9 @@ func _run_b14_live_verification() -> void:
 		and room_dwell_elapsed >= post_deposit_room_dwell_duration - 0.1
 		and room_exit_observed
 		and room_check_completed
+		and room_parent_voice_observed
+		and room_parent_icon_observed
+		and room_kid_voice_observed
 	)
 	var verification_passed: bool = (
 		click_started_investigate
@@ -3645,7 +3652,8 @@ func _run_b14_live_verification() -> void:
 			"B14 live metrics: click investigate=%s, restored=%s, "
 			+ "TV off/on=%s/%s, visual anomaly=%s, phase2 off=%s; "
 			+ "punishment=%s, room enter/dwell/protest/exit=%s/%s/%s/%s "
-			+ "(%.2f s), resumed=%s; VO icon=%s, noise events=%d."
+			+ "(%.2f s), resumed=%s; room VO parent/icon/kid=%s/%s/%s; "
+			+ "VO icon=%s, noise events=%d."
 		)
 		% [
 			click_started_investigate,
@@ -3661,6 +3669,9 @@ func _run_b14_live_verification() -> void:
 			room_exit_observed,
 			room_dwell_elapsed,
 			room_check_completed,
+			room_parent_voice_observed,
+			room_parent_icon_observed,
+			room_kid_voice_observed,
 			voice_indicator_observed,
 			_verify_b14_visual_noise_count,
 		]
@@ -3674,6 +3685,12 @@ func _run_b14_live_verification() -> void:
 	assert(visual_anomaly_detected, "B14 cone did not notice an early-dark zone.")
 	assert(phase_two_tv_stayed_off, "B14 phase 2 TV shutdown was not permanent.")
 	assert(epilogue_gate_passed, "B14 escaped-child room check did not complete.")
+	assert(
+		room_parent_voice_observed
+		and room_parent_icon_observed
+		and room_kid_voice_observed,
+		"B14 room-dwell parent/icon/kid VO wiring did not play in order."
+	)
 	assert(
 		voice_indicator_observed and voice_indicator_silent,
 		"B14 parent VO icon was missing or emitted gameplay noise."

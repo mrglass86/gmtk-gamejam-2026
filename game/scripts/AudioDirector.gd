@@ -93,8 +93,6 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 @export var clock_tick_max_distance: float = 4.0
 
 @export_group("Door Holds")
-@export var door_creak_quiet_volume_db: float = -18.0
-@export var door_creak_rush_volume_db: float = -7.0
 @export var door_creak_max_distance: float = 8.0
 
 @onready var _player: DinnerPlayer = get_node_or_null(player_path) as DinnerPlayer
@@ -145,11 +143,13 @@ var _chase_giggle_elapsed: float = 0.0
 var _previous_routine_time: float = -0.001
 var _fridge_previous_openness: float = 0.0
 var _fridge_was_opening: bool = false
+var _b14_verification: bool = false
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 func _ready() -> void:
 	_muted_for_a6_verification = OS.get_cmdline_user_args().has("--verify-a6")
+	_b14_verification = OS.get_cmdline_user_args().has("--verify-b14")
 	_rng.randomize()
 	_wire_streams_and_tuning()
 	_collect_doors()
@@ -190,14 +190,24 @@ func verify_configuration() -> void:
 	assert(_fridge != null)
 	assert(is_equal_approx(_tv_bed.max_distance, tv_bed_max_distance))
 	assert(is_equal_approx(_speaker_bed.max_distance, speaker_bed_max_distance))
-	assert(CASTING.POOLS.size() >= 29)
+	assert(CASTING.POOLS.size() >= 30)
 	for event_id: StringName in [
 		&"catch",
 		&"deposit",
 		&"win",
 		&"bathroom_visit",
+		&"epilogue_room_check",
+		&"epilogue_kid_protest",
 	]:
 		assert(CASTING.EVENTS.has(event_id))
+	assert(
+		CASTING.POOLS[&"parent_bed_check"].get("speaker", &"")
+		== &"parent"
+	)
+	assert(
+		CASTING.POOLS[&"kid_room_protest"].get("speaker", &"")
+		== &"kid"
+	)
 	var catch_steps: Array = CASTING.EVENTS[&"catch"].get("steps", [])
 	var carry_step: Dictionary = catch_steps.back()
 	assert(
@@ -246,10 +256,38 @@ func begin_audio_verification() -> void:
 	assert(_parent_footsteps.playing)
 	assert(_pool_contains_stream(&"parent_footstep", _parent_footsteps.stream))
 	var verification_door: DinnerDoor = _doors[0]
+	verification_door.openness_rate = verification_door.creak_slow_rate
 	verification_door.openness += 0.01
 	_update_door_creak(1.0 / 60.0)
 	assert(_door_creak.playing)
 	assert(_pool_contains_stream(&"door_creak_slow", _door_creak.stream))
+	assert(
+		is_equal_approx(
+			_door_creak.pitch_scale,
+			verification_door.get_creak_pitch_scale()
+		)
+	)
+	assert(
+		is_equal_approx(
+			_door_creak.volume_db,
+			verification_door.get_creak_volume_db()
+		)
+	)
+	verification_door.openness_rate = verification_door.creak_fast_rate
+	verification_door.openness += 0.02
+	_update_door_creak(1.0 / 60.0)
+	assert(
+		is_equal_approx(
+			_door_creak.pitch_scale,
+			verification_door.get_creak_pitch_scale()
+		)
+	)
+	assert(
+		is_equal_approx(
+			_door_creak.volume_db,
+			verification_door.get_creak_volume_db()
+		)
+	)
 	_on_snack_picked_up(_player)
 	assert(_snack_pickup.playing)
 	_on_snack_dropped(_snack.global_position)
@@ -261,6 +299,17 @@ func begin_audio_verification() -> void:
 	assert(_voice.stream == drop_voice)
 	assert(_play_pool(&"carry_red_handed"))
 	assert(_pool_contains_stream(&"carry_red_handed", _voice.stream))
+	_voice.stop()
+	_voice_priority = 0
+	_on_epilogue_room_check_started()
+	assert(is_voice_pool_playing(&"parent_bed_check"))
+	assert(
+		(_parent.get_node("ParentVoiceIndicator") as MeshInstance3D).visible
+	)
+	_voice.stop()
+	_voice_priority = 0
+	_on_epilogue_kid_protest()
+	assert(is_voice_pool_playing(&"kid_room_protest"))
 	_play_pool(&"fridge_open_pop")
 	assert(_fridge_pop.playing)
 	_play_pool(&"wrapper_crinkle")
@@ -384,6 +433,14 @@ func _connect_gameplay_signals() -> void:
 		_parent.player_caught.connect(_on_player_caught)
 	if not _parent.player_deposited.is_connected(_on_player_deposited):
 		_parent.player_deposited.connect(_on_player_deposited)
+	if not _parent.epilogue_room_check_started.is_connected(
+		_on_epilogue_room_check_started
+	):
+		_parent.epilogue_room_check_started.connect(
+			_on_epilogue_room_check_started
+		)
+	if not _parent.epilogue_kid_protest.is_connected(_on_epilogue_kid_protest):
+		_parent.epilogue_kid_protest.connect(_on_epilogue_kid_protest)
 	if not _pet.alert_started.is_connected(_on_pet_alert_started):
 		_pet.alert_started.connect(_on_pet_alert_started)
 	if not _pet.bark_started.is_connected(_on_pet_bark_started):
@@ -562,22 +619,15 @@ func _update_door_creak(delta: float) -> void:
 		_stop_door_creak()
 		return
 	_door_creak.global_position = _get_door_hinge_position(moving_door)
-	var rush_weight: float = clampf(
-		inverse_lerp(0.2, 1.0, fastest_rate),
-		0.0,
-		1.0
-	)
-	_door_creak.volume_db = lerpf(
-		door_creak_quiet_volume_db,
-		door_creak_rush_volume_db,
-		rush_weight
-	)
+	var rush_weight: float = moving_door.get_creak_rate_weight()
 	if not _door_creak.playing:
 		_play_pool(
 			&"door_creak_fast"
 			if rush_weight >= 0.5
 			else &"door_creak_slow"
 		)
+	_door_creak.pitch_scale = moving_door.get_creak_pitch_scale()
+	_door_creak.volume_db = moving_door.get_creak_volume_db()
 
 
 func _stop_door_creak() -> void:
@@ -602,6 +652,16 @@ func _on_player_caught(_catch_position: Vector3, had_snack: bool) -> void:
 func _on_player_deposited() -> void:
 	if _game_active:
 		_play_event(&"deposit")
+
+
+func _on_epilogue_room_check_started() -> void:
+	if _game_active or _b14_verification:
+		_play_event(&"epilogue_room_check", {}, _b14_verification)
+
+
+func _on_epilogue_kid_protest() -> void:
+	if _game_active or _b14_verification:
+		_play_event(&"epilogue_kid_protest", {}, _b14_verification)
 
 
 func _on_pet_alert_started() -> void:
@@ -744,6 +804,11 @@ func _play_pool(pool_id: StringName) -> bool:
 			_voice.pitch_scale = pitch
 			_voice_priority = priority
 			_voice.play()
+			if (
+				config.get("speaker", &"") == &"parent"
+				and _parent != null
+			):
+				_parent.show_parent_voice_indicator()
 		&"caught_sting":
 			_caught_sting.stream = stream
 			_caught_sting.pitch_scale = pitch
@@ -787,6 +852,10 @@ func _play_pool(pool_id: StringName) -> bool:
 		_:
 			return false
 	return true
+
+
+func is_voice_pool_playing(pool_id: StringName) -> bool:
+	return _voice.playing and _pool_contains_stream(pool_id, _voice.stream)
 
 
 func _get_door_hinge_position(door: DinnerDoor) -> Vector3:

@@ -18,6 +18,7 @@ anonymous pool names under
 | parent_grunt | 8 |
 | carry_red_handed | 8 |
 | carry_empty_handed | 7 |
+| kid_room_protest | 3 |
 | caught_grunt | 3 |
 | chase_giggle | 3 |
 | win_mmm | 1 |
@@ -50,6 +51,8 @@ anonymous pool names under
 - Win: sting plus “mmm”, then giggle.
 - Wrapper noise: crinkle, with a low-chance shush.
 - Bathroom visit: toilet flush, then sink water.
+- Escaped-child room check: parent bed-check line at dwell start, then a
+  bed-specific child protest on Parent's delayed protest signal.
 
 All pools avoid immediate repeats and use 5–8% pitch jitter. A single voice
 channel enforces carry/deposit over catch/found over chase/routine priority.
