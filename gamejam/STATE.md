@@ -10,15 +10,15 @@ a journal.
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Saturday — original-audio integration, mix walk, and feel
   tuning.
-- Next playable checkpoint: B15 hearing acceptance — first door rush/bark
-  produces a stationary CURIOUS turn; the second cue produces INVESTIGATE,
-  with the “hm?” VO fold-in active.
+- Next playable checkpoint: director A17 acceptance — lit-room readability,
+  exclusive anchored interactions, bathroom dressing, and replacement player
+  footsteps on top of B15's two-cue hearing.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A16 plus actor B6–B13 and the
+- Godot version: 4.7.1-stable — A0.2 through A17 plus actor B6–B15 and the
   original/CC0 audio pass are in `game/` (Compatibility renderer). The approved
-  director layout bakes a connected 150-polygon navmesh; input, lighting, noise,
+  director layout bakes a connected 155-polygon navmesh; input, lighting, noise,
   indicator, route, ambient-mask, countdown, game-flow, audio, and A9
   presentation/tuning checks pass.
 - Entry scene: `res://scenes/Main.tscn`
@@ -89,6 +89,11 @@ a journal.
   grouping, stationary CURIOUS turn, 8 s two-cue escalation window, immediate
   visual escalation, source trace, and live door/bark gate. Exact committed
   startup plus B6–B10/B12–B15 pass.
+  `2d4e142` adds A17: 32.0 renderer-only practical energy at attenuation 2.0,
+  8+8 CC0 player carpet/wood steps, hinge-origin door sound, exclusive nearest
+  interaction with door tie priority, world-anchored prompt/countdown, 0.8
+  switch noise, and the dark-start ceiling-disc bathroom/toilet pass. Editor,
+  startup, and all 27 verification flags pass (29/29).
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -98,9 +103,9 @@ a journal.
 
 ## Current focus
 
-- Lane A folds B15's `curiosity_started` signal into the short parent “hm?” VO
-  and resolves the bedroom-door/kid-hall-switch interaction overlap; then Noah
-  runs the B15 acceptance walk.
+- Noah reviews the A17 labeled lighting capture and plays the interaction,
+  bathroom, footstep, and B15 CURIOUS beats. Lane A still owes the first-interest
+  parent “hm?” VO wiring.
 
 ## Known blockers or risks
 
@@ -126,6 +131,10 @@ a journal.
   whether HUNT feels threatening rather than predetermined.
 - B14 actor and AudioDirector gates are green; the remaining risk is the
   director's live timing/mix verdict.
+- A17's renderer gate and labeled capture are green; the 32.0 practical energy
+  is renderer-only but still needs the director's in-motion contrast verdict.
+- B15's first-interest parent “hm?” VO remains an open AudioDirector wiring
+  request; the CURIOUS behavior itself is green.
 - Godot MCP for lane A: 30-minute hard abort rule (brief 9.2).
 - This Claude instance has no shell — validation runs through the web build in
   the browser pane plus Noah's terminal.

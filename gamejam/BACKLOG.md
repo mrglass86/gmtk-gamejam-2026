@@ -126,6 +126,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       stationary CURIOUS for ~2 s; second cue inside 8 s or sight enters
       INVESTIGATE; HUNT remains 75. Accept: live 12 m bedroom-door and two-bark
       sequences, with source-labelled metrics (`5e84967`, `--verify-b15`).
+- [x] A17 acceptance fixes — lit practical energy, 8+8 CC0 player footsteps,
+      hinge-origin door audio, nearest-only anchored interaction HUD, 0.8
+      switch noise, and dark-start bathroom ceiling fixture/toilet
+      (`2d4e142`, `--verify-a17`, 155 nav polygons, 29/29 full battery).
 - [x] B13 detection/grab regressions — perception remains active throughout
       the post-deposit epilogue and aborts it on sight or loud hearing;
       `grab_distance` is 1.5 m and FOUND lunges directly inside 2.5 m with

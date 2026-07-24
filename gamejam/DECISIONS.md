@@ -579,3 +579,21 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** The director’s B15 play finds CURIOUS too permissive, or a
   source trace proves the switch—not the door stream—is the dominant cue.
 - **Evidence / handoff:** B15 work order and director follow-up, 2026-07-24.
+
+## 2026-07-24 — A17 uses renderer-only hot practicals and exclusive interaction
+
+- **Decision:** Keep Omni attenuation at 2.0, Sun absent, and ambient at 0.05;
+  raise only practical renderer energy to 32.0 so lit rooms recover the A10
+  pool brightness. Interaction resolves to one nearest target, with doors
+  winning exact distance ties. Player steps use separate 8-take CC0
+  carpet/wood pools; family foley remains on household props and parent steps.
+- **Why:** Lower Omni energy left the raised 4.5 m sources cave-dark. Overlapping
+  independent input handlers could trigger a door and switch together, and the
+  family player-step takes did not meet the director's quality bar.
+- **Rejected / cut:** Restoring Sun or flattening attenuation; player-centered
+  prompts; multi-target E presses; replacing family household foley.
+- **Owner:** Noah (director), lane A (world/audio/UI implementation)
+- **Revisit when:** The director's in-motion contrast pass finds clipped hot
+  cores, or the CC0 step mix masks sub-threshold carpet feedback.
+- **Evidence / handoff:** `2d4e142`, `--verify-a17`, and
+  `gamejam/handoffs/2026-07-24-a17-lighting.png`.

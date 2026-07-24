@@ -12,14 +12,12 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
   `AudioDirector.gd` to the short parent “hm?”/first-interest VO tell and its
   existing magenta parent-voice indicator. It is visual/VO only: emit no
   `NoiseSystem` event, and do not wait until the second-cue INVESTIGATE state.
-- [ ] (lane B / B15) Resolve the overlapping `BedroomDoor` and
-  `Level/KidHallSwitch` interact radii: their centers are ~1.51 m apart while
-  radii are 1.6/1.45 m, so one E press can target both. Add nearest-interactable
-  arbitration or move/tighten the switch interaction without changing its
-  ruled 1.5 click loudness unless a live source trace justifies that retune.
-
 ## Done
 
+- [x] (lane A / A17 for lane B B15) Moved `Level/KidHallSwitch` away from
+  `BedroomDoor`; Player now selects exactly one nearest interactable and doors
+  win distance ties. Director's later A17 ruling supersedes the prior click
+  value: all switch analytical clicks are 0.8.
 - [x] (lane B / B14) `AudioDirector.gd` now tags parent-authored pools in the
   casting table, shows Parent's magenta indicator only after one of those pools
   starts, and maps the room-check/protest signals to parent-bed-check and
@@ -29,7 +27,7 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
   active positional player every frame.
 - [x] (lane A / A16 for lane B B14) After the post-capture beat, Parent may
   call `../Level/KidHallSwitch.set_state(true, true)` to turn on the initially
-  dark hall practical with its positional click and 1.5 analytical noise.
+  dark hall practical with its positional click and 0.8 analytical noise.
   Stable node: `Level/KidHallSwitch`; signal: `toggled(switch_id, is_on)`.
 
 - [x] (lane B / B11) A11 dog visual keeps its snout along Pet-local `-Z`;
