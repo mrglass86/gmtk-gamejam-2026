@@ -63,7 +63,10 @@ a journal.
   1.8 Omni attenuation, 2.2 base energy, 0.04 ambient, and centered dining
   fixture while preserving the analytic light anchors and 0.35 sight boundary.
   `1fada23` adds B12's suspicion-ramped parent cone and dog hearing-radius ring;
-  clean committed-tree startup plus B6/B9/B10/B12 pass.
+  clean committed-tree startup plus B6/B9/B10/B12 pass. A13 voice intake is
+  audition-ready: 124 anonymous mono OGG candidates and a source/duration
+  manifest are prepared, but no voice is wired until the director names
+  keepers.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -82,6 +85,8 @@ a journal.
 - A12 is functionally and Compatibility-renderer verified but awaits the
   director's contrast verdict; the darkest adult/pantry pockets remain
   intentionally readable.
+- A13 family-voice wiring is intentionally blocked on the director's keeper
+  filenames and event assignments; CC0 fallbacks remain authoritative.
 - The scaffolded input map was hand-serialized — lane A verifies it in A0.
 - Route timing remains unmeasured in play; tune furniture/entrances only if the
   quiet route misses the 1.4–1.6× target.

@@ -124,6 +124,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [x] Audio pass pulled forward — CC0 countdown tells, surface/player and parent
       footsteps, stings, pet cues, held-door creak, and positional masking beds
       (`d34f4a8`, `--verify-audio`, release Web click clean).
+- [ ] A13 family voices — intake complete: 124 mono normalized audition
+      candidates plus manifest. Director names keeper filenames and mappings;
+      lane A then adds nonrepeating pools, pitch jitter, and CC0 fallback
+      behavior.
 - [ ] Director audio mix walk — verify the three countdown tells read above the
       beds and tune `AudioDirector` export volumes only.
 - [ ] One outside playtester, watched silently; fixes prioritized by Claude via playtest-critic lens.
@@ -137,10 +141,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       win, lose); separate transparent PNGs: paper bg, wordmark, snack doodles,
       controls block, press-any-key; hand-drawn lettering. Menus only — the
       in-game world language stays locked.
-- [ ] Family voice session (~20 min cap) — daughter: "no no no, I hungry!"
+- [x] Family voice session (~20 min cap) — daughter: "no no no, I hungry!"
       (carry), "uh oh" (drop), giggle (win), "night night"; Noah: carry grumble,
-      "hm?" + "what was that?" (investigate voice tells). AirDrop to
-      assets/voice/; CC0 clips remain fallbacks.
+      "hm?" + "what was that?" (investigate voice tells). Raw takes processed
+      into an anonymous 124-candidate audition set; keeper choices remain.
 - [ ] Integration (bounded lane tasks, AFTER the Friday freeze is banked):
       lane A assembles the menu PNGs as Control screens + wires voice swaps
       with normalized levels.
