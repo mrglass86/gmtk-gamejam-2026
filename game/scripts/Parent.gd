@@ -828,6 +828,8 @@ func _on_lighting_changed() -> void:
 
 func _evaluate_stable_light_changes() -> void:
 	_light_change_check_pending = false
+	if not is_inside_tree():
+		return
 	for node: Node in get_tree().get_nodes_in_group("world_switch"):
 		var wall_switch: DinnerWorldSwitch = node as DinnerWorldSwitch
 		if wall_switch == null or wall_switch.target_light_id.is_empty():
