@@ -13,6 +13,13 @@ toilet flush, and sink water. No performer names are listed. The CC0 cues below
 remain wired as fallbacks wherever an original pool is empty or does not yet
 cover an event.
 
+Runtime family takes use conservative clip-profiled spectral denoise
+(`ffmpeg` `afftdn`, 6 dB reduction). The untouched originals and side-by-side
+A/B copies remain in the repository, with per-take results recorded in
+`game/audio/denoised/MANIFEST.md`. Takes without a sufficiently quiet profile
+window are omitted from runtime pools so their corresponding CC0 fallback is
+used instead.
+
 ## Kenney packs
 
 - [UI Audio](https://www.kenney.nl/assets/ui-audio), CC0 — TV click-off,

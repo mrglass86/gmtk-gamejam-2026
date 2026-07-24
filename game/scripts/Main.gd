@@ -81,6 +81,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a17"):
 		_verify_a17_acceptance_fixes()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a18"):
+		_verify_a18_polish_pack()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -601,10 +604,10 @@ func _verify_audio_pass() -> void:
 		and $AudioDirector/TVBed is AudioStreamPlayer3D
 	)
 	print(
-		"A15/B15 audio verification passed: curiosity VO/indicator without "
-		+ "gameplay noise, original voice/foley pools, context catch branches, "
-		+ "no-repeat selection, VO priority, positional sources, CC0 fallbacks, "
-		+ "and zero bus effects."
+		"A18 audio verification passed: denoised family pools with CC0 fallbacks, "
+		+ "soft idle giggles, context catch branches, no-repeat VO priority, "
+		+ "sneak/run mix separation, one-shot pickup, 2.5 s wrapper audio, "
+		+ "positional sources, and zero bus effects."
 	)
 	audio_director.end_audio_verification()
 	for settle_frame: int in range(8):
@@ -804,7 +807,7 @@ func _verify_a9_practical_lighting() -> void:
 
 	var level: Node3D = $Level as Node3D
 	var configured_range: float = float(level.get("lamp_range"))
-	assert(configured_range >= 5.5 and configured_range <= 6.0)
+	assert(configured_range >= 7.0 and configured_range <= 9.0)
 	var fixture_names: PackedStringArray = [
 		"KidLampVisual",
 		"LivingLampVisual",
@@ -877,7 +880,7 @@ func _verify_a9_practical_lighting() -> void:
 	)
 
 	print(
-		"A9 verification passed: five cool emissive practicals, 5.8 m pools, "
+		"A9 verification passed: five cool emissive practicals, 7.8 m visual pools, "
 		+ "A16 0.05 ambient floor, and live capsule/HUD brightness tracking."
 	)
 	get_tree().quit()
@@ -1307,7 +1310,7 @@ func _verify_a12_lighting_contrast() -> void:
 		level.get("omni_visual_attenuation")
 	)
 	var configured_energy: float = float(level.get("lamp_energy"))
-	assert(is_equal_approx(configured_attenuation, 2.0))
+	assert(is_equal_approx(configured_attenuation, 1.45))
 	assert(configured_energy > 2.2)
 
 	var fixture_names: PackedStringArray = [
@@ -1355,7 +1358,7 @@ func _verify_a12_lighting_contrast() -> void:
 	# remains at its pre-A12 floor anchor and keeps its linear falloff.
 	var analytic_mid_anchor: Vector3 = Vector3(-0.5, 0.0, 0.5)
 	var analytic_dining_probe: Vector3 = Vector3(0.95, 0.0, 0.9)
-	var configured_range: float = float(level.get("lamp_range"))
+	var configured_range: float = float(level.get("analytic_light_range"))
 	var expected_dining_brightness: float = 1.0 - (
 		analytic_mid_anchor.distance_to(analytic_dining_probe)
 		/ configured_range
@@ -1500,7 +1503,7 @@ func _verify_a16_world_pack() -> void:
 		var light: OmniLight3D = (
 			level.get_node("%s/Light" % fixture_name) as OmniLight3D
 		)
-		assert(is_equal_approx(light.omni_attenuation, 2.0))
+		assert(is_equal_approx(light.omni_attenuation, 1.45))
 
 	# Renderer falloff changed; locked analytic linear falloff did not.
 	LightSystem.register_light(
@@ -1586,7 +1589,7 @@ func _verify_a16_world_pack() -> void:
 	print(
 		"A16 verification passed: nav=%d polygons, switches=%d, "
 		% [polygon_count, switches.size()]
-		+ "inverse-square practicals, south-sweep fridge, positional SFX, "
+		+ "shadowed practicals, south-sweep fridge, positional SFX, "
 		+ "interaction HUD, TV notes, and dressed hazard/pet props."
 	)
 	get_tree().quit()
@@ -1603,8 +1606,8 @@ func _verify_a17_acceptance_fixes() -> void:
 	).environment
 	assert(not has_node("Sun"))
 	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
-	assert(is_equal_approx(float(level.get("omni_visual_attenuation")), 2.0))
-	assert(is_equal_approx(float(level.get("lamp_energy")), 32.0))
+	assert(is_equal_approx(float(level.get("omni_visual_attenuation")), 1.45))
+	assert(is_equal_approx(float(level.get("lamp_energy")), 6.5))
 	assert(is_equal_approx(float(level.get("area_light_energy")), 2.2))
 	for fixture_name: String in [
 		"KidLampVisual",
@@ -1616,7 +1619,7 @@ func _verify_a17_acceptance_fixes() -> void:
 		var light: OmniLight3D = (
 			level.get_node("%s/Light" % fixture_name) as OmniLight3D
 		)
-		assert(is_equal_approx(light.omni_attenuation, 2.0))
+		assert(is_equal_approx(light.omni_attenuation, 1.45))
 		assert(light.light_energy >= 4.4)
 
 	for pool_id: StringName in [
@@ -1638,7 +1641,7 @@ func _verify_a17_acceptance_fixes() -> void:
 	)
 	assert(
 		(parent_pool["streams"] as Array)[0].resource_path.begins_with(
-			"res://audio/original/foley/"
+			"res://audio/denoised/foley/"
 		)
 	)
 
@@ -1778,6 +1781,168 @@ func _verify_a17_acceptance_fixes() -> void:
 	get_tree().quit()
 
 
+func _verify_a18_polish_pack() -> void:
+	get_tree().paused = false
+	for settle_frame: int in range(12):
+		await get_tree().physics_frame
+
+	var level: Node3D = $Level as Node3D
+	var environment: Environment = (
+		$WorldEnvironment as WorldEnvironment
+	).environment
+	assert(not has_node("Sun"))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
+	assert(is_equal_approx(float(level.get("lamp_energy")), 6.5))
+	assert(is_equal_approx(float(level.get("lamp_range")), 7.8))
+	assert(is_equal_approx(float(level.get("analytic_light_range")), 5.8))
+	assert(
+		is_equal_approx(
+			float(level.get("omni_visual_attenuation")),
+			1.45
+		)
+	)
+
+	var shadowed_omni_count: int = 0
+	for candidate: Node in get_tree().root.find_children(
+		"*",
+		"OmniLight3D",
+		true,
+		false
+	):
+		var omni: OmniLight3D = candidate as OmniLight3D
+		assert(omni.shadow_enabled, "%s must cast practical shadows." % omni.name)
+		assert(is_equal_approx(omni.shadow_blur, 2.0))
+		assert(is_equal_approx(omni.shadow_opacity, 0.8))
+		shadowed_omni_count += 1
+	assert(shadowed_omni_count >= 8)
+
+	var wall_names: PackedStringArray = [
+		"NorthWall",
+		"SouthWall",
+		"WestWall",
+		"EastWall",
+		"KidSouthA",
+		"KidSouthB",
+		"KidBathDivider",
+		"BathLivingDivider",
+		"DogKitchenDivider",
+		"AdultNorthA",
+		"AdultNorthB",
+		"AdultEast",
+		"LVertical",
+		"LHorizontal",
+		"PantryWest",
+	]
+	for wall_name: String in wall_names:
+		var wall: StaticBody3D = level.get_node(wall_name) as StaticBody3D
+		var occluder: MeshInstance3D = (
+			wall.get_node("ShadowOccluder") as MeshInstance3D
+		)
+		assert(
+			occluder.cast_shadow
+			== GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+		)
+		var occluder_mesh: BoxMesh = occluder.mesh as BoxMesh
+		assert(
+			is_equal_approx(
+				occluder_mesh.size.y,
+				float(level.get("wall_shadow_occluder_height"))
+			)
+		)
+
+	# Lighting v3 is renderer-only. The gameplay light remains the locked
+	# five-point-eight-metre linear source used by the capsule/AI thresholds.
+	var analytic_mid_anchor: Vector3 = Vector3(-0.5, 0.0, 0.5)
+	var analytic_probe: Vector3 = Vector3(0.95, 0.0, 0.9)
+	var expected_probe: float = 1.0 - (
+		analytic_mid_anchor.distance_to(analytic_probe) / 5.8
+	)
+	assert(
+		is_equal_approx(
+			LightSystem.get_brightness_at(analytic_mid_anchor),
+			1.0
+		)
+	)
+	assert(
+		is_equal_approx(
+			LightSystem.get_brightness_at(analytic_probe),
+			expected_probe
+		)
+	)
+
+	var denoised_stream_count: int = 0
+	for pool_id: StringName in DinnerAudioCasting.POOLS:
+		var pool: Dictionary = DinnerAudioCasting.POOLS[pool_id] as Dictionary
+		for stream: AudioStream in pool.get("streams", []):
+			assert(
+				not stream.resource_path.begins_with("res://audio/original/"),
+				"Runtime family pool still references an original: %s."
+				% stream.resource_path
+			)
+			if stream.resource_path.begins_with("res://audio/denoised/"):
+				denoised_stream_count += 1
+	assert(denoised_stream_count >= 60)
+	assert(
+		(
+			DinnerAudioCasting.POOLS[&"idle_giggle"][
+				"streams"
+			] as Array
+		).size() >= 3
+	)
+	assert(
+		is_equal_approx(
+			float(
+				DinnerAudioCasting.POOLS[&"idle_giggle"].get(
+					"volume_offset_db",
+					0.0
+				)
+			),
+			-8.0
+		)
+	)
+
+	var audio_director: DinnerAudioDirector = (
+		$AudioDirector as DinnerAudioDirector
+	)
+	assert(is_equal_approx(audio_director.carpet_step_volume_db, -42.0))
+	assert(is_equal_approx(audio_director.hardwood_step_volume_db, -28.0))
+	assert(is_equal_approx(audio_director.run_carpet_step_volume_db, -20.0))
+	assert(is_equal_approx(audio_director.run_hardwood_step_volume_db, -7.0))
+	assert(is_equal_approx(audio_director.creak_step_volume_db, -3.0))
+	assert(is_equal_approx(audio_director.wrapper_volume_db, -20.0))
+	assert(is_equal_approx(audio_director.wrapper_audio_interval, 2.5))
+	var player: DinnerPlayer = $Player as DinnerPlayer
+	assert(is_equal_approx(player.snack_noise_interval, 0.6))
+	assert(
+		player.idle_giggled.is_connected(
+			Callable(audio_director, "_on_player_idle_giggled")
+		)
+	)
+
+	print(
+		(
+			"A18 metrics: %d shadowed omnis, %d wall occluders, "
+			+ "%d denoised pool entries, visual range %.1f m, "
+			+ "attenuation %.2f, sneak carpet %.0f dB."
+		)
+		% [
+			shadowed_omni_count,
+			wall_names.size(),
+			denoised_stream_count,
+			float(level.get("lamp_range")),
+			float(level.get("omni_visual_attenuation")),
+			audio_director.carpet_step_volume_db,
+		]
+	)
+	print(
+		"A18 verification passed: room-scale wall-blocked practicals, locked "
+		+ "analytic light, denoised family pools, near-silent sneak mix, "
+		+ "one-shot pickup/cadenced wrapper audio, and soft idle giggles."
+	)
+	await _settle_verification_audio()
+	get_tree().quit()
+
+
 func _assert_snack_clear_of_panel(
 	snack_visual: MeshInstance3D,
 	panel: MeshInstance3D
@@ -1870,6 +2035,9 @@ func _capture_layout(capture_path: String) -> void:
 	var capture_a16_fridge_closed: bool = OS.get_cmdline_user_args().has(
 		"--capture-a16-fridge-closed"
 	)
+	var capture_a18_wall_proof: bool = OS.get_cmdline_user_args().has(
+		"--capture-a18-wall-proof"
+	)
 	if (
 		capture_a10_fridge_open
 		or capture_a10_fridge_closed
@@ -1886,6 +2054,8 @@ func _capture_layout(capture_path: String) -> void:
 		var snack: DinnerSnack = $Snack as DinnerSnack
 		snack.reveal_at(pantry.global_position)
 		($Snack/Visual as SnackVisualPresenter).apply_reveal_clearance()
+	if capture_a18_wall_proof:
+		_configure_a18_wall_blocking_capture()
 	for frame: int in range(capture_warmup_frames):
 		await get_tree().process_frame
 	if capture_fridge_light:
@@ -1903,6 +2073,76 @@ func _capture_layout(capture_path: String) -> void:
 	else:
 		print("A0 layout capture saved: %s" % capture_path)
 	get_tree().quit()
+
+
+func _configure_a18_wall_blocking_capture() -> void:
+	var phase_director: PhaseDirector = $PhaseDirector as PhaseDirector
+	phase_director.set_process(false)
+	phase_director.set_physics_process(false)
+
+	for fixture_name: String in [
+		"KidLampVisual",
+		"LivingLampVisual",
+		"KitchenLampVisual",
+		"MidLampVisual",
+		"AlcoveLampVisual",
+		"BathroomLampVisual",
+	]:
+		var fixture: Node3D = $Level.get_node(fixture_name) as Node3D
+		fixture.visible = false
+	var hall_switch: DinnerWorldSwitch = (
+		$Level/KidHallSwitch as DinnerWorldSwitch
+	)
+	hall_switch.set_state(true, false)
+
+	var bedroom_door: DinnerDoor = $BedroomDoor as DinnerDoor
+	bedroom_door.openness = 1.0
+	bedroom_door.call("_apply_visual")
+
+	var camera_target: Vector3 = Vector3(-10.8, 0.0, 1.2)
+	var camera_rig: Node3D = $CameraRig as Node3D
+	camera_rig.global_position = camera_target + Vector3(0.0, 18.0, 0.01)
+	camera_rig.look_at(camera_target, Vector3.UP)
+	($CameraRig/OrthoCamera as Camera3D).size = 12.5
+
+	var proof_layer: CanvasLayer = CanvasLayer.new()
+	proof_layer.name = "A18WallBlockingProof"
+	proof_layer.layer = 30
+	add_child(proof_layer)
+	var proof_label: Label = Label.new()
+	proof_label.text = (
+		"A18 LIGHTING V3 — HALL LIGHT ONLY\n"
+		+ "SOLID WALL BLOCKS • OPEN BEDROOM DOOR SPILLS"
+	)
+	proof_label.position = Vector2(32.0, 80.0)
+	proof_label.add_theme_font_size_override("font_size", 28)
+	proof_label.add_theme_color_override("font_color", Color("#f2f5f9"))
+	proof_label.add_theme_color_override("font_outline_color", Color("#111820"))
+	proof_label.add_theme_constant_override("outline_size", 7)
+	proof_layer.add_child(proof_label)
+
+	for marker_row: Dictionary in [
+		{
+			"text": "WALL BLOCK",
+			"position": Vector3(-9.0, 0.4, 2.4),
+			"color": Color("#c8d2df"),
+		},
+		{
+			"text": "DOORWAY SPILL",
+			"position": Vector3(-12.75, 0.4, 2.4),
+			"color": Color("#d889de"),
+		},
+	]:
+		var marker: Label3D = Label3D.new()
+		marker.text = marker_row["text"]
+		marker.position = marker_row["position"]
+		marker.font_size = 28
+		marker.outline_size = 7
+		marker.pixel_size = 0.003
+		marker.modulate = marker_row["color"]
+		marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		marker.no_depth_test = true
+		add_child(marker)
 
 
 func _configure_a16_fridge_capture(is_open: bool) -> void:

@@ -50,9 +50,11 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 @export var tell_max_distance: float = 18.0
 
 @export_group("Footsteps")
-@export var carpet_step_volume_db: float = -25.0
-@export var hardwood_step_volume_db: float = -10.0
-@export var creak_step_volume_db: float = -5.0
+@export var carpet_step_volume_db: float = -42.0
+@export var hardwood_step_volume_db: float = -28.0
+@export var run_carpet_step_volume_db: float = -20.0
+@export var run_hardwood_step_volume_db: float = -7.0
+@export var creak_step_volume_db: float = -3.0
 @export var toy_squeak_volume_db: float = -3.0
 @export var parent_step_volume_db: float = -7.0
 @export var parent_step_distance: float = 0.85
@@ -76,7 +78,8 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 @export var chase_min_player_speed: float = 0.2
 
 @export_group("Original Foley")
-@export var wrapper_volume_db: float = -12.0
+@export var wrapper_volume_db: float = -20.0
+@export var wrapper_audio_interval: float = 2.5
 @export var fridge_pop_volume_db: float = -8.0
 @export var fridge_pop_max_distance: float = 7.0
 @export var bathroom_foley_volume_db: float = -13.0
@@ -145,6 +148,9 @@ var _fridge_previous_openness: float = 0.0
 var _fridge_was_opening: bool = false
 var _b14_verification: bool = false
 var _verification_noise_count: int = 0
+var _wrapper_audio_elapsed: float = 0.0
+var _snack_pickup_latched: bool = false
+var _snack_pickup_play_count: int = 0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
@@ -174,6 +180,7 @@ func _physics_process(delta: float) -> void:
 	_update_fridge_pop(delta)
 	_update_routine_events()
 	_update_chase_giggle(delta)
+	_update_wrapper_audio(delta)
 
 
 func verify_configuration() -> void:
@@ -194,6 +201,7 @@ func verify_configuration() -> void:
 	assert(CASTING.POOLS.size() >= 30)
 	for event_id: StringName in [
 		&"curiosity",
+		&"idle_giggle",
 		&"catch",
 		&"deposit",
 		&"win",
@@ -210,6 +218,22 @@ func verify_configuration() -> void:
 		CASTING.POOLS[&"kid_room_protest"].get("speaker", &"")
 		== &"kid"
 	)
+	assert(
+		is_equal_approx(
+			float(CASTING.POOLS[&"idle_giggle"].get("volume_offset_db", 0.0)),
+			-8.0
+		)
+	)
+	for pool_id: StringName in CASTING.POOLS:
+		var pool_streams: Array = CASTING.POOLS[pool_id].get("streams", [])
+		for stream: AudioStream in pool_streams:
+			assert(
+				not stream.resource_path.begins_with(
+					"res://audio/original/"
+				),
+				"Uncleaned family take remains wired: %s."
+				% stream.resource_path
+			)
 	var catch_steps: Array = CASTING.EVENTS[&"catch"].get("steps", [])
 	var carry_step: Dictionary = catch_steps.back()
 	assert(
@@ -257,12 +281,35 @@ func begin_audio_verification() -> void:
 	assert(_pool_contains_stream(&"parent_investigate", _voice.stream))
 	assert(parent_voice_indicator.visible)
 	assert(_verification_noise_count == 0)
+	_voice.stop()
+	_voice_priority = 0
+	_player.idle_giggled.emit(_player.global_position)
+	assert(is_voice_pool_playing(&"idle_giggle"))
+	assert(is_equal_approx(_voice.volume_db, voice_volume_db - 8.0))
 	_on_player_caught(Vector3.ZERO, true)
 	assert(_caught_sting.playing)
 	_play_player_footstep(_player.carpet_surface_multiplier)
 	assert(_pool_contains_stream(&"footstep_carpet_walk", _player_footsteps.stream))
+	assert(is_equal_approx(_player_footsteps.volume_db, carpet_step_volume_db))
 	_play_player_footstep(_player.hardwood_surface_multiplier)
 	assert(_pool_contains_stream(&"footstep_wood", _player_footsteps.stream))
+	assert(is_equal_approx(_player_footsteps.volume_db, hardwood_step_volume_db))
+	Input.action_press("run")
+	_play_player_footstep(_player.carpet_surface_multiplier)
+	assert(
+		is_equal_approx(
+			_player_footsteps.volume_db,
+			run_carpet_step_volume_db
+		)
+	)
+	_play_player_footstep(_player.hardwood_surface_multiplier)
+	assert(
+		is_equal_approx(
+			_player_footsteps.volume_db,
+			run_hardwood_step_volume_db
+		)
+	)
+	Input.action_release("run")
 	_play_player_footstep(_player.creaky_surface_multiplier)
 	assert(_player_footsteps.stream == PLAYER_STEP_CREAK_STREAM)
 	_last_parent_position = _parent.global_position - Vector3(0.45, 0.0, 0.0)
@@ -304,12 +351,25 @@ func begin_audio_verification() -> void:
 			verification_door.get_creak_volume_db()
 		)
 	)
+	var pickup_count_before: int = _snack_pickup_play_count
+	_on_snack_picked_up(_player)
 	_on_snack_picked_up(_player)
 	assert(_snack_pickup.playing)
+	assert(_snack_pickup_play_count == pickup_count_before + 1)
 	_on_snack_dropped(_snack.global_position)
 	assert(_snack_drop.playing)
 	assert(_voice.playing)
 	assert(_pool_contains_stream(&"snack_drop_voice", _voice.stream))
+	_wrapper_foley.stop()
+	_player.set_carrying_snack(true)
+	_wrapper_audio_elapsed = 0.0
+	_update_wrapper_audio(wrapper_audio_interval - 0.01)
+	assert(not _wrapper_foley.playing)
+	_update_wrapper_audio(0.02)
+	assert(_wrapper_foley.playing)
+	assert(is_equal_approx(_wrapper_foley.volume_db, wrapper_volume_db))
+	assert(is_equal_approx(_player.snack_noise_interval, 0.6))
+	_player.set_carrying_snack(false)
 	var drop_voice: AudioStream = _voice.stream
 	assert(not _play_pool(&"chase_giggle"))
 	assert(_voice.stream == drop_voice)
@@ -443,6 +503,8 @@ func _connect_gameplay_signals() -> void:
 		GameClock.phase_changed.connect(_on_phase_changed)
 	if not NoiseSystem.noise_emitted.is_connected(_on_noise_emitted):
 		NoiseSystem.noise_emitted.connect(_on_noise_emitted)
+	if not _player.idle_giggled.is_connected(_on_player_idle_giggled):
+		_player.idle_giggled.connect(_on_player_idle_giggled)
 	if not _parent.state_changed.is_connected(_on_parent_state_changed):
 		_parent.state_changed.connect(_on_parent_state_changed)
 	if not _parent.curiosity_started.is_connected(_on_parent_curiosity_started):
@@ -486,6 +548,9 @@ func _on_game_started() -> void:
 	_parent_step_distance_accumulated = 0.0
 	_chase_giggle_elapsed = 0.0
 	_previous_routine_time = -0.001
+	_wrapper_audio_elapsed = 0.0
+	_snack_pickup_latched = false
+	_snack_pickup_play_count = 0
 	_routine_events_fired.clear()
 	_sequence_group_generations.clear()
 	_voice.stop()
@@ -566,8 +631,6 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 	var recovered_raw_loudness: float = loudness / audible_fraction
 	var comparison_tolerance: float = maxf(0.06, expected_step_loudness * 0.12)
 	if absf(recovered_raw_loudness - expected_step_loudness) > comparison_tolerance:
-		if _player.carrying_snack:
-			_play_event(&"wrapper_noise")
 		return
 	_play_player_footstep(surface_multiplier)
 
@@ -581,7 +644,11 @@ func _play_player_footstep(surface_multiplier: float) -> void:
 		_player_footsteps.stream = PLAYER_STEP_CREAK_STREAM
 		_player_footsteps.volume_db = creak_step_volume_db
 	elif surface_multiplier <= _player.carpet_surface_multiplier + 0.01:
-		_player_footsteps.volume_db = carpet_step_volume_db
+		_player_footsteps.volume_db = (
+			run_carpet_step_volume_db
+			if Input.is_action_pressed("run")
+			else carpet_step_volume_db
+		)
 		_play_pool(
 			&"footstep_carpet_sprint"
 			if Input.is_action_pressed("run")
@@ -589,7 +656,11 @@ func _play_player_footstep(surface_multiplier: float) -> void:
 		)
 		return
 	else:
-		_player_footsteps.volume_db = hardwood_step_volume_db
+		_player_footsteps.volume_db = (
+			run_hardwood_step_volume_db
+			if Input.is_action_pressed("run")
+			else hardwood_step_volume_db
+		)
 		_play_pool(&"footstep_wood")
 		return
 	_player_footsteps.pitch_scale = _rng.randf_range(0.92, 1.08)
@@ -667,6 +738,11 @@ func _on_parent_curiosity_started(_sound_position: Vector3) -> void:
 		_play_event(&"curiosity")
 
 
+func _on_player_idle_giggled(_giggle_position: Vector3) -> void:
+	if _game_active:
+		_play_event(&"idle_giggle")
+
+
 func _on_player_caught(_catch_position: Vector3, had_snack: bool) -> void:
 	if _game_active:
 		_play_event(&"catch", {&"had_snack": had_snack})
@@ -703,12 +779,19 @@ func _on_pet_bark_started() -> void:
 
 
 func _on_snack_picked_up(_carrier: DinnerPlayer) -> void:
-	if _game_active:
-		_snack_pickup.global_position = _carrier.global_position
-		_snack_pickup.play()
+	if not _game_active or _snack_pickup_latched:
+		return
+	_snack_pickup_latched = true
+	_snack_pickup_play_count += 1
+	_wrapper_audio_elapsed = 0.0
+	_snack_pickup.global_position = _carrier.global_position
+	_snack_pickup.play()
 
 
 func _on_snack_dropped(drop_position: Vector3) -> void:
+	_snack_pickup_latched = false
+	_wrapper_audio_elapsed = 0.0
+	_wrapper_foley.stop()
 	if not _game_active:
 		return
 	_snack_drop.global_position = drop_position
@@ -825,6 +908,10 @@ func _play_pool(pool_id: StringName) -> bool:
 				return false
 			_voice.stream = stream
 			_voice.pitch_scale = pitch
+			_voice.volume_db = (
+				voice_volume_db
+				+ float(config.get("volume_offset_db", 0.0))
+			)
 			_voice_priority = priority
 			_voice.play()
 			if (
@@ -974,6 +1061,18 @@ func _update_chase_giggle(delta: float) -> void:
 	_chase_giggle_elapsed = 0.0
 	if _rng.randf() <= chase_giggle_chance:
 		_play_pool(&"chase_giggle")
+
+
+func _update_wrapper_audio(delta: float) -> void:
+	if _player == null or not _player.carrying_snack:
+		_wrapper_audio_elapsed = 0.0
+		return
+	_wrapper_audio_elapsed += delta
+	var safe_interval: float = maxf(wrapper_audio_interval, 0.1)
+	if _wrapper_audio_elapsed < safe_interval:
+		return
+	_wrapper_audio_elapsed = fmod(_wrapper_audio_elapsed, safe_interval)
+	_play_pool(&"wrapper_crinkle")
 
 
 func _on_voice_finished() -> void:

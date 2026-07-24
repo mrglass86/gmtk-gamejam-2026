@@ -13,13 +13,15 @@ const WORLD_SWITCH_SCRIPT: Script = preload("res://scripts/WorldSwitch.gd")
 @export var failsafe_floor_thickness: float = 0.2
 @export var failsafe_floor_size: Vector2 = Vector2(30.0, 12.8)
 @export var prop_height: float = 0.8
-@export var lamp_energy: float = 32.0
+@export var lamp_energy: float = 6.5
 @export var area_light_energy: float = 2.2
-@export_range(5.5, 6.0) var lamp_range: float = 5.8
-@export_range(0.0, 10.0) var omni_visual_attenuation: float = 2.0
+@export_range(7.0, 9.0) var lamp_range: float = 7.8
+@export var analytic_light_range: float = 5.8
+@export_range(0.0, 10.0) var omni_visual_attenuation: float = 1.45
 @export var omni_source_height: float = 4.5
 @export var omni_shadow_blur: float = 2.0
 @export_range(0.0, 1.0) var shadow_opacity: float = 0.8
+@export var wall_shadow_occluder_height: float = 5.2
 
 @export_group("Practical Light Fixtures")
 @export var fixture_stand_color: Color = Color("#3c4654")
@@ -320,8 +322,31 @@ func _add_wall(node_name: String, center: Vector3, dimensions: Vector3) -> void:
 	wall.position = center
 	wall.add_to_group("nav_source")
 	_add_box_visual(wall, dimensions, wall_color)
+	_add_wall_shadow_occluder(wall, dimensions)
 	_add_box_collision(wall, dimensions)
 	add_child(wall)
+
+
+func _add_wall_shadow_occluder(
+	wall: StaticBody3D,
+	dimensions: Vector3
+) -> void:
+	var occluder: MeshInstance3D = MeshInstance3D.new()
+	occluder.name = "ShadowOccluder"
+	occluder.position.y = (
+		wall_shadow_occluder_height - dimensions.y
+	) * 0.5
+	occluder.cast_shadow = (
+		GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+	)
+	var occluder_mesh: BoxMesh = BoxMesh.new()
+	occluder_mesh.size = Vector3(
+		dimensions.x,
+		wall_shadow_occluder_height,
+		dimensions.z
+	)
+	occluder.mesh = occluder_mesh
+	wall.add_child(occluder)
 
 
 func _add_prop(node_name: String, center: Vector3, dimensions: Vector3, color: Color) -> void:
@@ -658,10 +683,11 @@ func _add_omni(
 	light.position = resolved_light_position - fixture.position
 	light.light_color = Color("#d6e1f2")
 	light.light_energy = lamp_energy * energy_scale
-	var effective_range: float = (
-		range_override if range_override > 0.0 else lamp_range
+	var visual_range: float = lamp_range
+	var analytic_range: float = (
+		range_override if range_override > 0.0 else analytic_light_range
 	)
-	light.omni_range = effective_range
+	light.omni_range = visual_range
 	light.omni_attenuation = omni_visual_attenuation
 	light.shadow_enabled = true
 	light.shadow_blur = omni_shadow_blur
@@ -680,7 +706,7 @@ func _add_omni(
 		node_name,
 		zone,
 		resolved_analytic_position,
-		effective_range,
+		analytic_range,
 		starts_enabled
 	)
 

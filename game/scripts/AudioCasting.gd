@@ -8,9 +8,9 @@ class_name DinnerAudioCasting
 const POOLS: Dictionary = {
 	&"parent_investigate": {
 		"streams": [
-			preload("res://audio/original/voice/parent_investigate_01.ogg"),
-			preload("res://audio/original/voice/parent_investigate_02.ogg"),
-			preload("res://audio/original/voice/parent_investigate_03.ogg"),
+			preload("res://audio/denoised/voice/parent_investigate_01.ogg"),
+			preload("res://audio/denoised/voice/parent_investigate_02.ogg"),
+			preload("res://audio/denoised/voice/parent_investigate_03.ogg"),
 		],
 		"channel": &"voice",
 		"speaker": &"parent",
@@ -19,12 +19,12 @@ const POOLS: Dictionary = {
 	},
 	&"parent_found_call": {
 		"streams": [
-			preload("res://audio/original/voice/parent_found_call_01.ogg"),
-			preload("res://audio/original/voice/parent_found_call_02.ogg"),
-			preload("res://audio/original/voice/parent_found_call_03.ogg"),
-			preload("res://audio/original/voice/parent_found_call_04.ogg"),
-			preload("res://audio/original/voice/parent_found_call_05.ogg"),
-			preload("res://audio/original/voice/parent_found_call_06.ogg"),
+			preload("res://audio/denoised/voice/parent_found_call_01.ogg"),
+			preload("res://audio/denoised/voice/parent_found_call_02.ogg"),
+			preload("res://audio/denoised/voice/parent_found_call_03.ogg"),
+			preload("res://audio/denoised/voice/parent_found_call_04.ogg"),
+			preload("res://audio/denoised/voice/parent_found_call_05.ogg"),
+			preload("res://audio/denoised/voice/parent_found_call_06.ogg"),
 		],
 		"channel": &"voice",
 		"speaker": &"parent",
@@ -33,8 +33,7 @@ const POOLS: Dictionary = {
 	},
 	&"parent_bed_check": {
 		"streams": [
-			preload("res://audio/original/voice/parent_bed_check_01.ogg"),
-			preload("res://audio/original/voice/parent_bed_check_02.ogg"),
+			preload("res://audio/denoised/voice/parent_bed_check_02.ogg"),
 		],
 		"channel": &"voice",
 		"speaker": &"parent",
@@ -43,9 +42,9 @@ const POOLS: Dictionary = {
 	},
 	&"parent_couch_mutter": {
 		"streams": [
-			preload("res://audio/original/voice/parent_couch_mutter_01.ogg"),
-			preload("res://audio/original/voice/parent_couch_mutter_02.ogg"),
-			preload("res://audio/original/voice/parent_couch_mutter_03.ogg"),
+			preload("res://audio/denoised/voice/parent_couch_mutter_01.ogg"),
+			preload("res://audio/denoised/voice/parent_couch_mutter_02.ogg"),
+			preload("res://audio/denoised/voice/parent_couch_mutter_03.ogg"),
 		],
 		"channel": &"voice",
 		"speaker": &"parent",
@@ -54,8 +53,8 @@ const POOLS: Dictionary = {
 	},
 	&"parent_kitchen_intent": {
 		"streams": [
-			preload("res://audio/original/voice/parent_kitchen_intent_01.ogg"),
-			preload("res://audio/original/voice/parent_kitchen_intent_02.ogg"),
+			preload("res://audio/denoised/voice/parent_kitchen_intent_01.ogg"),
+			preload("res://audio/denoised/voice/parent_kitchen_intent_02.ogg"),
 		],
 		"channel": &"voice",
 		"speaker": &"parent",
@@ -64,7 +63,7 @@ const POOLS: Dictionary = {
 	},
 	&"parent_dog_attention": {
 		"streams": [
-			preload("res://audio/original/voice/parent_dog_attention_01.ogg"),
+			preload("res://audio/denoised/voice/parent_dog_attention_01.ogg"),
 		],
 		"channel": &"voice",
 		"speaker": &"parent",
@@ -73,14 +72,13 @@ const POOLS: Dictionary = {
 	},
 	&"parent_grunt": {
 		"streams": [
-			preload("res://audio/original/voice/parent_grunt_01.ogg"),
-			preload("res://audio/original/voice/parent_grunt_02.ogg"),
-			preload("res://audio/original/voice/parent_grunt_03.ogg"),
-			preload("res://audio/original/voice/parent_grunt_04.ogg"),
-			preload("res://audio/original/voice/parent_grunt_05.ogg"),
-			preload("res://audio/original/voice/parent_grunt_06.ogg"),
-			preload("res://audio/original/voice/parent_grunt_07.ogg"),
-			preload("res://audio/original/voice/parent_grunt_08.ogg"),
+			preload("res://audio/denoised/voice/parent_grunt_01.ogg"),
+			preload("res://audio/denoised/voice/parent_grunt_02.ogg"),
+			preload("res://audio/denoised/voice/parent_grunt_03.ogg"),
+			preload("res://audio/denoised/voice/parent_grunt_04.ogg"),
+			preload("res://audio/denoised/voice/parent_grunt_05.ogg"),
+			preload("res://audio/denoised/voice/parent_grunt_06.ogg"),
+			preload("res://audio/denoised/voice/parent_grunt_07.ogg"),
 		],
 		"channel": &"voice",
 		"speaker": &"parent",
@@ -89,14 +87,13 @@ const POOLS: Dictionary = {
 	},
 	&"carry_red_handed": {
 		"streams": [
-			preload("res://audio/original/voice/carry_red_handed_01.ogg"),
-			preload("res://audio/original/voice/carry_red_handed_02.ogg"),
-			preload("res://audio/original/voice/carry_red_handed_03.ogg"),
-			preload("res://audio/original/voice/carry_red_handed_04.ogg"),
-			preload("res://audio/original/voice/carry_red_handed_05.ogg"),
-			preload("res://audio/original/voice/carry_red_handed_06.ogg"),
-			preload("res://audio/original/voice/carry_red_handed_07.ogg"),
-			preload("res://audio/original/voice/carry_red_handed_08.ogg"),
+			preload("res://audio/denoised/voice/carry_red_handed_01.ogg"),
+			preload("res://audio/denoised/voice/carry_red_handed_02.ogg"),
+			preload("res://audio/denoised/voice/carry_red_handed_03.ogg"),
+			preload("res://audio/denoised/voice/carry_red_handed_04.ogg"),
+			preload("res://audio/denoised/voice/carry_red_handed_05.ogg"),
+			preload("res://audio/denoised/voice/carry_red_handed_06.ogg"),
+			preload("res://audio/denoised/voice/carry_red_handed_08.ogg"),
 		],
 		"channel": &"voice",
 		"priority": 4,
@@ -104,13 +101,13 @@ const POOLS: Dictionary = {
 	},
 	&"carry_empty_handed": {
 		"streams": [
-			preload("res://audio/original/voice/carry_empty_handed_01.ogg"),
-			preload("res://audio/original/voice/carry_empty_handed_02.ogg"),
-			preload("res://audio/original/voice/carry_empty_handed_03.ogg"),
-			preload("res://audio/original/voice/carry_empty_handed_04.ogg"),
-			preload("res://audio/original/voice/carry_empty_handed_05.ogg"),
-			preload("res://audio/original/voice/carry_empty_handed_06.ogg"),
-			preload("res://audio/original/voice/carry_empty_handed_07.ogg"),
+			preload("res://audio/denoised/voice/carry_empty_handed_01.ogg"),
+			preload("res://audio/denoised/voice/carry_empty_handed_02.ogg"),
+			preload("res://audio/denoised/voice/carry_empty_handed_03.ogg"),
+			preload("res://audio/denoised/voice/carry_empty_handed_04.ogg"),
+			preload("res://audio/denoised/voice/carry_empty_handed_05.ogg"),
+			preload("res://audio/denoised/voice/carry_empty_handed_06.ogg"),
+			preload("res://audio/denoised/voice/carry_empty_handed_07.ogg"),
 		],
 		"channel": &"voice",
 		"priority": 4,
@@ -118,9 +115,9 @@ const POOLS: Dictionary = {
 	},
 	&"kid_room_protest": {
 		"streams": [
-			preload("res://audio/original/voice/carry_empty_handed_01.ogg"),
-			preload("res://audio/original/voice/carry_empty_handed_02.ogg"),
-			preload("res://audio/original/voice/carry_empty_handed_03.ogg"),
+			preload("res://audio/denoised/voice/carry_empty_handed_01.ogg"),
+			preload("res://audio/denoised/voice/carry_empty_handed_02.ogg"),
+			preload("res://audio/denoised/voice/carry_empty_handed_03.ogg"),
 		],
 		"channel": &"voice",
 		"speaker": &"kid",
@@ -129,9 +126,8 @@ const POOLS: Dictionary = {
 	},
 	&"caught_grunt": {
 		"streams": [
-			preload("res://audio/original/voice/caught_grunt_01.ogg"),
-			preload("res://audio/original/voice/caught_grunt_02.ogg"),
-			preload("res://audio/original/voice/caught_grunt_03.ogg"),
+			preload("res://audio/denoised/voice/caught_grunt_01.ogg"),
+			preload("res://audio/denoised/voice/caught_grunt_03.ogg"),
 		],
 		"channel": &"voice",
 		"priority": 2,
@@ -139,17 +135,28 @@ const POOLS: Dictionary = {
 	},
 	&"chase_giggle": {
 		"streams": [
-			preload("res://audio/original/voice/chase_giggle_01.ogg"),
-			preload("res://audio/original/voice/chase_giggle_02.ogg"),
-			preload("res://audio/original/voice/chase_giggle_03.ogg"),
+			preload("res://audio/denoised/voice/chase_giggle_01.ogg"),
+			preload("res://audio/denoised/voice/chase_giggle_02.ogg"),
+			preload("res://audio/denoised/voice/chase_giggle_03.ogg"),
 		],
 		"channel": &"voice",
 		"priority": 1,
 		"pitch_jitter": 0.06,
 	},
+	&"idle_giggle": {
+		"streams": [
+			preload("res://audio/denoised/voice/chase_giggle_01.ogg"),
+			preload("res://audio/denoised/voice/chase_giggle_02.ogg"),
+			preload("res://audio/denoised/voice/chase_giggle_03.ogg"),
+		],
+		"channel": &"voice",
+		"priority": 1,
+		"pitch_jitter": 0.06,
+		"volume_offset_db": -8.0,
+	},
 	&"win_mmm": {
 		"streams": [
-			preload("res://audio/original/voice/win_mmm_01.ogg"),
+			preload("res://audio/denoised/voice/win_mmm_01.ogg"),
 		],
 		"channel": &"voice",
 		"priority": 4,
@@ -157,14 +164,14 @@ const POOLS: Dictionary = {
 	},
 	&"win_giggle": {
 		"streams": [
-			preload("res://audio/original/voice/win_giggle_01.ogg"),
-			preload("res://audio/original/voice/win_giggle_02.ogg"),
-			preload("res://audio/original/voice/win_giggle_03.ogg"),
-			preload("res://audio/original/voice/win_giggle_04.ogg"),
-			preload("res://audio/original/voice/win_giggle_05.ogg"),
-			preload("res://audio/original/voice/win_giggle_06.ogg"),
-			preload("res://audio/original/voice/win_giggle_07.ogg"),
-			preload("res://audio/original/voice/win_giggle_08.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_01.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_02.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_03.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_04.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_05.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_06.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_07.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_08.ogg"),
 		],
 		"channel": &"voice",
 		"priority": 4,
@@ -172,7 +179,7 @@ const POOLS: Dictionary = {
 	},
 	&"deposit_sniffle": {
 		"streams": [
-			preload("res://audio/original/voice/deposit_sniffle_01.ogg"),
+			preload("res://audio/denoised/voice/deposit_sniffle_01.ogg"),
 		],
 		"channel": &"voice",
 		"priority": 4,
@@ -180,8 +187,8 @@ const POOLS: Dictionary = {
 	},
 	&"deposit_reconcile": {
 		"streams": [
-			preload("res://audio/original/voice/deposit_reconcile_01.ogg"),
-			preload("res://audio/original/voice/deposit_reconcile_02.ogg"),
+			preload("res://audio/denoised/voice/deposit_reconcile_01.ogg"),
+			preload("res://audio/denoised/voice/deposit_reconcile_02.ogg"),
 		],
 		"channel": &"voice",
 		"priority": 4,
@@ -189,8 +196,7 @@ const POOLS: Dictionary = {
 	},
 	&"wrapper_shush": {
 		"streams": [
-			preload("res://audio/original/voice/wrapper_shush_01.ogg"),
-			preload("res://audio/original/voice/wrapper_shush_02.ogg"),
+			preload("res://audio/denoised/voice/wrapper_shush_01.ogg"),
 		],
 		"channel": &"voice",
 		"priority": 1,
@@ -198,7 +204,7 @@ const POOLS: Dictionary = {
 	},
 	&"snack_drop_voice": {
 		"streams": [
-			preload("res://audio/original/voice/snack_drop_voice_01.ogg"),
+			preload("res://audio/denoised/voice/snack_drop_voice_01.ogg"),
 		],
 		"channel": &"voice",
 		"priority": 3,
@@ -218,15 +224,7 @@ const POOLS: Dictionary = {
 	},
 	&"door_creak_fast": {
 		"streams": [
-			preload("res://audio/original/foley/door_creak_fast_01.ogg"),
-			preload("res://audio/original/foley/door_creak_fast_02.ogg"),
-			preload("res://audio/original/foley/door_creak_fast_03.ogg"),
-			preload("res://audio/original/foley/door_creak_fast_04.ogg"),
-			preload("res://audio/original/foley/door_creak_fast_05.ogg"),
-			preload("res://audio/original/foley/door_creak_fast_06.ogg"),
-			preload("res://audio/original/foley/door_creak_fast_07.ogg"),
-			preload("res://audio/original/foley/door_creak_fast_08.ogg"),
-			preload("res://audio/original/foley/door_creak_fast_09.ogg"),
+			preload("res://audio/denoised/foley/door_creak_fast_03.ogg"),
 		],
 		"fallback": preload("res://audio/sfx/door_creak.ogg"),
 		"channel": &"door_creak",
@@ -234,10 +232,7 @@ const POOLS: Dictionary = {
 	},
 	&"door_creak_slow": {
 		"streams": [
-			preload("res://audio/original/foley/door_creak_slow_01.ogg"),
-			preload("res://audio/original/foley/door_creak_slow_02.ogg"),
-			preload("res://audio/original/foley/door_creak_slow_03.ogg"),
-			preload("res://audio/original/foley/door_creak_slow_04.ogg"),
+			preload("res://audio/denoised/foley/door_creak_slow_04.ogg"),
 		],
 		"fallback": preload("res://audio/sfx/door_creak.ogg"),
 		"channel": &"door_creak",
@@ -290,47 +285,44 @@ const POOLS: Dictionary = {
 	},
 	&"parent_footstep": {
 		"streams": [
-			preload("res://audio/original/foley/footstep_wood_01.ogg"),
-			preload("res://audio/original/foley/footstep_wood_02.ogg"),
-			preload("res://audio/original/foley/footstep_wood_03.ogg"),
+			preload("res://audio/denoised/foley/footstep_wood_01.ogg"),
+			preload("res://audio/denoised/foley/footstep_wood_02.ogg"),
+			preload("res://audio/denoised/foley/footstep_wood_03.ogg"),
 		],
 		"fallback": preload("res://audio/sfx/parent_step.ogg"),
 		"channel": &"parent_footsteps",
 		"pitch_jitter": 0.08,
 	},
 	&"fridge_hum": {
-		"streams": [
-			preload("res://audio/original/foley/fridge_hum_01.ogg"),
-		],
+		"streams": [],
 		"fallback": preload("res://audio/ambience/fridge_hum.ogg"),
 		"channel": &"fridge_hum",
 		"pitch_jitter": 0.05,
 	},
 	&"fridge_open_pop": {
-		"streams": [
-			preload("res://audio/original/foley/fridge_open_pop_01.ogg"),
-		],
+		"streams": [],
+		"fallback": preload("res://audio/sfx/snack_pickup.ogg"),
 		"channel": &"fridge_pop",
 		"pitch_jitter": 0.06,
 	},
 	&"wrapper_crinkle": {
 		"streams": [
-			preload("res://audio/original/foley/wrapper_crinkle_01.ogg"),
-			preload("res://audio/original/foley/wrapper_crinkle_02.ogg"),
+			preload("res://audio/denoised/foley/wrapper_crinkle_01.ogg"),
+			preload("res://audio/denoised/foley/wrapper_crinkle_02.ogg"),
 		],
 		"channel": &"wrapper",
 		"pitch_jitter": 0.08,
 	},
 	&"sink_running": {
 		"streams": [
-			preload("res://audio/original/foley/sink_running_01.ogg"),
+			preload("res://audio/denoised/foley/sink_running_01.ogg"),
 		],
 		"channel": &"bathroom",
 		"pitch_jitter": 0.05,
 	},
 	&"toilet_flush": {
 		"streams": [
-			preload("res://audio/original/foley/toilet_flush_01.ogg"),
+			preload("res://audio/denoised/foley/toilet_flush_01.ogg"),
 		],
 		"channel": &"bathroom",
 		"pitch_jitter": 0.05,
@@ -341,6 +333,10 @@ const EVENTS: Dictionary = {
 	&"curiosity": {
 		"group": &"parent_state",
 		"steps": [{"pool": &"parent_investigate", "delay_ms": 0}],
+	},
+	&"idle_giggle": {
+		"group": &"kid_idle",
+		"steps": [{"pool": &"idle_giggle", "delay_ms": 0}],
 	},
 	&"investigate": {
 		"group": &"parent_state",
