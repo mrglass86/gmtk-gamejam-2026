@@ -144,6 +144,7 @@ var _previous_routine_time: float = -0.001
 var _fridge_previous_openness: float = 0.0
 var _fridge_was_opening: bool = false
 var _b14_verification: bool = false
+var _verification_noise_count: int = 0
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
@@ -192,6 +193,7 @@ func verify_configuration() -> void:
 	assert(is_equal_approx(_speaker_bed.max_distance, speaker_bed_max_distance))
 	assert(CASTING.POOLS.size() >= 30)
 	for event_id: StringName in [
+		&"curiosity",
 		&"catch",
 		&"deposit",
 		&"win",
@@ -241,6 +243,20 @@ func begin_audio_verification() -> void:
 	assert(_pet_chirp.playing)
 	_on_pet_bark_started()
 	assert(_pet_bark.playing)
+	_voice.stop()
+	_voice_priority = 0
+	var parent_voice_indicator: MeshInstance3D = (
+		_parent.get_node("ParentVoiceIndicator") as MeshInstance3D
+	)
+	parent_voice_indicator.visible = false
+	_verification_noise_count = 0
+	NoiseSystem.noise_emitted.connect(_capture_verification_noise)
+	_parent.curiosity_started.emit(Vector3.ZERO)
+	NoiseSystem.noise_emitted.disconnect(_capture_verification_noise)
+	assert(_voice.playing)
+	assert(_pool_contains_stream(&"parent_investigate", _voice.stream))
+	assert(parent_voice_indicator.visible)
+	assert(_verification_noise_count == 0)
 	_on_player_caught(Vector3.ZERO, true)
 	assert(_caught_sting.playing)
 	_play_player_footstep(_player.carpet_surface_multiplier)
@@ -429,6 +445,8 @@ func _connect_gameplay_signals() -> void:
 		NoiseSystem.noise_emitted.connect(_on_noise_emitted)
 	if not _parent.state_changed.is_connected(_on_parent_state_changed):
 		_parent.state_changed.connect(_on_parent_state_changed)
+	if not _parent.curiosity_started.is_connected(_on_parent_curiosity_started):
+		_parent.curiosity_started.connect(_on_parent_curiosity_started)
 	if not _parent.player_caught.is_connected(_on_player_caught):
 		_parent.player_caught.connect(_on_player_caught)
 	if not _parent.player_deposited.is_connected(_on_player_deposited):
@@ -642,6 +660,11 @@ func _on_parent_state_changed(state_name: StringName) -> void:
 		_play_event(&"investigate")
 	elif state_name == &"FOUND":
 		_play_event(&"found")
+
+
+func _on_parent_curiosity_started(_sound_position: Vector3) -> void:
+	if _game_active:
+		_play_event(&"curiosity")
 
 
 func _on_player_caught(_catch_position: Vector3, had_snack: bool) -> void:
@@ -955,6 +978,14 @@ func _update_chase_giggle(delta: float) -> void:
 
 func _on_voice_finished() -> void:
 	_voice_priority = 0
+
+
+func _capture_verification_noise(
+	_position: Vector3,
+	_loudness: float,
+	_source: Node
+) -> void:
+	_verification_noise_count += 1
 
 
 func _restart_if_stopped(audio_player: Node) -> void:

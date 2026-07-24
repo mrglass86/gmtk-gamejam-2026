@@ -601,9 +601,10 @@ func _verify_audio_pass() -> void:
 		and $AudioDirector/TVBed is AudioStreamPlayer3D
 	)
 	print(
-		"A15 audio verification passed: original voice/foley pools, context catch "
-		+ "branches, no-repeat selection, VO priority, positional sources, CC0 "
-		+ "fallbacks, and zero bus effects."
+		"A15/B15 audio verification passed: curiosity VO/indicator without "
+		+ "gameplay noise, original voice/foley pools, context catch branches, "
+		+ "no-repeat selection, VO priority, positional sources, CC0 fallbacks, "
+		+ "and zero bus effects."
 	)
 	audio_director.end_audio_verification()
 	for settle_frame: int in range(8):

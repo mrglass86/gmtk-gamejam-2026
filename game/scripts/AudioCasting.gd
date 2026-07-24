@@ -338,6 +338,10 @@ const POOLS: Dictionary = {
 }
 
 const EVENTS: Dictionary = {
+	&"curiosity": {
+		"group": &"parent_state",
+		"steps": [{"pool": &"parent_investigate", "delay_ms": 0}],
+	},
 	&"investigate": {
 		"group": &"parent_state",
 		"steps": [{"pool": &"parent_investigate", "delay_ms": 0}],
