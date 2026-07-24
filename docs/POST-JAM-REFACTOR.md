@@ -28,6 +28,15 @@ Grows through Saturday as review continues.
    the committed-tree blob check (`d656df8`) are genuinely good practice —
    formalize into a test runner rather than per-script cmdline flags.
 
+## Post-jam features (director-parked)
+
+- **Touch controls / mobile web** — the game is conceptually ideal for phones
+  (5-minute sessions, few verbs, bedtime theme). Needs: virtual stick,
+  hold-to-run and hold-to-open touch zones, real-device testing. The export is
+  already iOS-Safari-compatible (single-threaded, Compatibility renderer);
+  input is the only gap. Parked 2026-07-24 to protect the freeze.
+- Rigged character models (the parked assets/*.glb) — post-jam art pass.
+
 ## To review before Saturday night (as time allows)
 
 - Pet.gd, GameFlow.gd, AudioDirector.gd, NoiseIndicatorManager.gd,

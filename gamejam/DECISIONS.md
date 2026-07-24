@@ -130,6 +130,31 @@ Record decisions another session or tool would otherwise have to rediscover.
   costs a block.
 - **Evidence / handoff:** `gamejam/PLAN.md` sections 1, 1.1, 6; lane briefs
 
+## 2026-07-24 — Light-agency feature accepted; regression gate; freeze-day trip-wire
+
+- **Decision:** Run-six directorial batch. (1) REGRESSIONS FIRST (B13):
+  perception must stay live through the post-deposit epilogue (code-read
+  suspect: both perception paths early-return through all post-deposit
+  states), and FOUND gains a bigger grab radius plus a direct close-range
+  lunge — director acceptance in play required before features. (2) FEATURE
+  ACCEPTED: player-and-parent light agency — five switches (dining, kitchen,
+  foyer lamp, bathroom, hall-by-kid-door punishment light), parent tracks
+  phase-expected light state and restores anomalies, parent turns the TV off
+  to listen while alerted and back on when settled, living/dining wall
+  removed, all light from practicals with inverse-square visual falloff
+  (analytic untouched). Epilogue peek v3 = real crib check with a clock-burn
+  scold if the player is out. (3) Trip-wire: not green by 15:00 → degrade to
+  player-switches-only; threatens 17:00 → cut feature; 19:00 freeze immovable.
+- **Why:** Director's run six: two live regressions plus a feature that
+  deepens the locked light-inversion theme rather than diluting it.
+- **Rejected / cut:** A snack "rummage" hold (illustrative only, not ordered);
+  parent VO as real noise events (dog would investigate its owner — visual
+  indicator only).
+- **Owner:** Noah (feature design + acceptance), lanes (B13/B14/A16), Claude
+  (gate + trip-wire enforcement)
+- **Revisit when:** B13 acceptance run, then 15:00 trip-wire check.
+- **Evidence / handoff:** B13/B14/A16 work orders in chat, 2026-07-24 ~01:30.
+
 ## 2026-07-23 — Identity pass: construction-paper menus + family voice acting
 
 - **Decision:** (1) Menu chrome (title/win/lose only) adopts the director's
