@@ -137,6 +137,16 @@ func _crib_margin_does_not_award_a_win() -> void:
 	print("QA crib-margin metrics: offset=%.2f state=%s" % [
 		_player.global_position.distance_to(crib.global_position), _flow.state,
 	])
+	_require(_flow.state == PLAYING, "outside crib-rail case still produced a win")
+	if _failed:
+		return
+	# Approach through the open end at the same inside position guarded by A6.
+	_player.global_position = crib.global_position + Vector3(0.0, 0.15, 1.95)
+	await _wait_physics(3)
+	_require(_flow.state == WON, "inside crib position no longer produced a win")
+	print("QA crib-margin inside: offset=%.2f state=%s" % [
+		_player.global_position.distance_to(crib.global_position), _flow.state,
+	])
 
 
 func _expiry_during_requested_actor_state() -> void:
@@ -248,7 +258,9 @@ func _restart_fuzz_on_terminal_transitions() -> void:
 	_restart_count = 0
 	_restart_on_end = true
 	var crib: Node = _main.get_node("Crib")
-	_player.global_position = crib.global_position + Vector3(0.0, 0.2, 0.0)
+	# Use the open-end crib approach; its aggregate prop collider makes a
+	# centre teleport resolve outward before GameFlow evaluates the win.
+	_player.global_position = crib.global_position + Vector3(0.0, 0.15, 1.95)
 	_snack.call("reveal_at", _player.global_position)
 	_require(_snack.call("pick_up", _player), "restart win setup could not collect snack")
 	await _wait_physics(8)
@@ -308,7 +320,9 @@ func _nasty_snack_placements() -> void:
 		_player.set_carrying_snack(false)
 		_snack.call("drop_at", position)
 	# Sitting in the crib must not win by itself; only the player holding it may.
-	var crib_position: Vector3 = crib.global_position + Vector3(0.0, 0.6, 0.0)
+	var crib_position: Vector3 = (
+		crib.global_position + Vector3(0.0, 0.15, 1.95)
+	)
 	_player.global_position = Vector3(-30.0, 0.6, -20.0)
 	_snack.call("drop_at", crib_position)
 	await _wait_physics(100)

@@ -579,8 +579,17 @@ func _verify_a6_game_flow() -> void:
 
 	flow.prepare_verification_case()
 	flow.call("_input", start_event)
-	player.global_position = Vector3(-8.7, 0.6, -2.75)
+	player.global_position = Vector3(-6.75, 0.6, -4.7)
 	player.set_carrying_snack(true)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	assert(
+		flow.state == DinnerGameFlow.State.PLAYING
+		and not flow.call("_is_player_in_crib"),
+		"Player beside the crib rails qualified for a win."
+	)
+	player.global_position = Vector3(-8.7, 0.6, -2.75)
+	assert(flow.call("_is_player_in_crib"))
 	GameClock.time_expired.emit()
 	assert(flow.state == DinnerGameFlow.State.WON)
 	assert(($GameFlow/ResultCard/Panel/ResultHeading as Label).text == "BACK IN BED")
@@ -2066,8 +2075,14 @@ func _verify_a18_polish_pack() -> void:
 	for pool_id: StringName in DinnerAudioCasting.POOLS:
 		var pool: Dictionary = DinnerAudioCasting.POOLS[pool_id] as Dictionary
 		for stream: AudioStream in pool.get("streams", []):
+			var is_a23_short_reaction_override: bool = (
+				pool_id == &"kid_organic_reaction"
+				and stream.resource_path
+				== "res://audio/original/voice/caught_grunt_02.ogg"
+			)
 			assert(
-				not stream.resource_path.begins_with("res://audio/original/"),
+				not stream.resource_path.begins_with("res://audio/original/")
+				or is_a23_short_reaction_override,
 				"Runtime family pool still references an original: %s."
 				% stream.resource_path
 			)

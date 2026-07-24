@@ -130,6 +130,16 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       toy/creak stomp investigates; far-cone lit sight reaches 50 suspicion
       within 1.5 s. Accept: live `--verify-b21` plus B6/B8–B15/B18/B20 and
       adversarial QA regression (`b9dfecf`).
+- [x] Lane-C crib-boundary major — win containment uses the player centre and
+      an 0.08 m tolerance; the reported 2.04 m outside case stays PLAYING and
+      A6's inside position still wins immediately and at expiry.
+- [x] A23 family-voice casting — the start motivation is exclusive, live
+      `FOUND` and `CARRY` states drive context-aware no-repeat chains through
+      one VO player, and the parent carry-grunt pools split 3/1 by snack
+      context. Accept: `--verify-audio` (`eed6e31`).
+- [ ] A23 organic-reaction trigger — lane B emits the presentation-only
+      `Player.organic_reaction_triggered` signal for real toy/creak steps and
+      meaningful wall bumps; lane A's 25% roll and 2.5 s limiter are ready.
 - [x] B20 caught-snack exploit — capture atomically clears snack ownership,
       input-locked/carried players cannot auto-recollect it, and CARRY
       defensively preserves the catch-point drop. Accept: live

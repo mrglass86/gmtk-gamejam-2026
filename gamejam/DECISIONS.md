@@ -827,3 +827,40 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** Web profiling finds the segmented fan expensive, or play
   finds 1.2-second far-cone registration too harsh.
 - **Evidence / handoff:** `b9dfecf`, live `--verify-b21`, 2026-07-24.
+
+## 2026-07-24 — Family VO chains follow live gameplay states
+
+- **Decision:** Reserve `carry_red_handed_01` for the one-shot game-start
+  motivation line. During `FOUND`, continuously chain the combined chase/win
+  giggle pool; during `CARRY`, chain kid protests selected by catch snack
+  context and periodically interleave the matching parent-grunt pool. Stop
+  those chains on the authoritative state/deposit signals. Use
+  `caught_grunt_03` for catch and reserve 01/02 for chance-based world bumps.
+- **Why:** The live state lifetime naturally makes voice coverage scale with
+  each chase and carry without predicting path duration, while one dedicated
+  VO player preserves clear casting and priority.
+- **Rejected / cut:** Predicting carry time from distance; a fixed single
+  protest; overlapping a second VO player; inferring geometry bumps inside
+  AudioDirector.
+- **Owner:** Noah (director), lane A (casting/scheduler), lane B (world-contact
+  trigger)
+- **Revisit when:** A listening pass finds the 0.14–0.30 s chain gaps or
+  3.0–4.8 s parent-grunt cadence too dense.
+- **Evidence / handoff:** `eed6e31`, `--verify-audio`, A23 handoff, and the
+  open A23 row in `WIRING.md`.
+
+## 2026-07-24 — Crib wins use player-centre containment
+
+- **Decision:** `GameFlow` tests the player's centre against the authored crib
+  goal with an 0.08 m tolerance. `Area3D.overlaps_body()` is not an alternate
+  success path.
+- **Why:** Body overlap inflates the goal by the player capsule radius and
+  awarded a win at the reported 2.04 m beside-the-rails position. Centre
+  containment keeps the open-end approach reliable without accepting the
+  parallel outside edge.
+- **Rejected / cut:** Shrinking the visual crib; using raw body overlap;
+  redesigning the goal or layout during freeze.
+- **Owner:** Lane C (finding), lane A (GameFlow fix)
+- **Revisit when:** The inside approach misses at gameplay speed.
+- **Evidence / handoff:** A6 immediate/expiry verification and lane-C
+  `crib-margin` scenario, 2026-07-24.

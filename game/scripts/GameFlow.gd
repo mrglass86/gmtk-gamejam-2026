@@ -29,7 +29,7 @@ enum State {
 )
 
 @export_group("Crib Goal")
-@export var goal_body_margin: float = 0.4
+@export_range(0.0, 0.1) var goal_body_margin: float = 0.08
 
 var state: State = State.TITLE
 var restart_was_requested: bool = false
@@ -163,8 +163,6 @@ func _request_restart() -> void:
 func _is_player_in_crib() -> bool:
 	if _crib_goal == null or _player == null:
 		return false
-	if _crib_goal.overlaps_body(_player):
-		return true
 	var collision: CollisionShape3D = _crib_goal.get_node_or_null("CollisionShape3D") as CollisionShape3D
 	if collision == null:
 		return false
@@ -173,6 +171,8 @@ func _is_player_in_crib() -> bool:
 		return false
 	var local_player_position: Vector3 = collision.to_local(_player.global_position)
 	var half_size: Vector3 = goal_shape.size * 0.5
+	# Test the player's centre, not Area3D body overlap. Body overlap includes
+	# the capsule radius and used to award a win beside the crib rails.
 	return (
 		absf(local_player_position.x) <= half_size.x + goal_body_margin
 		and absf(local_player_position.y) <= half_size.y

@@ -28,6 +28,7 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 @export_node_path("DinnerPet") var pet_path: NodePath = NodePath("../Pet")
 @export_node_path("DinnerSnack") var snack_path: NodePath = NodePath("../Snack")
 @export_node_path("DinnerGameFlow") var game_flow_path: NodePath = NodePath("../GameFlow")
+@export_node_path("Node3D") var crib_path: NodePath = NodePath("../Crib")
 @export_node_path("AudioListener3D") var listener_path: NodePath = NodePath(
 	"../Player/AudioListener3D"
 )
@@ -72,9 +73,12 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 
 @export_group("Original Voice")
 @export var voice_volume_db: float = -5.0
-@export var chase_giggle_min_interval: float = 1.5
-@export_range(0.0, 1.0) var chase_giggle_chance: float = 0.42
-@export var chase_min_player_speed: float = 0.2
+@export var chained_voice_gap_min: float = 0.14
+@export var chained_voice_gap_max: float = 0.30
+@export var carry_parent_grunt_interval_min: float = 3.0
+@export var carry_parent_grunt_interval_max: float = 4.8
+@export_range(0.0, 1.0) var organic_reaction_chance: float = 0.25
+@export var organic_reaction_cooldown: float = 2.5
 
 @export_group("Original Foley")
 @export var wrapper_volume_db: float = -20.0
@@ -104,6 +108,7 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 @onready var _game_flow: DinnerGameFlow = (
 	get_node_or_null(game_flow_path) as DinnerGameFlow
 )
+@onready var _crib: Node3D = get_node_or_null(crib_path) as Node3D
 @onready var _listener: AudioListener3D = (
 	get_node_or_null(listener_path) as AudioListener3D
 )
@@ -141,7 +146,20 @@ var _sequence_group_generations: Dictionary = {}
 var _routine_events_fired: Dictionary = {}
 var _audio_epoch: int = 0
 var _voice_priority: int = 0
-var _chase_giggle_elapsed: float = 0.0
+var _active_voice_pool: StringName = &""
+var _chase_chain_active: bool = false
+var _chase_voice_gap_remaining: float = 0.0
+var _carry_chain_active: bool = false
+var _carry_had_snack: bool = false
+var _carry_voice_gap_remaining: float = 0.0
+var _carry_elapsed: float = 0.0
+var _carry_start_distance: float = 0.0
+var _carry_protest_count: int = 0
+var _carry_parent_grunt_count: int = 0
+var _carry_next_parent_grunt_at: float = 0.0
+var _organic_reaction_elapsed: float = 999.0
+var _organic_reaction_play_count: int = 0
+var _game_start_line_play_count: int = 0
 var _previous_routine_time: float = -0.001
 var _fridge_previous_openness: float = 0.0
 var _fridge_was_opening: bool = false
@@ -178,7 +196,9 @@ func _physics_process(delta: float) -> void:
 	_update_door_creak(delta)
 	_update_fridge_pop(delta)
 	_update_routine_events()
-	_update_chase_giggle(delta)
+	_update_chase_voice(delta)
+	_update_carry_voice(delta)
+	_organic_reaction_elapsed += delta
 	_update_wrapper_audio(delta)
 
 
@@ -195,10 +215,12 @@ func verify_configuration() -> void:
 		assert(audio_player.get("stream") != null)
 	assert(_listener != null and _listener.is_current())
 	assert(_fridge != null)
+	assert(_crib != null)
 	assert(is_equal_approx(_tv_bed.max_distance, tv_bed_max_distance))
 	assert(is_equal_approx(_speaker_bed.max_distance, speaker_bed_max_distance))
 	assert(CASTING.POOLS.size() >= 30)
 	for event_id: StringName in [
+		&"game_start",
 		&"curiosity",
 		&"idle_giggle",
 		&"catch",
@@ -235,26 +257,59 @@ func verify_configuration() -> void:
 		CASTING.POOLS[&"snack_pickup_fridge_voice"].get("speaker", &"")
 		== &"kid"
 	)
+	for a23_pool: StringName in [
+		&"game_start_motivation",
+		&"carry_red_handed",
+		&"carry_empty_handed",
+		&"caught_reaction",
+		&"kid_organic_reaction",
+		&"fun_giggle",
+		&"parent_carry_grunt_red_handed",
+		&"parent_carry_grunt_empty_handed",
+	]:
+		assert(CASTING.POOLS.has(a23_pool))
 	for pool_id: StringName in CASTING.POOLS:
 		var pool_streams: Array = CASTING.POOLS[pool_id].get("streams", [])
 		for stream: AudioStream in pool_streams:
 			assert(
 				not stream.resource_path.begins_with(
 					"res://audio/original/"
-				),
+				)
+				or stream.resource_path
+				== "res://audio/original/voice/caught_grunt_02.ogg",
 				"Uncleaned family take remains wired: %s."
 				% stream.resource_path
 			)
+	var motivation_streams: Array = (
+		CASTING.POOLS[&"game_start_motivation"]["streams"] as Array
+	)
+	var red_handed_streams: Array = (
+		CASTING.POOLS[&"carry_red_handed"]["streams"] as Array
+	)
+	assert(motivation_streams.size() == 1)
+	assert(
+		motivation_streams[0].resource_path
+		== "res://audio/denoised/voice/carry_red_handed_01.ogg"
+	)
+	assert(
+		not red_handed_streams.has(motivation_streams[0]),
+		"Start motivation line leaked back into the carry pool."
+	)
+	assert((CASTING.POOLS[&"fun_giggle"]["streams"] as Array).size() == 11)
+	assert(
+		(CASTING.POOLS[&"parent_carry_grunt_red_handed"]["streams"] as Array)
+		.size() == 3
+	)
+	assert(
+		(CASTING.POOLS[&"parent_carry_grunt_empty_handed"]["streams"] as Array)
+		.size() == 1
+	)
 	var catch_steps: Array = CASTING.EVENTS[&"catch"].get("steps", [])
-	var carry_step: Dictionary = catch_steps.back()
-	assert(
-		_resolve_step_pool(carry_step, {&"had_snack": true})
-		== &"carry_red_handed"
-	)
-	assert(
-		_resolve_step_pool(carry_step, {&"had_snack": false})
-		== &"carry_empty_handed"
-	)
+	assert(catch_steps.size() == 2)
+	assert((catch_steps[1] as Dictionary).get("pool", &"") == &"caught_reaction")
+	var win_steps: Array = CASTING.EVENTS[&"win"].get("steps", [])
+	assert((win_steps.back() as Dictionary).get("pool", &"") == &"fun_giggle")
+	assert(int((win_steps.back() as Dictionary).get("priority", -1)) == 4)
 	for bus_index: int in range(AudioServer.bus_count):
 		assert(
 			AudioServer.get_bus_effect_count(bus_index) == 0,
@@ -264,8 +319,11 @@ func verify_configuration() -> void:
 
 func begin_audio_verification() -> void:
 	_rng.seed = 150026
+	var start_line_count_before: int = _game_start_line_play_count
 	_on_game_started()
 	assert(_game_active)
+	assert(is_voice_pool_playing(&"game_start_motivation"))
+	assert(_game_start_line_play_count == start_line_count_before + 1)
 	assert(_tv_bed.playing and _speaker_bed.playing)
 	assert(_fridge_hum.playing and _clock_tick.playing)
 	_on_phase_changed(1)
@@ -280,6 +338,7 @@ func begin_audio_verification() -> void:
 	assert(_pet_bark.playing)
 	_voice.stop()
 	_voice_priority = 0
+	_active_voice_pool = &""
 	var parent_voice_indicator: MeshInstance3D = (
 		_parent.get_node("ParentVoiceIndicator") as MeshInstance3D
 	)
@@ -294,11 +353,67 @@ func begin_audio_verification() -> void:
 	assert(_verification_noise_count == 0)
 	_voice.stop()
 	_voice_priority = 0
+	_active_voice_pool = &""
 	_player.idle_giggled.emit(_player.global_position)
 	assert(is_voice_pool_playing(&"idle_giggle"))
 	assert(is_equal_approx(_voice.volume_db, voice_volume_db - 8.0))
 	_on_player_caught(Vector3.ZERO, true)
 	assert(_caught_sting.playing)
+	assert(_carry_chain_active and _carry_had_snack)
+	assert(_carry_start_distance > 0.0)
+	_voice.stop()
+	_voice_priority = 0
+	_active_voice_pool = &""
+	_carry_voice_gap_remaining = 0.0
+	assert(_play_next_carry_voice())
+	assert(is_voice_pool_playing(&"carry_red_handed"))
+	assert(_carry_protest_count == 1)
+	_voice.stop()
+	_voice_priority = 0
+	_active_voice_pool = &""
+	_carry_elapsed = _carry_next_parent_grunt_at
+	assert(_play_next_carry_voice())
+	assert(is_voice_pool_playing(&"parent_carry_grunt_red_handed"))
+	assert(_carry_parent_grunt_count == 1)
+	_stop_carry_chain()
+	_start_carry_chain(Vector3.ZERO, false)
+	_voice.stop()
+	_voice_priority = 0
+	_active_voice_pool = &""
+	assert(_play_next_carry_voice())
+	assert(is_voice_pool_playing(&"carry_empty_handed"))
+	_voice.stop()
+	_voice_priority = 0
+	_active_voice_pool = &""
+	_carry_elapsed = _carry_next_parent_grunt_at
+	assert(_play_next_carry_voice())
+	assert(is_voice_pool_playing(&"parent_carry_grunt_empty_handed"))
+	_stop_carry_chain()
+	_voice.stop()
+	_voice_priority = 0
+	_active_voice_pool = &""
+	var original_reaction_chance: float = organic_reaction_chance
+	organic_reaction_chance = 1.0
+	_organic_reaction_elapsed = organic_reaction_cooldown
+	var reaction_count_before: int = _organic_reaction_play_count
+	_on_player_organic_reaction(&"toy", _player.global_position)
+	assert(is_voice_pool_playing(&"kid_organic_reaction"))
+	assert(_organic_reaction_play_count == reaction_count_before + 1)
+	organic_reaction_chance = original_reaction_chance
+	_voice.stop()
+	_voice_priority = 0
+	_active_voice_pool = &""
+	_start_chase_chain()
+	assert(_play_next_chase_giggle())
+	assert(is_voice_pool_playing(&"fun_giggle"))
+	var first_chase_pick: AudioStream = _voice.stream
+	_voice.stop()
+	_on_voice_finished()
+	_chase_voice_gap_remaining = 0.0
+	assert(_play_next_chase_giggle())
+	assert(is_voice_pool_playing(&"fun_giggle"))
+	assert(_voice.stream != first_chase_pick)
+	_stop_chase_chain()
 	_play_player_footstep(_player.carpet_surface_multiplier)
 	assert(_pool_contains_stream(&"footstep_carpet_walk", _player_footsteps.stream))
 	assert(is_equal_approx(_player_footsteps.volume_db, carpet_step_volume_db))
@@ -385,12 +500,13 @@ func begin_audio_verification() -> void:
 	assert(is_equal_approx(_player.snack_noise_loudness, 0.3))
 	_player.set_carrying_snack(false)
 	var drop_voice: AudioStream = _voice.stream
-	assert(not _play_pool(&"chase_giggle"))
+	assert(not _play_pool(&"fun_giggle"))
 	assert(_voice.stream == drop_voice)
 	assert(_play_pool(&"carry_red_handed"))
 	assert(_pool_contains_stream(&"carry_red_handed", _voice.stream))
 	_voice.stop()
 	_voice_priority = 0
+	_active_voice_pool = &""
 	_on_epilogue_room_check_started()
 	assert(is_voice_pool_playing(&"parent_bed_check"))
 	assert(
@@ -398,21 +514,29 @@ func begin_audio_verification() -> void:
 	)
 	_voice.stop()
 	_voice_priority = 0
+	_active_voice_pool = &""
 	_on_epilogue_kid_protest()
 	assert(is_voice_pool_playing(&"kid_room_protest"))
 	_play_pool(&"fridge_open_pop")
 	assert(_fridge_pop.playing)
 	_play_pool(&"wrapper_crinkle")
 	assert(_wrapper_foley.playing)
-	var first_pick: AudioStream = _select_pool_stream(&"chase_giggle")
-	var second_pick: AudioStream = _select_pool_stream(&"chase_giggle")
+	var first_pick: AudioStream = _select_pool_stream(&"fun_giggle")
+	var second_pick: AudioStream = _select_pool_stream(&"fun_giggle")
 	assert(first_pick != second_pick, "A15 pools must not repeat immediately.")
+	print(
+		"A23 casting verified: motivation=1, carry red/empty=6/7, "
+		+ "organic=2, chase+win giggles=11, parent carry red/empty=3/1."
+	)
 
 
 func end_audio_verification() -> void:
 	_game_active = false
 	_audio_epoch += 1
+	_stop_chase_chain()
+	_stop_carry_chain()
 	_voice_priority = 0
+	_active_voice_pool = &""
 	_sequence_group_generations.clear()
 	for audio_player: Node in find_children("*", "AudioStreamPlayer", true, false):
 		audio_player.call("stop")
@@ -519,6 +643,18 @@ func _connect_gameplay_signals() -> void:
 		NoiseSystem.noise_emitted.connect(_on_noise_emitted)
 	if not _player.idle_giggled.is_connected(_on_player_idle_giggled):
 		_player.idle_giggled.connect(_on_player_idle_giggled)
+	var organic_reaction_callback: Callable = _on_player_organic_reaction
+	if (
+		_player.has_signal(&"organic_reaction_triggered")
+		and not _player.is_connected(
+			&"organic_reaction_triggered",
+			organic_reaction_callback
+		)
+	):
+		_player.connect(
+			&"organic_reaction_triggered",
+			organic_reaction_callback
+		)
 	if not _parent.state_changed.is_connected(_on_parent_state_changed):
 		_parent.state_changed.connect(_on_parent_state_changed)
 	if not _parent.curiosity_started.is_connected(_on_parent_curiosity_started):
@@ -560,15 +696,19 @@ func _on_game_started() -> void:
 	_game_active = true
 	_current_phase = GameClock.phase
 	_parent_step_distance_accumulated = 0.0
-	_chase_giggle_elapsed = 0.0
+	_stop_chase_chain()
+	_stop_carry_chain()
 	_previous_routine_time = -0.001
 	_wrapper_audio_elapsed = 0.0
+	_organic_reaction_elapsed = maxf(organic_reaction_cooldown, 0.0)
+	_organic_reaction_play_count = 0
 	_snack_pickup_latched = false
 	_snack_pickup_play_count = 0
 	_routine_events_fired.clear()
 	_sequence_group_generations.clear()
 	_voice.stop()
 	_voice_priority = 0
+	_active_voice_pool = &""
 	if _parent != null:
 		_last_parent_position = _parent.global_position
 	if _fridge != null:
@@ -577,6 +717,8 @@ func _on_game_started() -> void:
 	_apply_ambient_phase()
 	_restart_if_stopped(_fridge_hum)
 	_restart_if_stopped(_clock_tick)
+	_play_event(&"game_start")
+	_game_start_line_play_count += 1
 
 
 func _on_game_ended(did_win: bool) -> void:
@@ -585,10 +727,13 @@ func _on_game_ended(did_win: bool) -> void:
 	_game_active = false
 	_audio_epoch += 1
 	_sequence_group_generations.clear()
+	_stop_chase_chain()
+	_stop_carry_chain()
 	_stop_ambient_beds()
 	_stop_door_creak()
 	_voice.stop()
 	_voice_priority = 0
+	_active_voice_pool = &""
 	_wrapper_foley.stop()
 	_fridge_pop.stop()
 	_bathroom_foley.stop()
@@ -741,10 +886,16 @@ func _stop_door_creak() -> void:
 func _on_parent_state_changed(state_name: StringName) -> void:
 	if not _game_active:
 		return
+	if state_name == &"FOUND":
+		_stop_carry_chain()
+		_play_event(&"found")
+		_start_chase_chain()
+		return
+	_stop_chase_chain()
+	if state_name != &"CARRY":
+		_stop_carry_chain()
 	if state_name == &"INVESTIGATE" or state_name == &"HUNT":
 		_play_event(&"investigate")
-	elif state_name == &"FOUND":
-		_play_event(&"found")
 
 
 func _on_parent_curiosity_started(_sound_position: Vector3) -> void:
@@ -757,13 +908,34 @@ func _on_player_idle_giggled(_giggle_position: Vector3) -> void:
 		_play_event(&"idle_giggle")
 
 
-func _on_player_caught(_catch_position: Vector3, had_snack: bool) -> void:
+func _on_player_organic_reaction(
+	_trigger_kind: StringName,
+	_world_position: Vector3
+) -> void:
+	if (
+		not _game_active
+		or _player == null
+		or _player.input_locked
+		or _organic_reaction_elapsed < maxf(organic_reaction_cooldown, 0.0)
+		or _voice.playing
+		or _rng.randf() > clampf(organic_reaction_chance, 0.0, 1.0)
+	):
+		return
+	if _play_pool(&"kid_organic_reaction"):
+		_organic_reaction_elapsed = 0.0
+		_organic_reaction_play_count += 1
+
+
+func _on_player_caught(catch_position: Vector3, had_snack: bool) -> void:
 	if _game_active:
+		_stop_chase_chain()
+		_start_carry_chain(catch_position, had_snack)
 		_play_event(&"catch", {&"had_snack": had_snack})
 
 
 func _on_player_deposited() -> void:
 	if _game_active:
+		_stop_carry_chain()
 		_play_event(&"deposit")
 
 
@@ -898,7 +1070,7 @@ func _play_event_step(
 		return
 	var pool_id: StringName = _resolve_step_pool(step, context)
 	if pool_id != &"":
-		_play_pool(pool_id)
+		_play_pool(pool_id, int(step.get("priority", -1)))
 
 
 func _resolve_step_pool(step: Dictionary, context: Dictionary) -> StringName:
@@ -912,7 +1084,7 @@ func _resolve_step_pool(step: Dictionary, context: Dictionary) -> StringName:
 	)
 
 
-func _play_pool(pool_id: StringName) -> bool:
+func _play_pool(pool_id: StringName, priority_override: int = -1) -> bool:
 	var config: Dictionary = CASTING.POOLS.get(pool_id, {})
 	if config.is_empty():
 		return false
@@ -929,13 +1101,18 @@ func _play_pool(pool_id: StringName) -> bool:
 	var channel: StringName = config.get("channel", &"")
 	match channel:
 		&"voice":
-			var priority: int = int(config.get("priority", 0))
+			var priority: int = (
+				priority_override
+				if priority_override >= 0
+				else int(config.get("priority", 0))
+			)
 			if _voice.playing and priority < _voice_priority:
 				return false
 			_voice.stream = stream
 			_voice.pitch_scale = pitch
 			_voice.volume_db = voice_volume_db + volume_offset_db
 			_voice_priority = priority
+			_active_voice_pool = pool_id
 			_voice.play()
 			if (
 				config.get("speaker", &"") == &"parent"
@@ -1074,24 +1251,135 @@ func _update_routine_events() -> void:
 			_play_event(event_row.get("event", &""))
 
 
-func _update_chase_giggle(delta: float) -> void:
+func _start_chase_chain() -> void:
+	_chase_chain_active = true
+	_chase_voice_gap_remaining = 0.0
+
+
+func _stop_chase_chain() -> void:
+	_chase_chain_active = false
+	_chase_voice_gap_remaining = 0.0
+	if _active_voice_pool == &"fun_giggle":
+		_voice.stop()
+		_voice_priority = 0
+		_active_voice_pool = &""
+
+
+func _update_chase_voice(delta: float) -> void:
+	if not _chase_chain_active:
+		return
+	if _parent == null or _parent.get_state_name() != &"FOUND":
+		_stop_chase_chain()
+		return
+	_chase_voice_gap_remaining = maxf(
+		_chase_voice_gap_remaining - delta,
+		0.0
+	)
+	if _voice.playing or _chase_voice_gap_remaining > 0.0:
+		return
+	_play_next_chase_giggle()
+
+
+func _play_next_chase_giggle() -> bool:
+	if not _chase_chain_active:
+		return false
+	return _play_pool(&"fun_giggle")
+
+
+func _start_carry_chain(catch_position: Vector3, had_snack: bool) -> void:
+	_carry_chain_active = true
+	_carry_had_snack = had_snack
+	_carry_voice_gap_remaining = 0.45
+	_carry_elapsed = 0.0
+	_carry_protest_count = 0
+	_carry_parent_grunt_count = 0
+	_carry_next_parent_grunt_at = _random_carry_grunt_interval()
+	_carry_start_distance = 0.0
+	if _crib != null:
+		var catch_delta: Vector3 = _crib.global_position - catch_position
+		catch_delta.y = 0.0
+		_carry_start_distance = catch_delta.length()
+
+
+func _stop_carry_chain() -> void:
+	_carry_chain_active = false
+	_carry_voice_gap_remaining = 0.0
+	if _is_carry_voice_pool(_active_voice_pool):
+		_voice.stop()
+		_voice_priority = 0
+		_active_voice_pool = &""
+
+
+func _update_carry_voice(delta: float) -> void:
+	if not _carry_chain_active:
+		return
+	if _parent == null or _parent.get_state_name() != &"CARRY":
+		_stop_carry_chain()
+		return
+	_carry_elapsed += delta
+	_carry_voice_gap_remaining = maxf(
+		_carry_voice_gap_remaining - delta,
+		0.0
+	)
+	if _voice.playing or _carry_voice_gap_remaining > 0.0:
+		return
+	_play_next_carry_voice()
+
+
+func _play_next_carry_voice() -> bool:
+	if not _carry_chain_active:
+		return false
+	var pool_id: StringName
 	if (
-		_parent == null
-		or _player == null
-		or _parent.get_state_name() != &"FOUND"
-		or _player.input_locked
-		or _player.get_real_velocity().length() < chase_min_player_speed
+		_carry_protest_count > 0
+		and _carry_elapsed >= _carry_next_parent_grunt_at
 	):
-		_chase_giggle_elapsed = 0.0
-		return
-	_chase_giggle_elapsed += delta
-	if _chase_giggle_elapsed < chase_giggle_min_interval:
-		return
-	if _voice.playing:
-		return
-	_chase_giggle_elapsed = 0.0
-	if _rng.randf() <= chase_giggle_chance:
-		_play_pool(&"chase_giggle")
+		pool_id = (
+			&"parent_carry_grunt_red_handed"
+			if _carry_had_snack
+			else &"parent_carry_grunt_empty_handed"
+		)
+		_carry_parent_grunt_count += 1
+		_carry_next_parent_grunt_at = (
+			_carry_elapsed + _random_carry_grunt_interval()
+		)
+	else:
+		pool_id = (
+			&"carry_red_handed"
+			if _carry_had_snack
+			else &"carry_empty_handed"
+		)
+		_carry_protest_count += 1
+	return _play_pool(pool_id)
+
+
+func _random_carry_grunt_interval() -> float:
+	return _rng.randf_range(
+		minf(
+			carry_parent_grunt_interval_min,
+			carry_parent_grunt_interval_max
+		),
+		maxf(
+			carry_parent_grunt_interval_min,
+			carry_parent_grunt_interval_max
+		)
+	)
+
+
+func _random_chained_voice_gap() -> float:
+	return _rng.randf_range(
+		minf(chained_voice_gap_min, chained_voice_gap_max),
+		maxf(chained_voice_gap_min, chained_voice_gap_max)
+	)
+
+
+func _is_carry_voice_pool(pool_id: StringName) -> bool:
+	return pool_id in [
+		&"carry_red_handed",
+		&"carry_empty_handed",
+		&"parent_carry_grunt_red_handed",
+		&"parent_carry_grunt_empty_handed",
+	]
 
 
 func _update_wrapper_audio(delta: float) -> void:
@@ -1188,6 +1476,11 @@ func verify_a20_snack_audio_skin() -> void:
 
 func _on_voice_finished() -> void:
 	_voice_priority = 0
+	_active_voice_pool = &""
+	if _carry_chain_active:
+		_carry_voice_gap_remaining = _random_chained_voice_gap()
+	elif _chase_chain_active:
+		_chase_voice_gap_remaining = _random_chained_voice_gap()
 
 
 func _capture_verification_noise(

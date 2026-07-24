@@ -70,24 +70,37 @@ const POOLS: Dictionary = {
 		"priority": 1,
 		"pitch_jitter": 0.05,
 	},
-	&"parent_grunt": {
+	&"parent_carry_grunt_red_handed": {
 		"streams": [
-			preload("res://audio/denoised/voice/parent_grunt_01.ogg"),
 			preload("res://audio/denoised/voice/parent_grunt_02.ogg"),
 			preload("res://audio/denoised/voice/parent_grunt_03.ogg"),
 			preload("res://audio/denoised/voice/parent_grunt_04.ogg"),
-			preload("res://audio/denoised/voice/parent_grunt_05.ogg"),
-			preload("res://audio/denoised/voice/parent_grunt_06.ogg"),
+		],
+		"channel": &"voice",
+		"speaker": &"parent",
+		"priority": 4,
+		"pitch_jitter": 0.05,
+	},
+	&"parent_carry_grunt_empty_handed": {
+		"streams": [
 			preload("res://audio/denoised/voice/parent_grunt_07.ogg"),
 		],
 		"channel": &"voice",
 		"speaker": &"parent",
-		"priority": 2,
+		"priority": 4,
+		"pitch_jitter": 0.05,
+	},
+	&"game_start_motivation": {
+		"streams": [
+			preload("res://audio/denoised/voice/carry_red_handed_01.ogg"),
+		],
+		"channel": &"voice",
+		"speaker": &"kid",
+		"priority": 3,
 		"pitch_jitter": 0.05,
 	},
 	&"carry_red_handed": {
 		"streams": [
-			preload("res://audio/denoised/voice/carry_red_handed_01.ogg"),
 			preload("res://audio/denoised/voice/carry_red_handed_02.ogg"),
 			preload("res://audio/denoised/voice/carry_red_handed_03.ogg"),
 			preload("res://audio/denoised/voice/carry_red_handed_04.ogg"),
@@ -96,6 +109,7 @@ const POOLS: Dictionary = {
 			preload("res://audio/denoised/voice/carry_red_handed_08.ogg"),
 		],
 		"channel": &"voice",
+		"speaker": &"kid",
 		"priority": 4,
 		"pitch_jitter": 0.06,
 	},
@@ -110,6 +124,7 @@ const POOLS: Dictionary = {
 			preload("res://audio/denoised/voice/carry_empty_handed_07.ogg"),
 		],
 		"channel": &"voice",
+		"speaker": &"kid",
 		"priority": 4,
 		"pitch_jitter": 0.06,
 	},
@@ -124,22 +139,43 @@ const POOLS: Dictionary = {
 		"priority": 4,
 		"pitch_jitter": 0.06,
 	},
-	&"caught_grunt": {
+	&"caught_reaction": {
 		"streams": [
-			preload("res://audio/denoised/voice/caught_grunt_01.ogg"),
 			preload("res://audio/denoised/voice/caught_grunt_03.ogg"),
 		],
 		"channel": &"voice",
+		"speaker": &"kid",
+		"priority": 3,
+		"pitch_jitter": 0.06,
+	},
+	&"kid_organic_reaction": {
+		"streams": [
+			preload("res://audio/denoised/voice/caught_grunt_01.ogg"),
+			# Director override: this 0.38 s reaction has no clean profile
+			# window, so A18 kept its untouched generic runtime copy.
+			preload("res://audio/original/voice/caught_grunt_02.ogg"),
+		],
+		"channel": &"voice",
+		"speaker": &"kid",
 		"priority": 2,
 		"pitch_jitter": 0.06,
 	},
-	&"chase_giggle": {
+	&"fun_giggle": {
 		"streams": [
 			preload("res://audio/denoised/voice/chase_giggle_01.ogg"),
 			preload("res://audio/denoised/voice/chase_giggle_02.ogg"),
 			preload("res://audio/denoised/voice/chase_giggle_03.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_01.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_02.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_03.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_04.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_05.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_06.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_07.ogg"),
+			preload("res://audio/denoised/voice/win_giggle_08.ogg"),
 		],
 		"channel": &"voice",
+		"speaker": &"kid",
 		"priority": 1,
 		"pitch_jitter": 0.06,
 	},
@@ -171,21 +207,6 @@ const POOLS: Dictionary = {
 		"priority": 3,
 		"pitch_jitter": 0.05,
 		"volume_offset_db": -2.0,
-	},
-	&"win_giggle": {
-		"streams": [
-			preload("res://audio/denoised/voice/win_giggle_01.ogg"),
-			preload("res://audio/denoised/voice/win_giggle_02.ogg"),
-			preload("res://audio/denoised/voice/win_giggle_03.ogg"),
-			preload("res://audio/denoised/voice/win_giggle_04.ogg"),
-			preload("res://audio/denoised/voice/win_giggle_05.ogg"),
-			preload("res://audio/denoised/voice/win_giggle_06.ogg"),
-			preload("res://audio/denoised/voice/win_giggle_07.ogg"),
-			preload("res://audio/denoised/voice/win_giggle_08.ogg"),
-		],
-		"channel": &"voice",
-		"priority": 4,
-		"pitch_jitter": 0.06,
 	},
 	&"deposit_sniffle": {
 		"streams": [
@@ -362,6 +383,10 @@ const POOLS: Dictionary = {
 }
 
 const EVENTS: Dictionary = {
+	&"game_start": {
+		"group": &"game_start",
+		"steps": [{"pool": &"game_start_motivation", "delay_ms": 0}],
+	},
 	&"curiosity": {
 		"group": &"parent_state",
 		"steps": [{"pool": &"parent_investigate", "delay_ms": 0}],
@@ -382,14 +407,7 @@ const EVENTS: Dictionary = {
 		"group": &"carry_flow",
 		"steps": [
 			{"pool": &"caught_sting", "delay_ms": 0},
-			{"pool": &"caught_grunt", "delay_ms": 120},
-			{"pool": &"parent_grunt", "delay_ms": 650},
-			{
-				"context_key": &"had_snack",
-				"true_pool": &"carry_red_handed",
-				"false_pool": &"carry_empty_handed",
-				"delay_ms": 2850,
-			},
+			{"pool": &"caught_reaction", "delay_ms": 120},
 		],
 	},
 	&"deposit": {
@@ -404,7 +422,7 @@ const EVENTS: Dictionary = {
 		"steps": [
 			{"pool": &"win_sting", "delay_ms": 0},
 			{"pool": &"win_mmm", "delay_ms": 0},
-			{"pool": &"win_giggle", "delay_ms": 1050},
+			{"pool": &"fun_giggle", "delay_ms": 1050, "priority": 4},
 		],
 	},
 	&"lose": {
