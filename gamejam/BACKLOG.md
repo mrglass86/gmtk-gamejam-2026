@@ -136,9 +136,16 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       labeled capture, and 150-polygon nav.
 - [x] A16 integration — fast-forwarded to main after B13 acceptance; clean
       editor/startup plus all 24 automated gates pass at `043e990`.
-- [ ] B14 parent/light behavior features — IN PROGRESS, unblocked by B13/A16.
-      At 15:00 degrade to player-switches-only if not green; cut before the
-      17:00 threat window.
+- [x] B14 actor behavior — phase-expected light restoration, TV listening and
+      couch restore, punishment hall light, escaped-child room check, silent
+      magenta VO icon, and rate-derived door audio controls (`4e39e71`,
+      `--verify-b14`).
+- [ ] B14 AudioDirector integration — lane A clears the two exact open rows in
+      `gamejam/WIRING.md`: parent-only VO/icon timing plus epilogue lines, and
+      live door-rate pitch/volume.
+- [ ] B14 director acceptance — early-dark switch is restored, TV goes fully
+      off while listening and returns at the couch before phase 2, escaped
+      child triggers the four-second room check, and door creak rate reads.
 
 ## Should — Saturday (feel day)
 
