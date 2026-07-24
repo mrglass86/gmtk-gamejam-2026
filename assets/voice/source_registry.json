@@ -153,15 +153,15 @@
       "batch": 2,
       "sha256": "f2d4169aa3c585caaa0a808157cb2fe02255355242c7336bf367cd142f81bed1",
       "duration_seconds": 40.512,
-      "category_hint": "wrapper_crinkle",
-      "silence_threshold_db": -28.0
+      "category_hint": "toilet_flush",
+      "silence_threshold_db": -35.0
     },
     {
       "source_id": "recording_22",
       "batch": 2,
       "sha256": "367a844c77b8e28620b896f2211b3c33174562d67d0aa8fb737c56a14454245b",
       "duration_seconds": 8.085333,
-      "category_hint": "light_switch",
+      "category_hint": "sink_running",
       "silence_threshold_db": -35.0
     }
   ]

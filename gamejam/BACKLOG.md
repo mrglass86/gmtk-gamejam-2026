@@ -124,12 +124,12 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [x] Audio pass pulled forward — CC0 countdown tells, surface/player and parent
       footsteps, stings, pet cues, held-door creak, and positional masking beds
       (`d34f4a8`, `--verify-audio`, release Web click clean).
-- [ ] A13/A14 original audio — intake complete: 124 A13 family-voice and 97
+- [ ] A13/A14 original audio — intake complete: 124 A13 family-voice and 84
       A14 parent-voice/household-foley mono normalized audition candidates plus
       one manifest. Director names keeper filenames and mappings; lane A then
       adds nonrepeating pools and pitch jitter, replacing matched CC0 clips
-      while retaining CC0 fallbacks for empty categories. No new clock or dog
-      recording was found in batch 2.
+      while retaining CC0 fallbacks for empty categories. No wrapper,
+      light-switch, clock, or dog recording was found in batch 2.
 - [ ] Director audio mix walk — verify the three countdown tells read above the
       beds and tune `AudioDirector` export volumes only.
 - [ ] One outside playtester, watched silently; fixes prioritized by Claude via playtest-critic lens.
@@ -147,7 +147,7 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       (carry), "uh oh" (drop), giggle (win), "night night"; Noah: carry grumble,
       "hm?" + "what was that?" (investigate voice tells). Raw takes processed
       into an anonymous 124-candidate A13 audition set. Nine additional
-      parent-voice/household-foley sources produced 97 A14 candidates; keeper
+      parent-voice/household-foley sources produced 84 A14 candidates; keeper
       choices remain.
 - [ ] Integration (bounded lane tasks, AFTER the Friday freeze is banked):
       lane A assembles the menu PNGs as Control screens + wires voice swaps

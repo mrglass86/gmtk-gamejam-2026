@@ -57,12 +57,12 @@ BATCH2_SOURCE_CONFIG: list[dict[str, object]] = [
     },
     {
         "sha256": "f2d4169aa3c585caaa0a808157cb2fe02255355242c7336bf367cd142f81bed1",
-        "category": "wrapper_crinkle",
-        "threshold_db": -28.0,
+        "category": "toilet_flush",
+        "threshold_db": -35.0,
     },
     {
         "sha256": "367a844c77b8e28620b896f2211b3c33174562d67d0aa8fb737c56a14454245b",
-        "category": "light_switch",
+        "category": "sink_running",
         "threshold_db": -35.0,
         "minimum_candidate_seconds": 0.15,
     },
@@ -157,8 +157,8 @@ def audio_hint_for_category(category: str) -> str:
         "footstep_wood": "wood footstep take",
         "fridge_hum": "refrigerator hum take",
         "fridge_pop": "refrigerator pop/open take",
-        "light_switch": "light-switch take",
-        "wrapper_crinkle": "wrapper-crinkle take",
+        "sink_running": "sink-running take",
+        "toilet_flush": "toilet-flush take",
     }
     return hints[category]
 

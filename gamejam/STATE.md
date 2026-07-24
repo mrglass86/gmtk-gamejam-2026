@@ -65,7 +65,7 @@ a journal.
   `1fada23` adds B12's suspicion-ramped parent cone and dog hearing-radius ring;
   clean committed-tree startup plus B6/B9/B10/B12 pass. A13 voice intake is
   audition-ready: 124 anonymous mono OGG candidates and a source/duration
-  manifest are prepared. A14 adds 97 anonymous parent-voice and household-foley
+  manifest are prepared. A14 adds 84 anonymous parent-voice and household-foley
   candidates from nine new source fingerprints without reprocessing the 13 A13
   sources. No original recordings are wired until the director names keepers.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
@@ -88,7 +88,8 @@ a journal.
   intentionally readable.
 - A13/A14 original-audio wiring is intentionally blocked on the director's
   keeper filenames and event assignments; CC0 fallbacks remain authoritative.
-  No new clock or dog recording was present in the A14 intake.
+  No wrapper, light-switch, clock, or dog recording was present in the A14
+  intake; those CC0 cues remain the only candidates.
 - The scaffolded input map was hand-serialized — lane A verifies it in A0.
 - Route timing remains unmeasured in play; tune furniture/entrances only if the
   quiet route misses the 1.4–1.6× target.

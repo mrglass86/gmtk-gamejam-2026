@@ -162,10 +162,10 @@ Adaptive silence thresholds preserve quiet foley; all other processing matches A
 - `footstep_wood`: 7
 - `fridge_hum`: 1
 - `fridge_pop`: 1
-- `light_switch`: 3
 - `parent_voice`: 28
-- `wrapper_crinkle`: 15
-- Total: 97
+- `sink_running`: 3
+- `toilet_flush`: 2
+- Total: 84
 
 ### Candidates
 
@@ -250,21 +250,8 @@ Adaptive silence thresholds preserve quiet foley; all other processing matches A
 | footstep_other_09.ogg | footstep_other | footstep take (surface uncertain) | 1.090 | recording_19 | 9 | 23.069–24.079 | -38 | -3.0 |
 | fridge_pop_01.ogg | fridge_pop | refrigerator pop/open take | 5.931 | recording_20 | 1 | 0.000–5.891 | -45 | -3.0 |
 | fridge_hum_01.ogg | fridge_hum | refrigerator hum take | 13.401 | recording_20 | 2 | 6.200–19.605 | -45 | -3.0 |
-| wrapper_crinkle_01.ogg | wrapper_crinkle | wrapper-crinkle take | 4.633 | recording_21 | 1 | 1.129–5.682 | -28 | -3.0 |
-| wrapper_crinkle_02.ogg | wrapper_crinkle | wrapper-crinkle take | 0.629 | recording_21 | 2 | 6.065–6.614 | -28 | -3.2 |
-| wrapper_crinkle_03.ogg | wrapper_crinkle | wrapper-crinkle take | 0.919 | recording_21 | 3 | 9.084–9.922 | -28 | -3.0 |
-| wrapper_crinkle_04.ogg | wrapper_crinkle | wrapper-crinkle take | 0.525 | recording_21 | 4 | 10.303–10.748 | -28 | -3.0 |
-| wrapper_crinkle_05.ogg | wrapper_crinkle | wrapper-crinkle take | 0.342 | recording_21 | 5 | 11.189–11.451 | -28 | -2.8 |
-| wrapper_crinkle_06.ogg | wrapper_crinkle | wrapper-crinkle take | 1.144 | recording_21 | 6 | 12.326–13.390 | -28 | -3.0 |
-| wrapper_crinkle_07.ogg | wrapper_crinkle | wrapper-crinkle take | 0.613 | recording_21 | 7 | 13.730–14.263 | -28 | -2.8 |
-| wrapper_crinkle_08.ogg | wrapper_crinkle | wrapper-crinkle take | 1.183 | recording_21 | 8 | 15.406–16.509 | -28 | -3.0 |
-| wrapper_crinkle_09.ogg | wrapper_crinkle | wrapper-crinkle take | 1.362 | recording_21 | 9 | 16.842–18.124 | -28 | -3.0 |
-| wrapper_crinkle_10.ogg | wrapper_crinkle | wrapper-crinkle take | 0.349 | recording_21 | 10 | 18.781–19.050 | -28 | -3.0 |
-| wrapper_crinkle_11.ogg | wrapper_crinkle | wrapper-crinkle take | 0.412 | recording_21 | 11 | 19.981–20.313 | -28 | -3.1 |
-| wrapper_crinkle_12.ogg | wrapper_crinkle | wrapper-crinkle take | 4.807 | recording_21 | 12 | 20.684–25.412 | -28 | -2.9 |
-| wrapper_crinkle_13.ogg | wrapper_crinkle | wrapper-crinkle take | 0.746 | recording_21 | 13 | 28.565–29.231 | -28 | -3.0 |
-| wrapper_crinkle_14.ogg | wrapper_crinkle | wrapper-crinkle take | 0.399 | recording_21 | 14 | 30.489–30.808 | -28 | -3.0 |
-| wrapper_crinkle_15.ogg | wrapper_crinkle | wrapper-crinkle take | 0.422 | recording_21 | 15 | 31.682–32.024 | -28 | -3.1 |
-| light_switch_01.ogg | light_switch | light-switch take | 0.408 | recording_22 | 1 | 0.000–0.368 | -35 | -2.9 |
-| light_switch_02.ogg | light_switch | light-switch take | 3.448 | recording_22 | 2 | 1.287–4.655 | -35 | -3.3 |
-| light_switch_03.ogg | light_switch | light-switch take | 0.340 | recording_22 | 3 | 4.959–5.219 | -35 | -3.2 |
+| toilet_flush_01.ogg | toilet_flush | toilet-flush take | 32.969 | recording_21 | 1 | 1.103–33.992 | -35 | -3.0 |
+| toilet_flush_02.ogg | toilet_flush | toilet-flush take | 1.590 | recording_21 | 2 | 38.420–39.930 | -35 | -3.0 |
+| sink_running_01.ogg | sink_running | sink-running take | 0.408 | recording_22 | 1 | 0.000–0.368 | -35 | -2.9 |
+| sink_running_02.ogg | sink_running | sink-running take | 3.448 | recording_22 | 2 | 1.287–4.655 | -35 | -3.3 |
+| sink_running_03.ogg | sink_running | sink-running take | 0.340 | recording_22 | 3 | 4.959–5.219 | -35 | -3.2 |

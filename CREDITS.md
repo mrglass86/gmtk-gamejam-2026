@@ -9,9 +9,9 @@ sources are listed here for provenance and jam review.
 Original family voice and household recordings were made for this project and
 are used with the director/parent's permission. The second recording batch
 includes parent voice, door creaks, carpet and wood footsteps, refrigerator
-sounds, wrapper crinkles, and light-switch clicks. No performer names are
-listed. The CC0 cues below remain the gameplay fallbacks until the director
-selects original keepers.
+sounds, a toilet flush, and sink water. No performer names are listed. The CC0
+cues below remain the gameplay fallbacks until the director selects original
+keepers.
 
 ## Kenney packs
 
