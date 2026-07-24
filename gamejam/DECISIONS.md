@@ -495,3 +495,20 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** Director run six finds the calm marks distracting or the
   alert pulse unreadable at gameplay camera scale.
 - **Evidence / handoff:** `1fada23`, clean committed-tree `--verify-b12`.
+
+## 2026-07-23 — Original audio remains audition-gated with CC0 fallback
+
+- **Decision:** A13 family voice and A14 household foley stay unwired until the
+  director names exact keeper candidates and event mappings. Selected original
+  foley replaces the corresponding CC0 cue through nonrepeating variation pools
+  with ±5–8% pitch jitter; selected voice follows the A13 event mapping with
+  ±5% jitter. Empty or unselected categories retain their CC0 fallback.
+- **Why:** The director must judge performance and recording quality, while the
+  existing CC0 pass preserves a complete, shippable mix during auditions.
+- **Rejected / cut:** Automatically wiring every processed take; deleting CC0
+  cues when an original category is empty; treating transcript guesses as
+  keeper assignments.
+- **Owner:** Noah (audition and mapping), lane A (post-pick integration)
+- **Revisit when:** The director returns exact keeper filenames and mappings.
+- **Evidence / handoff:** `assets/voice/candidates/MANIFEST.md` and
+  `gamejam/handoffs/2026-07-23-lane-a-a14-audio-intake.md`.

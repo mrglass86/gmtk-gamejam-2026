@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "source_id": "recording_01",
+      "batch": 1,
+      "sha256": "19c98bbd18b48436edc8d3d7ee32ad9da1bc592b63537d4059cf8c2003cb5271",
+      "duration_seconds": 15.594667,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_02",
+      "batch": 1,
+      "sha256": "a37d80c398becfc5d7dfdc121a5ecc2df93a4fc8542cfb6c7eb820c9bf441a20",
+      "duration_seconds": 29.162667,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_03",
+      "batch": 1,
+      "sha256": "73f20b24232aa2c46568136b5ebf92f345586768b0f868df12cecd13fcfd0405",
+      "duration_seconds": 22.762667,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_04",
+      "batch": 1,
+      "sha256": "2557a24ddb685a23e9622a274e2c16b2675f1b5635921bb7f46b35aa9d7b7967",
+      "duration_seconds": 14.058667,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_05",
+      "batch": 1,
+      "sha256": "193f862414722d74f56c6381122fcf0f6b3e9a6c47b827d0bce0802488beb57e",
+      "duration_seconds": 56.64,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_06",
+      "batch": 1,
+      "sha256": "30f87741e906ce80775d8ffc75dc2673572b95caba397753a2e37b7b5d9769a0",
+      "duration_seconds": 61.845333,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_07",
+      "batch": 1,
+      "sha256": "a04a2ff3cb373bd5b45ac70b3468614d7c2100482a5118207b728801dc1c309a",
+      "duration_seconds": 6.634667,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_08",
+      "batch": 1,
+      "sha256": "97c2a00cdb08774462113a74256fe8538b85479a2ed2c2ae07d6c1a3c7fc824b",
+      "duration_seconds": 41.536,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_09",
+      "batch": 1,
+      "sha256": "53a1cdb73b98f349d43935ef5f053eb4a1441b8d7fbbfc1dcec71e372e80b560",
+      "duration_seconds": 10.816,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_10",
+      "batch": 1,
+      "sha256": "1760279b1de8b455e8c29dadbd24e194abffdb194f2bc7831f4fbf54ded42fd1",
+      "duration_seconds": 26.261333,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_11",
+      "batch": 1,
+      "sha256": "e5a1891c7e6991fd8c1bf917f487ddec888a248874341e69a161c17feb3f5f6a",
+      "duration_seconds": 25.066667,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_12",
+      "batch": 1,
+      "sha256": "bb0c8ac34b9249b9b4cbdd59242649baa8a5a1157bc601cec2346c859f750776",
+      "duration_seconds": 46.314667,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_13",
+      "batch": 1,
+      "sha256": "99e529efeb04c159237353466c7699ce976f2fdb8e13009fd8bf996ab7e57975",
+      "duration_seconds": 14.570667,
+      "category_hint": "a13_original"
+    },
+    {
+      "source_id": "recording_14",
+      "batch": 2,
+      "sha256": "3eed6f6bfc96d315bd220d17cb696763538340d5df0231536ab9154d281c70d6",
+      "duration_seconds": 108.949333,
+      "category_hint": "parent_voice",
+      "silence_threshold_db": -33.0
+    },
+    {
+      "source_id": "recording_15",
+      "batch": 2,
+      "sha256": "2ba1241a3f183392f51fd1dcd7c392153ba048aed79cdae66d9c3113e21cc2f5",
+      "duration_seconds": 47.082667,
+      "category_hint": "door_creak",
+      "silence_threshold_db": -33.0
+    },
+    {
+      "source_id": "recording_16",
+      "batch": 2,
+      "sha256": "ff0b0d996d2b020461820d17138447c3650886dcd6e5580c4d488b3b1388aa58",
+      "duration_seconds": 7.914667,
+      "category_hint": "footstep_carpet",
+      "silence_threshold_db": -40.0
+    },
+    {
+      "source_id": "recording_17",
+      "batch": 2,
+      "sha256": "346d564ab4fb09f4375b16d47e653d27847ecf41e88a553d81db553abd1d0610",
+      "duration_seconds": 26.346667,
+      "category_hint": "footstep_carpet",
+      "silence_threshold_db": -42.0
+    },
+    {
+      "source_id": "recording_18",
+      "batch": 2,
+      "sha256": "a47c219c1a205b4b649c1e130232ebcfa9570827d98b51d60c365544f1af1014",
+      "duration_seconds": 27.370667,
+      "category_hint": "footstep_wood",
+      "silence_threshold_db": -42.0
+    },
+    {
+      "source_id": "recording_19",
+      "batch": 2,
+      "sha256": "4b05d83fe19c6ca7ab69ba032a05c1f2e50c6a3a2c38e8354807eddf86a52b3a",
+      "duration_seconds": 24.554667,
+      "category_hint": "footstep_other",
+      "silence_threshold_db": -38.0
+    },
+    {
+      "source_id": "recording_20",
+      "batch": 2,
+      "sha256": "1bac897267368195621971fe2e38086c27eb1fdd01410eab007283c4fce43976",
+      "duration_seconds": 19.605333,
+      "category_hint": "fridge",
+      "silence_threshold_db": -45.0
+    },
+    {
+      "source_id": "recording_21",
+      "batch": 2,
+      "sha256": "f2d4169aa3c585caaa0a808157cb2fe02255355242c7336bf367cd142f81bed1",
+      "duration_seconds": 40.512,
+      "category_hint": "wrapper_crinkle",
+      "silence_threshold_db": -28.0
+    },
+    {
+      "source_id": "recording_22",
+      "batch": 2,
+      "sha256": "367a844c77b8e28620b896f2211b3c33174562d67d0aa8fb737c56a14454245b",
+      "duration_seconds": 8.085333,
+      "category_hint": "light_switch",
+      "silence_threshold_db": -35.0
+    }
+  ]
+}

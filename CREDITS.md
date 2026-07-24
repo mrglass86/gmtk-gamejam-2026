@@ -4,11 +4,14 @@ Every third-party audio source used by the game is released under Creative
 Commons Zero (CC0 1.0). Attribution is not required by the license, but the
 sources are listed here for provenance and jam review.
 
-## Original family voices
+## Original family voices and household foley
 
-Original family voice recordings were made for this project and are used with
-the director/parent's permission. No performer names are listed. The CC0 cues
-below remain the gameplay fallbacks.
+Original family voice and household recordings were made for this project and
+are used with the director/parent's permission. The second recording batch
+includes parent voice, door creaks, carpet and wood footsteps, refrigerator
+sounds, wrapper crinkles, and light-switch clicks. No performer names are
+listed. The CC0 cues below remain the gameplay fallbacks until the director
+selects original keepers.
 
 ## Kenney packs
 

@@ -146,3 +146,125 @@ Grouping is provisional and exists only to shorten the director audition.
 | other_64.ogg | other | Peace out! | 0.483 | recording_13.m4a | 6 | 8.700–9.102 | -3.0 |
 | other_65.ogg | other | (unclear) | 0.475 | recording_13.m4a | 7 | 11.582–11.977 | -3.1 |
 | other_66.ogg | other | Bye! | 0.550 | recording_13.m4a | 8 | 12.368–12.838 | -3.0 |
+
+## Batch 2 (A14)
+
+Only source fingerprints absent from the A13 registry were processed. Raw filenames are intentionally omitted.
+
+Adaptive silence thresholds preserve quiet foley; all other processing matches A13: mono 48 kHz OGG Vorbis, 70 Hz high-pass, trimmed edges, and iterative -3 dBFS peak normalization.
+
+### Counts
+
+- `door_creak_fast`: 19
+- `door_creak_slow`: 4
+- `footstep_carpet`: 10
+- `footstep_other`: 9
+- `footstep_wood`: 7
+- `fridge_hum`: 1
+- `fridge_pop`: 1
+- `light_switch`: 3
+- `parent_voice`: 28
+- `wrapper_crinkle`: 15
+- Total: 97
+
+### Candidates
+
+| Candidate | Category guess | Transcript/audio hint | Duration (s) | Source | Segment | Source range (s) | Split threshold (dBFS) | Peak (dBFS) |
+|---|---|---|---:|---|---:|---:|---:|---:|
+| parent_voice_01.ogg | parent_voice | (non-speech / unclear) | 0.342 | recording_14 | 1 | 0.000–0.302 | -33 | -2.9 |
+| parent_voice_02.ogg | parent_voice | (sighs) | 1.269 | recording_14 | 2 | 1.460–2.648 | -33 | -3.0 |
+| parent_voice_03.ogg | parent_voice | *sigh* | 0.728 | recording_14 | 3 | 4.124–4.772 | -33 | -3.0 |
+| parent_voice_04.ogg | parent_voice | She awake again. | 1.005 | recording_14 | 4 | 6.592–7.516 | -33 | -3.0 |
+| parent_voice_05.ogg | parent_voice | I'm back to bed. | 1.964 | recording_14 | 5 | 10.750–12.634 | -33 | -3.0 |
+| parent_voice_06.ogg | parent_voice | What was that? | 0.755 | recording_14 | 6 | 18.423–19.098 | -33 | -2.9 |
+| parent_voice_07.ogg | parent_voice | You hear that? | 0.514 | recording_14 | 7 | 21.891–22.325 | -33 | -2.9 |
+| parent_voice_08.ogg | parent_voice | What was that noise? | 0.749 | recording_14 | 8 | 24.290–24.959 | -33 | -3.0 |
+| parent_voice_09.ogg | parent_voice | (sighs) | 0.900 | recording_14 | 9 | 27.346–28.166 | -33 | -3.1 |
+| parent_voice_10.ogg | parent_voice | Well, you should have eaten your dinner. | 2.000 | recording_14 | 10 | 30.629–32.549 | -33 | -2.9 |
+| parent_voice_11.ogg | parent_voice | Maybe you wouldn't have been so hungry if you ate your dinner. | 2.081 | recording_14 | 11 | 34.770–36.770 | -33 | -2.9 |
+| parent_voice_12.ogg | parent_voice | Maybe you'll think about that tomorrow. | 1.380 | recording_14 | 12 | 40.573–41.873 | -33 | -3.0 |
+| parent_voice_13.ogg | parent_voice | at dinner. | 0.455 | recording_14 | 13 | 42.330–42.705 | -33 | -3.0 |
+| parent_voice_14.ogg | parent_voice | *sigh* | 0.736 | recording_14 | 14 | 46.908–47.565 | -33 | -3.1 |
+| parent_voice_15.ogg | parent_voice | You need to go back to bed. | 1.233 | recording_14 | 15 | 47.901–49.054 | -33 | -2.9 |
+| parent_voice_16.ogg | parent_voice | What are you doing up? | 1.014 | recording_14 | 16 | 51.630–52.564 | -33 | -3.1 |
+| parent_voice_17.ogg | parent_voice | This again? | 1.185 | recording_14 | 17 | 55.404–56.510 | -33 | -3.0 |
+| parent_voice_18.ogg | parent_voice | Come here. | 0.657 | recording_14 | 18 | 59.903–60.479 | -33 | -3.0 |
+| parent_voice_19.ogg | parent_voice | You come here right now. | 1.156 | recording_14 | 19 | 61.903–62.980 | -33 | -3.3 |
+| parent_voice_20.ogg | parent_voice | I'm telling you, I'm not going to do this again. | 2.124 | recording_14 | 20 | 64.863–66.907 | -33 | -3.0 |
+| parent_voice_21.ogg | parent_voice | Is she in bed already? | 1.265 | recording_14 | 21 | 70.477–71.662 | -33 | -3.0 |
+| parent_voice_22.ogg | parent_voice | You know what? I should probably check again. | 1.698 | recording_14 | 22 | 74.971–76.589 | -33 | -2.9 |
+| parent_voice_23.ogg | parent_voice | I think I want something to drink. | 1.246 | recording_14 | 23 | 79.870–81.035 | -33 | -3.1 |
+| parent_voice_24.ogg | parent_voice | I might go get a snack. | 1.233 | recording_14 | 24 | 83.988–85.141 | -33 | -3.0 |
+| parent_voice_25.ogg | parent_voice | There's never anything good on, is there? | 1.579 | recording_14 | 25 | 88.084–89.582 | -33 | -3.0 |
+| parent_voice_26.ogg | parent_voice | Mmm, I've already seen this one. | 1.438 | recording_14 | 26 | 91.862–93.221 | -33 | -3.0 |
+| parent_voice_27.ogg | parent_voice | Yeah, I wanted to watch this. | 1.085 | recording_14 | 27 | 96.765–97.770 | -33 | -3.0 |
+| parent_voice_28.ogg | parent_voice | What's he on about? | 0.910 | recording_14 | 28 | 103.087–103.916 | -33 | -3.0 |
+| door_creak_fast_01.ogg | door_creak_fast | fast door-creak take | 0.990 | recording_15 | 1 | 1.647–2.556 | -33 | -3.0 |
+| door_creak_fast_02.ogg | door_creak_fast | fast door-creak take | 0.796 | recording_15 | 2 | 3.008–3.724 | -33 | -3.0 |
+| door_creak_fast_03.ogg | door_creak_fast | fast door-creak take | 0.857 | recording_15 | 3 | 4.150–4.926 | -33 | -3.0 |
+| door_creak_fast_04.ogg | door_creak_fast | fast door-creak take | 0.657 | recording_15 | 4 | 5.615–6.192 | -33 | -3.1 |
+| door_creak_fast_05.ogg | door_creak_fast | fast door-creak take | 1.240 | recording_15 | 5 | 7.783–8.943 | -33 | -3.0 |
+| door_creak_fast_06.ogg | door_creak_fast | fast door-creak take | 0.622 | recording_15 | 6 | 9.360–9.902 | -33 | -3.0 |
+| door_creak_fast_07.ogg | door_creak_fast | fast door-creak take | 1.413 | recording_15 | 7 | 10.725–12.058 | -33 | -3.1 |
+| door_creak_fast_08.ogg | door_creak_fast | fast door-creak take | 0.899 | recording_15 | 8 | 13.024–13.843 | -33 | -3.1 |
+| door_creak_slow_01.ogg | door_creak_slow | slow door-creak take | 2.265 | recording_15 | 9 | 15.737–17.922 | -33 | -2.9 |
+| door_creak_fast_09.ogg | door_creak_fast | fast door-creak take | 0.479 | recording_15 | 10 | 18.721–19.120 | -33 | -3.0 |
+| door_creak_fast_10.ogg | door_creak_fast | fast door-creak take | 0.539 | recording_15 | 11 | 19.927–20.387 | -33 | -3.0 |
+| door_creak_fast_11.ogg | door_creak_fast | fast door-creak take | 0.451 | recording_15 | 12 | 20.702–21.073 | -33 | -2.9 |
+| door_creak_slow_02.ogg | door_creak_slow | slow door-creak take | 2.420 | recording_15 | 13 | 21.882–24.223 | -33 | -3.0 |
+| door_creak_fast_12.ogg | door_creak_fast | fast door-creak take | 1.464 | recording_15 | 14 | 24.554–25.938 | -33 | -3.0 |
+| door_creak_fast_13.ogg | door_creak_fast | fast door-creak take | 0.337 | recording_15 | 15 | 26.302–26.558 | -33 | -3.0 |
+| door_creak_slow_03.ogg | door_creak_slow | slow door-creak take | 4.802 | recording_15 | 16 | 27.168–31.890 | -33 | -3.1 |
+| door_creak_fast_14.ogg | door_creak_fast | fast door-creak take | 1.091 | recording_15 | 17 | 32.627–33.637 | -33 | -3.0 |
+| door_creak_fast_15.ogg | door_creak_fast | fast door-creak take | 0.345 | recording_15 | 18 | 34.016–34.281 | -33 | -3.0 |
+| door_creak_fast_16.ogg | door_creak_fast | fast door-creak take | 0.716 | recording_15 | 19 | 34.608–35.244 | -33 | -3.0 |
+| door_creak_slow_04.ogg | door_creak_slow | slow door-creak take | 4.386 | recording_15 | 20 | 35.772–40.077 | -33 | -3.0 |
+| door_creak_fast_17.ogg | door_creak_fast | fast door-creak take | 1.040 | recording_15 | 21 | 40.636–41.596 | -33 | -2.9 |
+| door_creak_fast_18.ogg | door_creak_fast | fast door-creak take | 1.410 | recording_15 | 22 | 41.921–43.251 | -33 | -3.0 |
+| door_creak_fast_19.ogg | door_creak_fast | fast door-creak take | 1.158 | recording_15 | 23 | 43.600–44.678 | -33 | -3.0 |
+| footstep_carpet_01.ogg | footstep_carpet | carpet/cushion footstep take | 0.307 | recording_16 | 1 | 0.000–0.267 | -40 | -2.9 |
+| footstep_carpet_02.ogg | footstep_carpet | carpet/cushion footstep take | 0.638 | recording_16 | 2 | 4.090–4.648 | -40 | -3.0 |
+| footstep_carpet_03.ogg | footstep_carpet | carpet/cushion footstep take | 2.413 | recording_16 | 3 | 4.952–7.285 | -40 | -3.0 |
+| footstep_carpet_04.ogg | footstep_carpet | carpet/cushion footstep take | 2.106 | recording_17 | 1 | 0.000–2.066 | -42 | -3.0 |
+| footstep_carpet_05.ogg | footstep_carpet | carpet/cushion footstep take | 0.485 | recording_17 | 2 | 2.421–2.825 | -42 | -3.0 |
+| footstep_carpet_06.ogg | footstep_carpet | carpet/cushion footstep take | 2.068 | recording_17 | 3 | 5.434–7.421 | -42 | -3.0 |
+| footstep_carpet_07.ogg | footstep_carpet | carpet/cushion footstep take | 2.831 | recording_17 | 4 | 8.454–11.205 | -42 | -2.9 |
+| footstep_carpet_08.ogg | footstep_carpet | carpet/cushion footstep take | 3.154 | recording_17 | 5 | 20.113–23.186 | -42 | -3.1 |
+| footstep_carpet_09.ogg | footstep_carpet | carpet/cushion footstep take | 0.618 | recording_17 | 6 | 23.503–24.041 | -42 | -3.0 |
+| footstep_carpet_10.ogg | footstep_carpet | carpet/cushion footstep take | 1.485 | recording_17 | 7 | 24.343–25.747 | -42 | -2.9 |
+| footstep_wood_01.ogg | footstep_wood | wood footstep take | 1.111 | recording_18 | 1 | 0.000–1.071 | -42 | -3.0 |
+| footstep_wood_02.ogg | footstep_wood | wood footstep take | 2.435 | recording_18 | 2 | 1.565–3.920 | -42 | -3.0 |
+| footstep_wood_03.ogg | footstep_wood | wood footstep take | 0.949 | recording_18 | 3 | 4.687–5.556 | -42 | -3.0 |
+| footstep_wood_04.ogg | footstep_wood | wood footstep take | 0.350 | recording_18 | 4 | 6.597–6.867 | -42 | -3.2 |
+| footstep_wood_05.ogg | footstep_wood | wood footstep take | 0.504 | recording_18 | 5 | 7.956–8.380 | -42 | -3.0 |
+| footstep_wood_06.ogg | footstep_wood | wood footstep take | 7.958 | recording_18 | 6 | 15.801–23.679 | -42 | -3.0 |
+| footstep_wood_07.ogg | footstep_wood | wood footstep take | 0.590 | recording_18 | 7 | 25.495–26.005 | -42 | -3.0 |
+| footstep_other_01.ogg | footstep_other | footstep take (surface uncertain) | 0.914 | recording_19 | 1 | 0.000–0.874 | -38 | -3.0 |
+| footstep_other_02.ogg | footstep_other | footstep take (surface uncertain) | 0.390 | recording_19 | 2 | 1.647–1.957 | -38 | -3.0 |
+| footstep_other_03.ogg | footstep_other | footstep take (surface uncertain) | 0.894 | recording_19 | 3 | 2.443–3.257 | -38 | -3.1 |
+| footstep_other_04.ogg | footstep_other | footstep take (surface uncertain) | 0.373 | recording_19 | 4 | 7.347–7.639 | -38 | -3.0 |
+| footstep_other_05.ogg | footstep_other | footstep take (surface uncertain) | 0.473 | recording_19 | 5 | 11.938–12.331 | -38 | -3.4 |
+| footstep_other_06.ogg | footstep_other | footstep take (surface uncertain) | 0.389 | recording_19 | 6 | 12.883–13.192 | -38 | -3.1 |
+| footstep_other_07.ogg | footstep_other | footstep take (surface uncertain) | 8.323 | recording_19 | 7 | 13.691–21.934 | -38 | -3.0 |
+| footstep_other_08.ogg | footstep_other | footstep take (surface uncertain) | 0.429 | recording_19 | 8 | 22.323–22.671 | -38 | -3.2 |
+| footstep_other_09.ogg | footstep_other | footstep take (surface uncertain) | 1.090 | recording_19 | 9 | 23.069–24.079 | -38 | -3.0 |
+| fridge_pop_01.ogg | fridge_pop | refrigerator pop/open take | 5.931 | recording_20 | 1 | 0.000–5.891 | -45 | -3.0 |
+| fridge_hum_01.ogg | fridge_hum | refrigerator hum take | 13.401 | recording_20 | 2 | 6.200–19.605 | -45 | -3.0 |
+| wrapper_crinkle_01.ogg | wrapper_crinkle | wrapper-crinkle take | 4.633 | recording_21 | 1 | 1.129–5.682 | -28 | -3.0 |
+| wrapper_crinkle_02.ogg | wrapper_crinkle | wrapper-crinkle take | 0.629 | recording_21 | 2 | 6.065–6.614 | -28 | -3.2 |
+| wrapper_crinkle_03.ogg | wrapper_crinkle | wrapper-crinkle take | 0.919 | recording_21 | 3 | 9.084–9.922 | -28 | -3.0 |
+| wrapper_crinkle_04.ogg | wrapper_crinkle | wrapper-crinkle take | 0.525 | recording_21 | 4 | 10.303–10.748 | -28 | -3.0 |
+| wrapper_crinkle_05.ogg | wrapper_crinkle | wrapper-crinkle take | 0.342 | recording_21 | 5 | 11.189–11.451 | -28 | -2.8 |
+| wrapper_crinkle_06.ogg | wrapper_crinkle | wrapper-crinkle take | 1.144 | recording_21 | 6 | 12.326–13.390 | -28 | -3.0 |
+| wrapper_crinkle_07.ogg | wrapper_crinkle | wrapper-crinkle take | 0.613 | recording_21 | 7 | 13.730–14.263 | -28 | -2.8 |
+| wrapper_crinkle_08.ogg | wrapper_crinkle | wrapper-crinkle take | 1.183 | recording_21 | 8 | 15.406–16.509 | -28 | -3.0 |
+| wrapper_crinkle_09.ogg | wrapper_crinkle | wrapper-crinkle take | 1.362 | recording_21 | 9 | 16.842–18.124 | -28 | -3.0 |
+| wrapper_crinkle_10.ogg | wrapper_crinkle | wrapper-crinkle take | 0.349 | recording_21 | 10 | 18.781–19.050 | -28 | -3.0 |
+| wrapper_crinkle_11.ogg | wrapper_crinkle | wrapper-crinkle take | 0.412 | recording_21 | 11 | 19.981–20.313 | -28 | -3.1 |
+| wrapper_crinkle_12.ogg | wrapper_crinkle | wrapper-crinkle take | 4.807 | recording_21 | 12 | 20.684–25.412 | -28 | -2.9 |
+| wrapper_crinkle_13.ogg | wrapper_crinkle | wrapper-crinkle take | 0.746 | recording_21 | 13 | 28.565–29.231 | -28 | -3.0 |
+| wrapper_crinkle_14.ogg | wrapper_crinkle | wrapper-crinkle take | 0.399 | recording_21 | 14 | 30.489–30.808 | -28 | -3.0 |
+| wrapper_crinkle_15.ogg | wrapper_crinkle | wrapper-crinkle take | 0.422 | recording_21 | 15 | 31.682–32.024 | -28 | -3.1 |
+| light_switch_01.ogg | light_switch | light-switch take | 0.408 | recording_22 | 1 | 0.000–0.368 | -35 | -2.9 |
+| light_switch_02.ogg | light_switch | light-switch take | 3.448 | recording_22 | 2 | 1.287–4.655 | -35 | -3.3 |
+| light_switch_03.ogg | light_switch | light-switch take | 0.340 | recording_22 | 3 | 4.959–5.219 | -35 | -3.2 |

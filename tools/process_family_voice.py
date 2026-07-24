@@ -126,7 +126,11 @@ def peak_db(path: Path) -> float:
     return float(match.group(1))
 
 
-def nonsilent_ranges(path: Path) -> list[tuple[float, float]]:
+def nonsilent_ranges(
+    path: Path,
+    threshold_db: float = SILENCE_THRESHOLD_DB,
+    minimum_candidate_seconds: float = MIN_CANDIDATE_SECONDS,
+) -> list[tuple[float, float]]:
     source_duration = duration_seconds(path)
     result = subprocess.run(
         [
@@ -138,7 +142,7 @@ def nonsilent_ranges(path: Path) -> list[tuple[float, float]]:
             "-af",
             (
                 "silencedetect="
-                f"noise={SILENCE_THRESHOLD_DB:g}dB:"
+                f"noise={threshold_db:g}dB:"
                 f"d={MIN_SILENCE_SECONDS:g}"
             ),
             "-f",
@@ -158,11 +162,11 @@ def nonsilent_ranges(path: Path) -> list[tuple[float, float]]:
     for event_name, event_time_text in events:
         event_time = float(event_time_text)
         if event_name == "start":
-            if event_time - candidate_start >= MIN_CANDIDATE_SECONDS:
+            if event_time - candidate_start >= minimum_candidate_seconds:
                 ranges.append((candidate_start, event_time))
         else:
             candidate_start = event_time
-    if source_duration - candidate_start >= MIN_CANDIDATE_SECONDS:
+    if source_duration - candidate_start >= minimum_candidate_seconds:
         ranges.append((candidate_start, source_duration))
     return ranges
 
