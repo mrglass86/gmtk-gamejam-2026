@@ -129,6 +129,13 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [ ] B13 director acceptance — Noah reproduces the epilogue walk-by and a
       close juking chase in the playable build; both must read and catch
       correctly before B14 starts.
+- [x] A16 world pack implementation — staged on `codex/a16-world` at
+      `9e6be08`/`1565f02`: open living/dining plan, five switches,
+      practical-only lighting, south-sweep fridge, hinge/positional audio,
+      interaction HUD, TV notes, and prop silhouettes. Accept: `--verify-a16`,
+      labeled capture, and 150-polygon nav.
+- [ ] A16 integration — BLOCKED on B13 director acceptance; merge the staged
+      branch only after the live walk-by/juke verdict is green.
 - [ ] B14 parent/light behavior features — BLOCKED on B13 director acceptance.
       At 15:00 degrade to player-switches-only if not green; cut before the
       17:00 threat window.

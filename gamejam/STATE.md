@@ -12,7 +12,8 @@ a journal.
   tuning.
 - Next playable checkpoint: B13 director acceptance — reproduce an escaped
   walk-by during the capture epilogue and a close juking chase. B14 stays
-  blocked until both pass in live play.
+  blocked until both pass in live play. A16 is complete and green on
+  `codex/a16-world`, but intentionally not integrated before that verdict.
 
 ## Working build
 
@@ -71,6 +72,14 @@ a journal.
   pass. `5a09b2f` adds B13: live post-deposit perception, crib-safe expected
   occupancy, self-door creak filtering, 1.5 m grabs, and a 2.5 m LOS lunge.
   Clean committed-tree startup plus B6–B13 and A15 audio gates pass.
+  `9e6be08`/`1565f02` stage A16 on top of B13: LivingSouth removed;
+  150-polygon nav;
+  five instant positional/noisy switches; bathroom and initially-dark kid-hall
+  practicals; Sun removed; renderer attenuation 2.0 with a 0.05 ambient
+  readability fallback; exact south-face/south-west-hinge fridge; hinge audio;
+  positional gameplay SFX; universal E/door-progress affordance; TV notes; and
+  primitive toy/dog-bed dressing. Startup, B13, A11, A12, A15 audio, and A16
+  gates pass.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -82,13 +91,15 @@ a journal.
 
 - Noah runs B13 acceptance first: leave the crib during the epilogue for one
   visible/noisy walk-by, then juke inside 2.5 m during FOUND. B14 remains
-  blocked until both behaviors pass.
+  blocked until both behaviors pass. Once accepted, integrate
+  `codex/a16-world` before starting B14.
 
 ## Known blockers or risks
 
 - A12 is functionally and Compatibility-renderer verified but awaits the
   director's contrast verdict; the darkest adult/pantry pockets remain
-  intentionally readable.
+  intentionally readable. A16 raised the ambient fallback to 0.05 after its
+  Sun-free capture audit.
 - Several approved original pools are thin: single takes for dog attention,
   win “mmm,” deposit sniffle, snack-drop voice, fridge hum/pop, sink, and
   toilet; immediate-repeat protection cannot add variety there. Light-switch,

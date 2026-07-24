@@ -8,6 +8,11 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Open
 
+- [ ] (lane A / A16 for lane B B14) After the post-capture beat, Parent may
+  call `../Level/KidHallSwitch.set_state(true, true)` to turn on the initially
+  dark hall practical with its positional click and 1.5 analytical noise.
+  Stable node: `Level/KidHallSwitch`; signal: `toggled(switch_id, is_on)`.
+
 ## Done
 
 - [x] (lane B / B11) A11 dog visual keeps its snout along Pet-local `-Z`;
