@@ -113,18 +113,19 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       suspicion and stays 0.45 in FOUND; the dog's runtime 6 m hearing ring is
       sleep-hidden, faint purple when calm, and pulses yellow during
       ALERT/INVESTIGATE (`1fada23`, `--verify-b12`).
-- [ ] Snack round trip wired end to end — lanes A+B. Pickup/drop feedback and
-      reveal clearance are verified; accept the complete interaction in S9.
+- [x] Snack identity round trip wired end to end — lanes A+B. Fridge/pantry
+      type persistence, distinct pulsing visuals, typed pickup/carry audio, and
+      the unchanged 0.3/0.6 noise mechanic pass `--verify-a20`/`--verify-b17`.
 - [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.
 - [ ] Route timing measured from Noah's runs, tuned to 1.4–1.6x — lane A adjusts. Accept: S10.
 - [ ] 19:00 freeze: Noah pastes the tag ritual, lane A exports, Claude validates, Noah uploads the itch draft (walkthrough supplied).
 
 ## Must — Saturday regression gate
 
-- [ ] B17 snack identity — FRIDGE reveals `ice_cream`, PANTRY reveals `chips`;
+- [x] B17 snack identity — FRIDGE reveals `ice_cream`, PANTRY reveals `chips`;
       the shared Snack exposes the type and preserves it across pickup,
       drop, and re-collection. Accept: live two-door `--verify-b17` round trip
-      plus presenter/audio consumption.
+      plus presenter/audio consumption (`8f92e36`, `--verify-a20`).
 - [x] B16 idle giggle — while free in PLAYING, Player randomizes each interval
       over 20–45 s, plays one soft giggle, and emits exactly one unmasked 0.5
       event with a 4 m magenta tell. No giggle while carried or on TITLE/WON/LOST.

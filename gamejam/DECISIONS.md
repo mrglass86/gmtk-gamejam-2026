@@ -671,3 +671,22 @@ Record decisions another session or tool would otherwise have to rediscover.
   gameplay prop needs a deliberately larger interaction footprint.
 - **Evidence / handoff:** `bb881ac`, `--verify-a19`, and
   `gamejam/handoffs/2026-07-24-a19-geometry-audit.png`.
+
+## 2026-07-24 — Snack identity changes presentation, never mechanics
+
+- **Decision:** `SnackVisualPresenter` consumes `DinnerSnack.snack_type`
+  directly: PANTRY/chips is a bright pulsing foil packet; FRIDGE/ice cream is
+  a pulsing cone and scoop. Pantry pickup/carry uses the existing grab and
+  wrapper skin. Fridge pickup uses the director's cleaned kid “mmm” take plus
+  a soft scoop, then a quiet spoon-tap carry skin with no crinkle. Both types
+  retain Player's single authoritative 0.3 loudness event every 0.6 s.
+- **Why:** The goal choice should read and sound different without changing
+  the locked return-leg stealth cost or inferring identity from world position.
+- **Rejected / cut:** Separate Snack actors; position-based type inference;
+  fridge wrapper audio; different noise radii/cadences by snack type.
+- **Owner:** Noah (director), lane B (identity authority), lane A
+  (visual/audio presentation)
+- **Revisit when:** A third snack type is added or CP5 finds either primitive
+  silhouette/audio skin unclear in motion.
+- **Evidence / handoff:** `8f92e36`, `--verify-a20`, `--verify-audio`, and
+  `--verify-b17`.

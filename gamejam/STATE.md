@@ -10,15 +10,14 @@ a journal.
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Saturday — original-audio integration, mix walk, and feel
   tuning.
-- Next playable checkpoint: A19 geometry review, B17 snack presentation/audio
-  integration, then CP5 manual full run — title-card start through both win
-  and expiry-loss outcomes, restart, then freeze/export.
+- Next playable checkpoint: CP5 manual full run — title-card start through both
+  win and expiry-loss outcomes, restart, then freeze/export.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A19 plus actor B6–B17 and the
+- Godot version: 4.7.1-stable — A0.2 through A20 plus actor B6–B17 and the
   original/CC0 audio pass are in `game/` (Compatibility renderer). The approved
-  director layout bakes a connected 155-polygon navmesh; input, lighting, noise,
+  director layout bakes a connected 164-polygon navmesh; input, lighting, noise,
   indicator, route, ambient-mask, countdown, game-flow, audio, and A9
   presentation/tuning checks pass.
 - Entry scene: `res://scenes/Main.tscn`
@@ -119,6 +118,11 @@ a journal.
   polygons. Editor, startup, and all 31 verification flags pass on `4010224`
   (33/33) with no script-error or resource-leak markers; a labeled
   Compatibility capture is committed.
+  `8f92e36` adds A20/B17 presentation consumption: a bright pulsing pantry
+  packet and cone/scoop fridge ice cream, typed pantry/fridge pickup and 2.5 s
+  carry skins, and the cleaned kid “mmm” fridge-pickup pool. Player remains the
+  sole 0.3 loudness / 0.6 s snack-noise authority. Exact committed editor,
+  startup, and all 32 verification flags pass (34/34), nav remains 164.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -128,8 +132,8 @@ a journal.
 
 ## Current focus
 
-- Noah reviews the A19 geometry capture. Lane A then consumes B17's stable
-  snack identity in presentation/audio before CP5.
+- Noah runs CP5 manually through both goal variants, both outcomes, and restart;
+  then the team freezes and exports.
 
 ## Known blockers or risks
 
@@ -141,6 +145,9 @@ a journal.
   win “mmm,” deposit sniffle, snack-drop voice, fridge hum/pop, sink, and
   toilet; immediate-repeat protection cannot add variety there. Light-switch,
   clock, pet, stings, snack pickup/thud, and other unfilled cues retain CC0.
+- Fridge pickup intentionally reuses the single cleaned kid “mmm” take, while
+  its scoop/spoon textures are quiet pitched treatments of existing CC0 snack
+  SFX; CP5 supplies the final in-motion mix verdict.
 - One director pick remains deliberately unassigned (`kid-kitty-cat`); it is
   not copied into the runtime tree.
 - The scaffolded input map was hand-serialized — lane A verifies it in A0.

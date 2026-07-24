@@ -8,13 +8,14 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Open
 
-- [ ] (lane B / B17) `DinnerSnack.snack_type` is now the stable public identity
-  (`ice_cream`/`chips`) and `snack_type_changed` announces replacements.
-  Update `SnackVisualPresenter.gd` and `AudioDirector.gd` to consume this value
-  for their B17 type-specific presentation/audio mapping; never infer identity
-  from the snack's current/drop position.
 ## Done
 
+- [x] (lane B / B17) `SnackVisualPresenter.gd` and `AudioDirector.gd` consume
+  the stable `DinnerSnack.snack_type` contract directly: pantry renders a
+  pulsing foil packet and uses grab/crinkle audio; fridge renders a pulsing
+  cone/scoop and uses kid “mmm” plus soft scoop/tap audio. The two carry skins
+  keep Player's authoritative 0.3 loudness / 0.6 s noise mechanic unchanged
+  (`8f92e36`, `--verify-a20`, `--verify-b17`).
 - [x] (lane B / B16) `AudioDirector.gd` connects
   `Player.idle_giggled(giggle_position)` to a soft -8 dB playback from the
   existing no-repeat three-take giggle pool. Player remains the sole author of
