@@ -116,8 +116,9 @@ a journal.
   visual-bounds collider; floating/sunk prop and fixture contacts are grounded;
   five switches mount flush on the correct wall axis; and all existing
   wall/floor seams remain sealed. The accurate footprints rebake to 164 nav
-  polygons. Focused A0.2/A4.1/A5.1/A7/A8/A10/A11/A16–A19 and B6–B10/B13–B15/
-  B17 gates pass; a labeled Compatibility capture is committed.
+  polygons. Editor, startup, and all 31 verification flags pass on `4010224`
+  (33/33) with no script-error or resource-leak markers; a labeled
+  Compatibility capture is committed.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.

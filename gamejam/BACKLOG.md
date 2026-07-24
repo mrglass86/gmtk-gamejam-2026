@@ -149,8 +149,9 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       fixture, and hazard checked for frame fit, contact, clipping, collision,
       and proportion. Door panels/blockers now fill frames; composite collider
       bounds match visuals; props/fixtures/switches are grounded and flush.
-      Focused world/door/nav/actor gates pass at 164 nav polygons (`bb881ac`,
-      `--verify-a19`; detailed checklist in the 12:52 lane-A handoff).
+      Editor/startup/all 31 flags pass at 164 nav polygons (33/33 on
+      `4010224`; `bb881ac`, `--verify-a19`; detailed checklist in the 12:52
+      lane-A handoff).
 - [x] B15 curiosity VO wiring — the first qualifying cue plays the director's
       parent investigate/“hm?” pool and magenta parent indicator with zero
       gameplay-noise emissions (`b14efb3`, `--verify-audio`, 29/29 battery).
