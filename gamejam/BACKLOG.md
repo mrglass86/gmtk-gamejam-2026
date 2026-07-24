@@ -140,6 +140,17 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [ ] A23 organic-reaction trigger — lane B emits the presentation-only
       `Player.organic_reaction_triggered` signal for real toy/creak steps and
       meaningful wall bumps; lane A's 25% roll and 2.5 s limiter are ready.
+- [x] A24 silent switches + toy piles — switch flips retain a soft positional
+      click but emit zero gameplay noise; all three toy hazards are flat
+      2.6 × 1.4 m overlays with separated pill/train/block silhouettes and one
+      collider (`cebba87`, `--verify-a24`; exact 41/41 battery, nav 164).
+- [x] A22 hallway light + fixture restyle — two switch-linked overhead
+      corridor practicals produce west/center/east analytic brightness
+      0.72/0.58/0.72 on and 0.05/0.30/0.31 off, crossing the unchanged 0.35
+      point-blank sight threshold only while lit. Hall, dining, kitchen, and
+      foyer sources read as flush ceiling discs; the kid nightstand remains a
+      lamp (`281cbab`, `--verify-a22`, labeled before/after captures; exact
+      editor/startup/all 38 flags pass, 40/40; nav 164).
 - [x] B20 caught-snack exploit — capture atomically clears snack ownership,
       input-locked/carried players cannot auto-recollect it, and CARRY
       defensively preserves the catch-point drop. Accept: live
@@ -182,8 +193,9 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       INVESTIGATE; HUNT remains 75. Accept: live 12 m bedroom-door and two-bark
       sequences, with source-labelled metrics (`5e84967`, `--verify-b15`).
 - [x] A17 acceptance fixes — lit practical energy, 8+8 CC0 player footsteps,
-      hinge-origin door audio, nearest-only anchored interaction HUD, 0.8
-      switch noise, and dark-start bathroom ceiling fixture/toilet
+      hinge-origin door audio, nearest-only anchored interaction HUD, and
+      dark-start bathroom ceiling fixture/toilet. A24 supersedes the former
+      0.8 switch-noise value with zero gameplay noise
       (`2d4e142`, `--verify-a17`, 155 nav polygons, 29/29 full battery).
 - [x] A18 polish — 69 conservative family denoise A/B copies with 19 rejected
       to CC0 fallback; wall-blocked room-scale practicals; near-silent sneak

@@ -187,6 +187,18 @@ func _build_lights() -> void:
 		&"ceiling_disc"
 	)
 	_add_omni(
+		"DiningEntryLampVisual",
+		"hall",
+		Vector3(-0.5, 1.16, 0.5),
+		0.85,
+		0.0,
+		-1.0,
+		Vector3(-0.5, 4.5, 0.5),
+		Vector3(-0.5, 0.0, 0.5),
+		true,
+		&"ceiling_disc"
+	)
+	_add_omni(
 		"AlcoveLampVisual",
 		"hall",
 		Vector3(8.3, 1.16, 4.7),
@@ -266,7 +278,8 @@ func _build_switches() -> void:
 		Vector3(-4.065, 1.0, 0.85),
 		"MidLampVisual",
 		true,
-		Vector3.RIGHT
+		Vector3.RIGHT,
+		PackedStringArray(["DiningEntryLampVisual"])
 	)
 	_add_world_switch(
 		"KitchenSwitch",
@@ -303,7 +316,7 @@ func _build_switches() -> void:
 	_add_world_switch(
 		"CarpetHallSwitch",
 		&"carpet_hall",
-		Vector3(-3.65, 1.0, 3.565),
+		Vector3(-3.65, 1.0, 3.635),
 		"CarpetHallLampWest",
 		true,
 		Vector3.BACK,

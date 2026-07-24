@@ -148,21 +148,21 @@ creaky_plank_color_b = Color(0.486275, 0.509804, 0.537255, 1)
 [node name="ToyHallRug" parent="Level" instance=ExtResource("8_noise_surface")]
 position = Vector3(-5.6, 0.02, 0.0)
 loudness_multiplier = 4.0
-surface_size = Vector2(1.8, 0.9)
+surface_size = Vector2(2.6, 1.4)
 surface_group = &"surface_toys"
 surface_color = Color(0.768627, 0.788235, 0.807843, 1)
 
 [node name="ToyDining" parent="Level" instance=ExtResource("8_noise_surface")]
 position = Vector3(-2.6, 0.0, 2.4)
 loudness_multiplier = 4.0
-surface_size = Vector2(1.8, 0.9)
+surface_size = Vector2(2.6, 1.4)
 surface_group = &"surface_toys"
 surface_color = Color(0.768627, 0.788235, 0.807843, 1)
 
 [node name="ToyCarpet" parent="Level" instance=ExtResource("8_noise_surface")]
 position = Vector3(-2.2, 0.0, 4.8)
 loudness_multiplier = 4.0
-surface_size = Vector2(1.8, 1.0)
+surface_size = Vector2(2.6, 1.4)
 surface_group = &"surface_toys"
 surface_color = Color(0.768627, 0.788235, 0.807843, 1)
 

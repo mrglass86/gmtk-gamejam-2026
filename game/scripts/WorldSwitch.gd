@@ -1,8 +1,8 @@
 extends Node3D
 class_name DinnerWorldSwitch
 
-## Instant player light switch. The switch owns its positional click and
-## analytical noise; the controlled practical remains authored by LevelBuilder.
+## Instant player light switch. The switch owns its soft positional click;
+## gameplay detection of the light change is visual-only.
 
 signal toggled(switch_id: StringName, is_on: bool)
 
@@ -15,7 +15,6 @@ const CLICK_STREAM: AudioStream = preload("res://audio/sfx/light_switch.ogg")
 @export var additional_target_fixture_paths: Array[NodePath] = []
 @export var starts_on: bool = true
 @export var interaction_radius: float = 1.45
-@export var click_loudness: float = 0.8
 @export var click_volume_db: float = -5.0
 
 var is_on: bool = true
@@ -60,7 +59,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
-func set_state(on: bool, make_noise: bool = false) -> void:
+func set_state(on: bool, play_click: bool = false) -> void:
 	is_on = on
 	if _target_fixture != null:
 		_target_fixture.visible = is_on
@@ -73,10 +72,9 @@ func set_state(on: bool, make_noise: bool = false) -> void:
 		LightSystem.call("set_light_enabled", target_light_id, is_on)
 	for additional_light_id: String in additional_target_light_ids:
 		LightSystem.call("set_light_enabled", additional_light_id, is_on)
-	if make_noise:
+	if play_click:
 		_click_player.pitch_scale = randf_range(0.94, 1.06)
 		_click_player.play()
-		NoiseSystem.emit_noise(global_position, click_loudness, self)
 	toggled.emit(switch_id, is_on)
 
 

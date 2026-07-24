@@ -15,10 +15,12 @@ a journal.
   victory-lap/sneak dial-in, crayon thumbnail, audio mix walk, fake-bounce
   lighting polish, one outside playtester. `jam-friday` + `jam-safety-1` protect
   the banked build.
+- Next playable checkpoint: tag the green acceptance head, export Web, validate
+  the package, and upload the prepared itch page.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A21 plus actor B6–B18 and the
+- Godot version: 4.7.1-stable — A0.2 through A22 plus actor B6–B20 and the
   original/CC0 audio pass are in `game/` (Compatibility renderer). The approved
   director layout bakes a connected 164-polygon navmesh; input, lighting, noise,
   indicator, route, ambient-mask, countdown, game-flow, audio, and A9
@@ -141,6 +143,12 @@ a journal.
   in both states. B19 lowers only Player's exported sneak multiplier to 0.2:
   live hardwood/creaky/toy emissions are 0.2/0.6/0.8, run-hardwood remains
   1.2, and only the plain sneak step stays below the 0.25 indicator gate.
+  `cf2f26f` closes B20's caught-snack win exploit. `281cbab` adds A22's two
+  switchable overhead corridor fixtures and flush-ceiling dining, kitchen,
+  hall, and foyer restyle. Corridor analytic probes read 0.72/0.58/0.72 on
+  and 0.05/0.30/0.31 off, so point-blank parent sight crosses the unchanged
+  0.35 threshold only while the route is lit. Exact editor, startup, and all
+  38 verification flags pass (40/40); nav remains 164 polygons.
   `eed6e31` adds A23's state-lifetime family-VO casting: the motivation line
   plays once at game start, combined giggles fill `FOUND`, context-selected
   kid protests and parent grunts fill `CARRY`, and deposit/state exit stops
@@ -149,6 +157,11 @@ a journal.
   The lane-C crib-boundary major is fixed: `GameFlow` uses the player centre
   with an 0.08 m margin instead of capsule-inflated Area overlap. The exact
   2.04 m outside case stays PLAYING; A6's inside position still wins.
+  `cebba87` adds A24: wall switches keep their soft positional click but emit
+  zero gameplay noise, while the existing visual light-anomaly path remains
+  green. All three squeaky-toy hazards widen to one flat 2.6 × 1.4 m overlay
+  with spread pill/train/block silhouettes. Exact editor, startup, and all 39
+  flags pass (41/41 functional gates); nav remains 164.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -158,7 +171,8 @@ a journal.
 
 ## Current focus
 
-- Freeze/export/upload. Fake-bounce lighting is optional post-freeze work only.
+- Freeze/export/upload. A22 and A24 are implemented; only director in-motion
+  presentation verdicts remain before export.
 
 ## Known blockers or risks
 
@@ -195,6 +209,8 @@ a journal.
 - A18's renderer gate and labeled captures are green; 6.5 practical energy at
   1.45 attenuation/7.8 m range is renderer-only and still needs the director's
   in-motion contrast verdict.
+- A22's analytic threshold proof is green, but the director must still judge
+  the corridor exposure and overhead-fixture readability in motion.
 - A19's 164-polygon nav and actor-route gates are green. Its collider fit is
   intentionally tighter than A18; the director still judges the closed
   bathroom/pantry silhouettes at gameplay scale.

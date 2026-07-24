@@ -864,3 +864,45 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** The inside approach misses at gameplay speed.
 - **Evidence / handoff:** A6 immediate/expiry verification and lane-C
   `crib-margin` scenario, 2026-07-24.
+
+## 2026-07-24 — Quiet carpet corridor is a switchable light gamble
+
+- **Decision:** Light the bottom carpet corridor with two shadow-casting
+  overhead practicals controlled together by a new `carpet_hall` wall switch.
+  The switch exposes one stable primary light id to
+  `LightSystem.nearest_switch_to`, while its secondary target follows the same
+  state. Lit west/center/east probes must exceed the unchanged 0.35 detection
+  threshold; switching the pair off must return all three below it. Dining,
+  kitchen, kid-hall, and foyer practicals become flush ceiling discs; the kid
+  nightstand remains a lamp.
+- **Why:** The quiet carpet route had no meaningful light tradeoff and could
+  hide a point-blank player. A player-controlled pair makes it a readable
+  stealth choice without changing global ambient, analytic falloff, or sight
+  thresholds.
+- **Rejected / cut:** Raising ambient light; widening unrelated room lights;
+  adding analytic-only spill without a visible source; changing inverse-square
+  renderer settings, shadow casting, or the 0.35 gameplay threshold; restyling
+  the kid nightstand.
+- **Owner:** Noah (director), lane A (lighting and switch implementation)
+- **Revisit when:** The director's in-motion pass finds the lit corridor too
+  punishing, the switch hard to read, or either overhead pool visually weak.
+- **Evidence / handoff:** `281cbab`, `--verify-a22`, and the labeled A22
+  before/after and fixture captures, 2026-07-24.
+
+## 2026-07-24 — Switch clicks are presentation-only
+
+- **Decision:** A wall-switch flip may play its soft positional click but emits
+  no `NoiseSystem` event. Parent awareness of unscheduled light changes remains
+  exclusively on the existing switch/light-state signal path. Each squeaky-toy
+  hazard uses one 2.6 × 1.4 m, 0.02 m-tall overlay carrying a spread
+  pill/train/block visual pile.
+- **Why:** A switch is a visible household-state anomaly, not a hearing cue.
+  Wider toy piles make the authored noise trap more likely to catch a careless
+  route while remaining flat and readable.
+- **Rejected / cut:** Retaining a low switch loudness; invisible trigger-only
+  expansion; adding colliders to individual toy meshes.
+- **Owner:** Noah (director), lane A (switch and hazard presentation)
+- **Revisit when:** The click is inaudible to the player or a widened pile
+  blocks a route.
+- **Evidence / handoff:** `cebba87`, `--verify-a24`, and A16/A17/A19/A22 plus
+  B14/B18 regressions.

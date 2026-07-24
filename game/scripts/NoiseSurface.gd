@@ -69,40 +69,67 @@ func _build_surface() -> void:
 
 
 func _build_toy_shapes() -> void:
-	var material: StandardMaterial3D = _make_surface_material(surface_color)
-	if name.contains("Dining"):
-		_add_toy_box(
-			"TrainBody",
-			Vector3(-0.18, 0.11, 0.0),
-			Vector3(0.72, 0.18, 0.28),
-			material
-		)
-		_add_toy_box(
-			"TrainCab",
-			Vector3(0.27, 0.18, 0.0),
-			Vector3(0.28, 0.32, 0.3),
-			material
-		)
-		_add_toy_box(
-			"TrainNose",
-			Vector3(-0.55, 0.13, 0.0),
-			Vector3(0.22, 0.22, 0.24),
-			material
-		)
-		return
+	var pill_material: StandardMaterial3D = _make_surface_material(
+		surface_color.lightened(0.08)
+	)
+	var train_material: StandardMaterial3D = _make_surface_material(
+		surface_color
+	)
+	var block_material: StandardMaterial3D = _make_surface_material(
+		surface_color.darkened(0.08)
+	)
+	var spread_x: float = maxf(surface_size.x, 1.8)
+	var spread_z: float = maxf(surface_size.y, 0.9)
+
 	var pill: MeshInstance3D = MeshInstance3D.new()
 	pill.name = "ToyPill"
-	pill.position = Vector3(0.0, 0.12, 0.0)
-	pill.rotation_degrees = Vector3(0.0, 0.0, 90.0)
+	pill.position = Vector3(-spread_x * 0.31, 0.20, -spread_z * 0.2)
+	pill.rotation_degrees = Vector3(0.0, 18.0, 90.0)
 	var pill_mesh: CapsuleMesh = CapsuleMesh.new()
-	pill_mesh.radius = 0.18
-	pill_mesh.height = 0.78
+	pill_mesh.radius = 0.16
+	pill_mesh.height = 0.68
 	pill.mesh = pill_mesh
-	pill.material_override = material
+	pill.material_override = pill_material
 	add_child(pill)
+
+	var train: Node3D = Node3D.new()
+	train.name = "ToyTrain"
+	train.position = Vector3(spread_x * 0.25, 0.0, spread_z * 0.18)
+	train.rotation_degrees.y = -12.0
+	add_child(train)
+	_add_toy_box(
+		train,
+		"Body",
+		Vector3(-0.08, 0.12, 0.0),
+		Vector3(0.62, 0.18, 0.27),
+		train_material
+	)
+	_add_toy_box(
+		train,
+		"Cab",
+		Vector3(0.27, 0.19, 0.0),
+		Vector3(0.25, 0.32, 0.29),
+		train_material
+	)
+	_add_toy_box(
+		train,
+		"Nose",
+		Vector3(-0.46, 0.13, 0.0),
+		Vector3(0.2, 0.22, 0.23),
+		train_material
+	)
+
+	_add_toy_box(
+		self,
+		"ToyBlock",
+		Vector3(0.0, 0.17, -spread_z * 0.3),
+		Vector3(0.4, 0.3, 0.4),
+		block_material
+	)
 
 
 func _add_toy_box(
+	parent: Node3D,
 	node_name: String,
 	local_position: Vector3,
 	size: Vector3,
@@ -115,7 +142,7 @@ func _add_toy_box(
 	mesh.size = size
 	part.mesh = mesh
 	part.material_override = material
-	add_child(part)
+	parent.add_child(part)
 
 
 func _build_creaky_planks() -> void:

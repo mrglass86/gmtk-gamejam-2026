@@ -76,9 +76,10 @@ func apply_phase(current_phase: int) -> void:
 	_set_level_node_visible("TVNotes", clamped_phase < 2)
 	_set_level_node_visible("KitchenLampVisual", clamped_phase < 3)
 	_set_level_node_visible("MidLampVisual", clamped_phase < 4)
+	_set_level_node_visible("DiningEntryLampVisual", clamped_phase < 4)
 	_set_level_node_visible("AlcoveLampVisual", clamped_phase < 4)
-	# These two practicals are switch controlled and are not part of the
-	# countdown zone sweep.
+	# These practicals are switch controlled and are not part of the
+	# countdown zone sweep; the corridor stays a player-authored risk choice.
 	LightSystem.set_light_enabled("BathroomLampVisual", bathroom_enabled)
 	_set_level_node_visible("BathroomLampVisual", bathroom_enabled)
 	LightSystem.set_light_enabled("HallDoorLampVisual", hall_door_enabled)
