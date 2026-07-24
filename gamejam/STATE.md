@@ -131,7 +131,11 @@ a journal.
   four upper doorway lintels, stable nearest-switch/light lookup, and labeled
   before/after Compatibility captures. `11886b8` guards B18's deferred light
   comparison across the A6 scene reload. Exact combined editor, startup, and
-  all 34 flags pass on `11886b8` (36/36), nav remains 164.
+  all 34 flags pass on `11886b8` (36/36), nav remains 164. B18 searchlight
+  routing now makes one nearest-off-switch diversion during dark INVESTIGATE
+  or HUNT, turns it on, and resumes the live target without retry oscillation;
+  working-tree B18 observes one attempt/completion and 0.51 m resumed motion
+  in both states.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -141,8 +145,7 @@ a journal.
 
 ## Current focus
 
-- Freeze/export/upload. B18 searchlight routing and fake-bounce lighting are
-  optional post-freeze work only.
+- Freeze/export/upload. Fake-bounce lighting is optional post-freeze work only.
 
 ## Known blockers or risks
 
@@ -171,9 +174,8 @@ a journal.
   whether HUNT feels threatening rather than predetermined.
 - B14 actor and AudioDirector gates are green; the remaining risk is the
   director's live timing/mix verdict.
-- B18 searchlight routing remains deliberately isolated after the green core.
-  A21 now exposes the requested `nearest_switch_to` contract; do not add the
-  behavior unless the freeze/export path is already safe.
+- B18 searchlight routing is isolated behind one-attempt-per-light bookkeeping;
+  export smoke still supplies the final visual verdict on switch detours.
 - A18's renderer gate and labeled captures are green; 6.5 practical energy at
   1.45 attenuation/7.8 m range is renderer-only and still needs the director's
   in-motion contrast verdict.

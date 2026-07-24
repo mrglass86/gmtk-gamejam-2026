@@ -268,6 +268,8 @@ enum State {
 @export var light_restore_delay: float = 2.0
 @export var light_switch_arrival_distance: float = 0.8
 @export var light_anomaly_cone_padding: float = 0.35
+@export var searchlight_brightness_threshold: float = 0.35
+@export var searchlight_switch_arrival_distance: float = 0.8
 @export var tv_couch_position: Vector3 = Vector3(-0.2, 0.7, -4.6)
 @export var tv_couch_settle_distance: float = 1.0
 @export var tv_ambient_id: String = "tv"
@@ -401,6 +403,8 @@ enum State {
 @export var verify_b18_big_loudness: float = 4.0
 @export var verify_b18_big_distance: float = 3.0
 @export var verify_b18_observation_duration: float = 0.75
+@export var verify_b18_searchlight_timeout: float = 8.0
+@export var verify_b18_searchlight_resume_distance: float = 0.5
 
 var suspicion: float = 0.0
 
@@ -467,6 +471,12 @@ var _light_restore_elapsed: float = 0.0
 var _parent_operating_switch: bool = false
 var _light_state_snapshot: Dictionary = {}
 var _light_change_check_pending: bool = false
+var _searchlight_switch: DinnerWorldSwitch
+var _searchlight_light_id: StringName
+var _searchlight_active: bool = false
+var _searchlight_attempted_light_ids: Dictionary = {}
+var _searchlight_attempt_count: int = 0
+var _searchlight_completion_count: int = 0
 var _kid_hall_punishment_active: bool = false
 var _tv_suppressed_for_listening: bool = false
 var _post_deposit_protest_emitted: bool = false
@@ -514,6 +524,8 @@ func _ready() -> void:
 		_run_b15_live_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--verify-b18-core"):
 		_run_b18_core_live_verification.call_deferred()
+	if OS.get_cmdline_user_args().has("--verify-b18"):
+		_run_b18_searchlight_live_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--trace-parent-perception"):
 		debug_perception_trace = true
 	if OS.get_cmdline_user_args().has("--trace-parent-hearing"):
@@ -875,6 +887,75 @@ func _on_world_switch_toggled(
 	_begin_light_anomaly_investigation(wall_switch)
 
 
+func _update_searchlight_diversion(delta: float, speed: float) -> bool:
+	if _light_anomaly_switch != null:
+		return false
+	if not _searchlight_active:
+		if (
+			LightSystem.get_brightness_at(global_position)
+			>= searchlight_brightness_threshold
+		):
+			return false
+		var nearest: Dictionary = LightSystem.nearest_switch_to(
+			global_position
+		)
+		var nearest_switch: DinnerWorldSwitch = (
+			nearest.get("switch") as DinnerWorldSwitch
+		)
+		var light_id: StringName = StringName(nearest.get("light_id", &""))
+		if (
+			nearest_switch == null
+			or light_id == &""
+			or _searchlight_attempted_light_ids.has(light_id)
+		):
+			return false
+		_searchlight_attempted_light_ids[light_id] = true
+		_searchlight_attempt_count += 1
+		if nearest_switch.is_on or LightSystem.is_light_enabled(light_id):
+			return false
+		_searchlight_switch = nearest_switch
+		_searchlight_light_id = light_id
+		_searchlight_active = true
+		_set_navigation_target(nearest_switch.global_position, true)
+	if not _can_query_navigation() or _searchlight_switch == null:
+		return true
+	_set_navigation_target(_searchlight_switch.global_position)
+	if _move_along_path(speed, delta):
+		return true
+	if (
+		_flat_distance(
+			global_position,
+			_searchlight_switch.global_position
+		) > searchlight_switch_arrival_distance
+		and not _navigation_agent.is_navigation_finished()
+	):
+		return true
+	_face_direction(
+		_searchlight_switch.global_position - global_position,
+		delta
+	)
+	_parent_operating_switch = true
+	_searchlight_switch.set_state(true, true)
+	_parent_operating_switch = false
+	_searchlight_completion_count += 1
+	_clear_searchlight_diversion(false)
+	if _state == State.HUNT:
+		_set_navigation_target(_hunt_target_position, true)
+	else:
+		_set_navigation_target(_last_known_position, true)
+	return true
+
+
+func _clear_searchlight_diversion(clear_attempts: bool) -> void:
+	_searchlight_active = false
+	_searchlight_switch = null
+	_searchlight_light_id = &""
+	if clear_attempts:
+		_searchlight_attempted_light_ids.clear()
+		_searchlight_attempt_count = 0
+		_searchlight_completion_count = 0
+
+
 func _scan_for_visible_light_anomaly(delta: float) -> void:
 	if _light_anomaly_switch != null or _state != State.ROUTINE:
 		return
@@ -960,6 +1041,7 @@ func _begin_light_anomaly_investigation(
 		or _state == State.HUNT
 	):
 		return
+	_clear_searchlight_diversion(false)
 	_light_anomaly_switch = wall_switch
 	_light_anomaly_expected_on = _is_switch_expected_on(wall_switch.switch_id)
 	_light_restore_elapsed = 0.0
@@ -1054,6 +1136,9 @@ func _update_investigate(delta: float) -> void:
 		return
 	if not _can_query_navigation():
 		return
+	if _update_searchlight_diversion(delta, investigate_speed):
+		_investigate_look_elapsed = 0.0
+		return
 
 	_set_navigation_target(_last_known_position)
 	if _move_along_path(investigate_speed, delta):
@@ -1096,6 +1181,8 @@ func _update_hunt(delta: float) -> void:
 		or _hunt_no_noise_elapsed >= hunt_timeout
 	):
 		_finish_hunt()
+		return
+	if _update_searchlight_diversion(delta, found_speed):
 		return
 	_set_navigation_target(_hunt_target_position)
 	if not _move_along_path(found_speed, delta):
@@ -1715,6 +1802,8 @@ func _begin_or_update_investigate(
 ) -> void:
 	if not ignore_repeat_cooldown and _is_repeat_target_suppressed(target):
 		return
+	if _state != State.INVESTIGATE and _state != State.HUNT:
+		_clear_searchlight_diversion(true)
 	_clear_interest()
 	_last_known_position = target
 	if _state == State.INVESTIGATE:
@@ -1728,6 +1817,8 @@ func _begin_or_update_investigate(
 
 
 func _begin_hunt(target: Vector3) -> void:
+	if _state != State.INVESTIGATE and _state != State.HUNT:
+		_clear_searchlight_diversion(true)
 	_clear_light_anomaly()
 	_clear_interest()
 	_hunt_target_position = target
@@ -1747,6 +1838,7 @@ func _finish_hunt() -> void:
 
 
 func _finish_investigate() -> void:
+	_clear_searchlight_diversion(true)
 	_last_checked_position = _last_known_position
 	_has_checked_position = true
 	_repeat_cooldown_remaining = repeat_cooldown_duration
@@ -1775,6 +1867,7 @@ func _begin_found_or_carry() -> void:
 func _begin_found() -> void:
 	if _player == null or _state == State.CARRY:
 		return
+	_clear_searchlight_diversion(true)
 	_cancel_glance()
 	_clear_light_anomaly()
 	_clear_interest()
@@ -1799,6 +1892,7 @@ func _begin_carry() -> void:
 		return
 	if global_position.distance_to(_player.global_position) > grab_distance:
 		return
+	_clear_searchlight_diversion(true)
 	_clear_interest()
 	var catch_position: Vector3 = _player.global_position
 	var had_snack: bool = _player.carrying_snack
@@ -2656,6 +2750,9 @@ func _run_b9_live_verification() -> void:
 	var pet: DinnerPet = get_parent().get_node_or_null("Pet") as DinnerPet
 	var original_time_scale: float = Engine.time_scale
 	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var original_searchlight_threshold: float = (
+		searchlight_brightness_threshold
+	)
 	var player_was_processing: bool = _player != null and _player.is_physics_processing()
 
 	Engine.time_scale = maxf(verify_time_scale, 1.0)
@@ -2825,6 +2922,7 @@ func _run_b9_live_verification() -> void:
 			)
 		)
 
+	searchlight_brightness_threshold = -1.0
 	_state = State.ROUTINE
 	suspicion = 0.0
 	_routine_staged_door_row = -1
@@ -2876,6 +2974,7 @@ func _run_b9_live_verification() -> void:
 		if endgame_elapsed >= verify_b9_endgame_duration:
 			endgame_reached_duration = true
 			break
+	searchlight_brightness_threshold = original_searchlight_threshold
 	var final_facing: Vector3 = -global_transform.basis.z
 	final_facing.y = 0.0
 	var final_facing_dot: float = final_facing.normalized().dot(Vector3.FORWARD)
@@ -4610,6 +4709,317 @@ func _run_b18_core_live_verification() -> void:
 		"B18 non-parent light change did not investigate immediately."
 	)
 	print("B18 core live SceneTree verification passed.")
+
+
+func _run_b18_searchlight_live_verification() -> void:
+	var pet: DinnerPet = get_parent().get_node_or_null("Pet") as DinnerPet
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var player_was_processing: bool = (
+		_player != null and _player.is_physics_processing()
+	)
+	var player_was_input_locked: bool = (
+		_player != null and _player.input_locked
+	)
+	var player_start_position: Vector3 = (
+		_player.global_position if _player != null else Vector3.ZERO
+	)
+	var pet_was_processing: bool = (
+		pet != null and pet.is_physics_processing()
+	)
+	var dining_switch: DinnerWorldSwitch
+	for node: Node in get_tree().get_nodes_in_group("world_switch"):
+		var candidate: DinnerWorldSwitch = node as DinnerWorldSwitch
+		if candidate != null and candidate.switch_id == &"dining":
+			dining_switch = candidate
+			break
+	var dining_original_on: bool = (
+		dining_switch != null and dining_switch.is_on
+	)
+
+	Engine.time_scale = maxf(verify_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(verify_physics_ticks_per_second, 60)
+	if _player != null:
+		if _player.is_attached_to_carrier():
+			_player.detach_from_carrier(player_start_position)
+		_player.set_input_locked(true)
+		_player.set_physics_process(false)
+		_player.global_position = verify_observer_parking_position
+	if pet != null:
+		pet.set_physics_process(false)
+	GameClock.start()
+	for _frame_index in range(verify_warmup_frames):
+		await get_tree().physics_frame
+
+	var search_start: Vector3 = Vector3(-2.0, 0.7, -0.8)
+	var search_target: Vector3 = Vector3(5.2, 0.7, -0.8)
+	var investigate_dark_at_start: bool = false
+	var investigate_diversion_started: bool = false
+	var investigate_switch_on: bool = false
+	var investigate_lit_after_switch: bool = false
+	var investigate_resumed_target: bool = false
+	var investigate_resume_motion: float = 0.0
+	var investigate_attempts: int = 0
+	var investigate_completions: int = 0
+	if dining_switch != null:
+		_parent_operating_switch = true
+		for zone: String in LightSystem.VALID_ZONES:
+			LightSystem.set_zone_enabled(zone, false)
+		dining_switch.set_state(false, false)
+		_parent_operating_switch = false
+		_refresh_light_state_snapshot()
+		await get_tree().physics_frame
+
+		global_position = search_start
+		_state = State.ROUTINE
+		suspicion = 40.0
+		_clear_light_anomaly()
+		_clear_searchlight_diversion(true)
+		_set_navigation_target(global_position, true)
+		investigate_dark_at_start = (
+			LightSystem.get_brightness_at(global_position)
+			< searchlight_brightness_threshold
+		)
+		_begin_or_update_investigate(search_target, true)
+		var investigate_switch_position: Vector3 = (
+			dining_switch.global_position
+		)
+		var investigate_start_time: float = (
+			GameClock.run_length - GameClock.time_remaining
+		)
+		var investigate_completion_position: Vector3 = global_position
+		var investigate_saw_completion: bool = false
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			investigate_diversion_started = (
+				investigate_diversion_started
+				or (
+					_searchlight_active
+					and _searchlight_switch == dining_switch
+				)
+			)
+			if _searchlight_completion_count > 0:
+				if not investigate_saw_completion:
+					investigate_completion_position = global_position
+				investigate_saw_completion = true
+				investigate_switch_on = dining_switch.is_on
+				investigate_lit_after_switch = (
+					LightSystem.get_brightness_at(global_position)
+					>= searchlight_brightness_threshold
+				)
+				investigate_resumed_target = (
+					_flat_distance(_last_navigation_target, search_target)
+					<= routine_repath_distance
+				)
+				investigate_resume_motion = maxf(
+					investigate_resume_motion,
+					_flat_distance(
+						global_position,
+						investigate_completion_position
+					)
+				)
+			investigate_attempts = maxi(
+				investigate_attempts,
+				_searchlight_attempt_count
+			)
+			investigate_completions = maxi(
+				investigate_completions,
+				_searchlight_completion_count
+			)
+			if (
+				investigate_saw_completion
+				and investigate_resume_motion
+				>= verify_b18_searchlight_resume_distance
+			):
+				break
+			if (
+				GameClock.run_length - GameClock.time_remaining
+				- investigate_start_time
+				>= verify_b18_searchlight_timeout
+			):
+				break
+		investigate_resumed_target = (
+			investigate_resumed_target
+			or (
+				investigate_saw_completion
+				and _flat_distance(_last_known_position, search_target)
+				<= routine_repath_distance
+			)
+		)
+
+	var hunt_dark_at_start: bool = false
+	var hunt_diversion_started: bool = false
+	var hunt_switch_on: bool = false
+	var hunt_lit_after_switch: bool = false
+	var hunt_resumed_target: bool = false
+	var hunt_resume_motion: float = 0.0
+	var hunt_attempts: int = 0
+	var hunt_completions: int = 0
+	if dining_switch != null:
+		_set_state(State.ROUTINE)
+		_parent_operating_switch = true
+		for zone: String in LightSystem.VALID_ZONES:
+			LightSystem.set_zone_enabled(zone, false)
+		dining_switch.set_state(false, false)
+		_parent_operating_switch = false
+		_refresh_light_state_snapshot()
+		await get_tree().physics_frame
+
+		global_position = search_start
+		suspicion = suspicion_max
+		_clear_light_anomaly()
+		_clear_searchlight_diversion(true)
+		_set_navigation_target(global_position, true)
+		hunt_dark_at_start = (
+			LightSystem.get_brightness_at(global_position)
+			< searchlight_brightness_threshold
+		)
+		_begin_hunt(search_target)
+		var hunt_start_time: float = (
+			GameClock.run_length - GameClock.time_remaining
+		)
+		var hunt_completion_position: Vector3 = global_position
+		var hunt_saw_completion: bool = false
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			hunt_diversion_started = (
+				hunt_diversion_started
+				or (
+					_searchlight_active
+					and _searchlight_switch == dining_switch
+				)
+			)
+			if _searchlight_completion_count > 0:
+				if not hunt_saw_completion:
+					hunt_completion_position = global_position
+				hunt_saw_completion = true
+				hunt_switch_on = dining_switch.is_on
+				hunt_lit_after_switch = (
+					LightSystem.get_brightness_at(global_position)
+					>= searchlight_brightness_threshold
+				)
+				hunt_resumed_target = (
+					_flat_distance(
+						_last_navigation_target,
+						search_target
+					) <= routine_repath_distance
+				)
+				hunt_resume_motion = maxf(
+					hunt_resume_motion,
+					_flat_distance(
+						global_position,
+						hunt_completion_position
+					)
+				)
+			hunt_attempts = maxi(
+				hunt_attempts,
+				_searchlight_attempt_count
+			)
+			hunt_completions = maxi(
+				hunt_completions,
+				_searchlight_completion_count
+			)
+			if (
+				hunt_saw_completion
+				and hunt_resume_motion
+				>= verify_b18_searchlight_resume_distance
+			):
+				break
+			if (
+				GameClock.run_length - GameClock.time_remaining
+				- hunt_start_time
+				>= verify_b18_searchlight_timeout
+			):
+				break
+		hunt_resumed_target = (
+			hunt_resumed_target
+			or (
+				hunt_saw_completion
+				and _flat_distance(_hunt_target_position, search_target)
+				<= routine_repath_distance
+			)
+		)
+
+	var investigate_gate_passed: bool = (
+		investigate_dark_at_start
+		and investigate_diversion_started
+		and investigate_switch_on
+		and investigate_lit_after_switch
+		and investigate_resumed_target
+		and investigate_resume_motion
+		>= verify_b18_searchlight_resume_distance
+		and investigate_attempts == 1
+		and investigate_completions == 1
+	)
+	var hunt_gate_passed: bool = (
+		hunt_dark_at_start
+		and hunt_diversion_started
+		and hunt_switch_on
+		and hunt_lit_after_switch
+		and hunt_resumed_target
+		and hunt_resume_motion >= verify_b18_searchlight_resume_distance
+		and hunt_attempts == 1
+		and hunt_completions == 1
+	)
+	var verification_passed: bool = (
+		dining_switch != null
+		and investigate_gate_passed
+		and hunt_gate_passed
+	)
+
+	GameClock.running = false
+	_set_state(State.ROUTINE)
+	_parent_operating_switch = true
+	for zone: String in LightSystem.VALID_ZONES:
+		LightSystem.set_zone_enabled(zone, true)
+	if dining_switch != null:
+		dining_switch.set_state(dining_original_on, false)
+	_parent_operating_switch = false
+	_refresh_light_state_snapshot()
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+	if _player != null:
+		_player.global_position = player_start_position
+		_player.set_input_locked(player_was_input_locked)
+		_player.set_physics_process(player_was_processing)
+	if pet != null:
+		pet.set_physics_process(pet_was_processing)
+
+	print(
+		(
+			"B18 searchlight live metrics: INVESTIGATE dark/start/on/lit="
+			+ "%s/%s/%s/%s, attempts/completions=%d/%d, resume=%.2f m; "
+			+ "HUNT dark/start/on/lit=%s/%s/%s/%s, "
+			+ "attempts/completions=%d/%d, resume=%.2f m."
+		)
+		% [
+			investigate_dark_at_start,
+			investigate_diversion_started,
+			investigate_switch_on,
+			investigate_lit_after_switch,
+			investigate_attempts,
+			investigate_completions,
+			investigate_resume_motion,
+			hunt_dark_at_start,
+			hunt_diversion_started,
+			hunt_switch_on,
+			hunt_lit_after_switch,
+			hunt_attempts,
+			hunt_completions,
+			hunt_resume_motion,
+		]
+	)
+	await _settle_verification_audio()
+	get_tree().quit(0 if verification_passed else 1)
+	assert(
+		investigate_gate_passed,
+		"B18 dark INVESTIGATE did not light once and resume its search."
+	)
+	assert(
+		hunt_gate_passed,
+		"B18 dark HUNT did not light once and resume its live target."
+	)
+	print("B18 searchlight live SceneTree verification passed.")
 
 
 func _reset_hearing_interest_for_verification() -> void:

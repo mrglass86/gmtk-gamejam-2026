@@ -754,3 +754,23 @@ Record decisions another session or tool would otherwise have to rediscover.
   bounded opening is added.
 - **Evidence / handoff:** `94c3879`, `--verify-a21`, and the labeled A21
   before/after captures.
+
+## 2026-07-24 — Dark searches take one light-switch diversion
+
+- **Decision:** On entering a dark area during INVESTIGATE or HUNT, Parent uses
+  `LightSystem.nearest_switch_to` to visit the nearest off practical, turns it
+  on with the normal click, then resumes the live investigation/noise target.
+  Each controlled light is attempted at most once per continuous search
+  episode. B14's explicit anomaly-restoration target retains priority.
+- **Why:** The parent should act intelligently in a dark house without losing
+  the player/noise objective or bouncing forever between an ineffective switch
+  and the search target.
+- **Rejected / cut:** Duplicating the switch map in Parent; repeatedly trying
+  the same switch when its pool does not light the route; rerouting routine,
+  carry, FOUND, or explicit B14 anomaly behavior.
+- **Owner:** Noah (director), lane A (nearest-switch contract), lane B
+  (search diversion)
+- **Revisit when:** Export smoke finds a switch visit visually confusing, or a
+  new room places its nearest switch outside the reachable nav region.
+- **Evidence / handoff:** `94c3879`, `--verify-a21`, and live
+  `--verify-b18`, 2026-07-24.

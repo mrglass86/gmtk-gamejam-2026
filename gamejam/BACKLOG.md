@@ -135,10 +135,11 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       off-schedule analytic-light changes investigate immediately without
       phase-transition false positives. Accept: live `--verify-b18-core` plus
       B8/B9/B14/B15 regression.
-- [ ] B18 searchlight routing — only after the core commit. In dark
-      INVESTIGATE/HUNT, use lane A's `nearest_switch_to`, turn the switch on,
-      then resume the original search without oscillation. The interface is
-      now present; cut the behavior if its integration is not freeze-safe.
+- [x] B18 searchlight routing — dark INVESTIGATE/HUNT uses A21's
+      `nearest_switch_to`, makes one off-switch diversion per controlled light,
+      turns it on, then resumes the live search target. Accept: live
+      `--verify-b18` observes exactly one attempt/completion and 0.51 m resumed
+      motion in both states; B9 isolates its routine-only timing subtest.
 - [x] B17 snack identity — FRIDGE reveals `ice_cream`, PANTRY reveals `chips`;
       the shared Snack exposes the type and preserves it across pickup,
       drop, and re-collection. Accept: live two-door `--verify-b17` round trip
