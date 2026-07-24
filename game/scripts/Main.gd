@@ -577,8 +577,9 @@ func _verify_audio_pass() -> void:
 		and $AudioDirector/TVBed is AudioStreamPlayer3D
 	)
 	print(
-		"Audio verification passed: first-input beds, countdown tells, footsteps, "
-		+ "pet/result/snack cues, positional sources, and zero bus effects."
+		"A15 audio verification passed: original voice/foley pools, context catch "
+		+ "branches, no-repeat selection, VO priority, positional sources, CC0 "
+		+ "fallbacks, and zero bus effects."
 	)
 	audio_director.end_audio_verification()
 	for settle_frame: int in range(8):

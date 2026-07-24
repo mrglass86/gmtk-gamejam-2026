@@ -512,3 +512,24 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** The director returns exact keeper filenames and mappings.
 - **Evidence / handoff:** `assets/voice/candidates/MANIFEST.md` and
   `gamejam/handoffs/2026-07-23-lane-a-a14-audio-intake.md`.
+
+## 2026-07-24 — Director-named picks drive data-defined original audio
+
+- **Decision:** The director's flat `assets/voice/picks/` folder is casting
+  truth. Selected takes are copied to anonymous runtime pools. `AudioCasting`
+  defines pools and ordered event steps; selection avoids immediate repeats
+  and adds 5–8% pitch jitter. One dedicated VO player enforces
+  carry/deposit > catch/found > chase/routine priority. Catch passes one
+  `had_snack` boolean to select red-handed versus empty-handed protest.
+  Unfilled events keep their CC0 fallbacks.
+- **Why:** The director has made performance choices; a data table keeps
+  sequencing, context, and substitutions auditable without branching event
+  code or exposing family names in the committed runtime tree.
+- **Rejected / cut:** Wiring audition candidates directly; filename parsing at
+  runtime; parallel overlapping voice players; removing CC0 coverage; assigning
+  the unmatched kitty line without a scenario.
+- **Owner:** Noah (casting), lane A (integration)
+- **Revisit when:** The director's mix walk changes a keeper, event delay,
+  priority, or pool assignment.
+- **Evidence / handoff:** `assets/voice/A15_CASTING.md`,
+  `game/scripts/AudioCasting.gd`, and `--verify-audio`.

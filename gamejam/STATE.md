@@ -8,11 +8,11 @@ a journal.
 - Jam: GMTK26 — theme: Countdown
 - Direction: Shoulda Eaten Dinner (toddler stealth; the countdown is the
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
-- Current phase: Friday — director-run behavior and presentation fixpacks
-- Next playable checkpoint: director run six — exercise the combined B8–B12
-  catch, ring-true hearing, bathroom staging, dog bowl visit, couch glances,
-  HUNT response, escalating threat telegraphs, A12 presentation, and full
-  win/lose loop.
+- Current phase: Saturday — original-audio integration, mix walk, and feel
+  tuning.
+- Next playable checkpoint: director audio/CP5 run — hear the context-sensitive
+  catch/carry/deposit sequence, original routine voice and foley, countdown
+  tells, and full win/lose loop together.
 
 ## Working build
 
@@ -63,11 +63,12 @@ a journal.
   1.8 Omni attenuation, 2.2 base energy, 0.04 ambient, and centered dining
   fixture while preserving the analytic light anchors and 0.35 sight boundary.
   `1fada23` adds B12's suspicion-ramped parent cone and dog hearing-radius ring;
-  clean committed-tree startup plus B6/B9/B10/B12 pass. A13 voice intake is
-  audition-ready: 124 anonymous mono OGG candidates and a source/duration
-  manifest are prepared. A14 adds 84 anonymous parent-voice and household-foley
-  candidates from nine new source fingerprints without reprocessing the 13 A13
-  sources. No original recordings are wired until the director names keepers.
+  clean committed-tree startup plus B6/B9/B10/B12 pass. A13/A14 produced 208
+  audition candidates; A15 now wires the director's 88 selected original voice
+  and foley takes through data-defined no-repeat pools, 5–8% pitch jitter,
+  context-sensitive carry protests, ordered sequences, a priority-controlled
+  VO channel, and CC0 fallbacks. Focused audio plus A6/A7/B7/B8 regressions
+  pass.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -77,19 +78,21 @@ a journal.
 
 ## Current focus
 
-- Noah runs the authoritative CP4/CP5 route: catch-time snack drop, capture
-  epilogue, dog/toy alarm, bathroom staging, naive sprint round trip, couch
-  glance, fridge swing, and lighting/listening verdicts against S7/S8/S9/S10.
+- Noah runs the authoritative audio/CP5 route: red-handed and empty-handed
+  catches, carry/deposit VO, routine lines, bathroom and kitchen foley,
+  countdown tells, and final mix balance against the full win/lose loop.
 
 ## Known blockers or risks
 
 - A12 is functionally and Compatibility-renderer verified but awaits the
   director's contrast verdict; the darkest adult/pantry pockets remain
   intentionally readable.
-- A13/A14 original-audio wiring is intentionally blocked on the director's
-  keeper filenames and event assignments; CC0 fallbacks remain authoritative.
-  No wrapper, light-switch, clock, or dog recording was present in the A14
-  intake; those CC0 cues remain the only candidates.
+- Several approved original pools are thin: single takes for dog attention,
+  win “mmm,” deposit sniffle, snack-drop voice, fridge hum/pop, sink, and
+  toilet; immediate-repeat protection cannot add variety there. Light-switch,
+  clock, pet, stings, snack pickup/thud, and other unfilled cues retain CC0.
+- One director pick remains deliberately unassigned (`kid-kitty-cat`); it is
+  not copied into the runtime tree.
 - The scaffolded input map was hand-serialized — lane A verifies it in A0.
 - Route timing remains unmeasured in play; tune furniture/entrances only if the
   quiet route misses the 1.4–1.6× target.

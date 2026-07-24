@@ -4,7 +4,8 @@ class_name DinnerParent
 ## Time-indexed parent routine with investigate, found chase, and carry overrides.
 
 signal state_changed(state_name: StringName)
-signal player_caught(catch_position: Vector3)
+signal player_caught(catch_position: Vector3, had_snack: bool)
+signal player_deposited()
 
 enum State {
 	ROUTINE,
@@ -1060,7 +1061,8 @@ func _begin_carry() -> void:
 	if global_position.distance_to(_player.global_position) > grab_distance:
 		return
 	var catch_position: Vector3 = _player.global_position
-	if _player.carrying_snack:
+	var had_snack: bool = _player.carrying_snack
+	if had_snack:
 		if _snack != null:
 			_snack.drop_at(catch_position)
 		else:
@@ -1072,7 +1074,7 @@ func _begin_carry() -> void:
 	_set_state(State.CARRY)
 	if _crib != null:
 		_set_navigation_target(_crib.global_position, true)
-	player_caught.emit(catch_position)
+	player_caught.emit(catch_position, had_snack)
 
 
 func _finish_carry() -> void:
@@ -1085,6 +1087,7 @@ func _finish_carry() -> void:
 	_post_deposit_path_started = false
 	_set_state(State.POST_DEPOSIT_EXIT)
 	_set_navigation_target(post_deposit_exit_position, true)
+	player_deposited.emit()
 
 
 func _resume_routine_after_deposit() -> void:
