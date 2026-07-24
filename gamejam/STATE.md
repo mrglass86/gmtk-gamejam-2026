@@ -10,9 +10,8 @@ a journal.
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Saturday — original-audio integration, mix walk, and feel
   tuning.
-- Next playable checkpoint: director A17 acceptance — lit-room readability,
-  exclusive anchored interactions, bathroom dressing, and replacement player
-  footsteps on top of B15's two-cue hearing.
+- Next playable checkpoint: CP5 manual full run — title-card start through both
+  win and expiry-loss outcomes, restart, then freeze/export.
 
 ## Working build
 
@@ -94,6 +93,9 @@ a journal.
   interaction with door tie priority, world-anchored prompt/countdown, 0.8
   switch noise, and the dark-start ceiling-disc bathroom/toilet pass. Editor,
   startup, and all 27 verification flags pass (29/29).
+  `b14efb3` closes the last WIRING request: B15 CURIOUS plays the director's
+  three-take parent investigate/“hm?” pool and its magenta parent indicator
+  without gameplay noise. The exact committed head passes 29/29.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -103,9 +105,8 @@ a journal.
 
 ## Current focus
 
-- Noah reviews the A17 labeled lighting capture and plays the interaction,
-  bathroom, footstep, and B15 CURIOUS beats. Lane A still owes the first-interest
-  parent “hm?” VO wiring.
+- Acceptance build is complete. Noah runs CP5's full title-to-win and
+  title-to-loss routes, then freezes and exports if the live verdict is clean.
 
 ## Known blockers or risks
 
@@ -133,8 +134,6 @@ a journal.
   director's live timing/mix verdict.
 - A17's renderer gate and labeled capture are green; the 32.0 practical energy
   is renderer-only but still needs the director's in-motion contrast verdict.
-- B15's first-interest parent “hm?” VO remains an open AudioDirector wiring
-  request; the CURIOUS behavior itself is green.
 - Godot MCP for lane A: 30-minute hard abort rule (brief 9.2).
 - This Claude instance has no shell — validation runs through the web build in
   the browser pane plus Noah's terminal.

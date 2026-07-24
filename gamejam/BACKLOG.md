@@ -130,6 +130,9 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       hinge-origin door audio, nearest-only anchored interaction HUD, 0.8
       switch noise, and dark-start bathroom ceiling fixture/toilet
       (`2d4e142`, `--verify-a17`, 155 nav polygons, 29/29 full battery).
+- [x] B15 curiosity VO wiring — the first qualifying cue plays the director's
+      parent investigate/“hm?” pool and magenta parent indicator with zero
+      gameplay-noise emissions (`b14efb3`, `--verify-audio`, 29/29 battery).
 - [x] B13 detection/grab regressions — perception remains active throughout
       the post-deposit epilogue and aborts it on sight or loud hearing;
       `grab_distance` is 1.5 m and FOUND lunges directly inside 2.5 m with
@@ -154,9 +157,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       magenta icon; room dwell plays parent bed-check then a three-take kid
       protest pool; active creaks use Door-derived pitch/volume every frame
       (`ccc1df5`, `0bfa05e`, `gamejam/WIRING.md` clear).
-- [ ] B14 director acceptance — early-dark switch is restored, TV goes fully
+- [x] B14 director acceptance — early-dark switch is restored, TV goes fully
       off while listening and returns at the couch before phase 2, escaped
       child triggers the four-second room check, and door creak rate reads.
+      A17/B15 follow-ups complete the accepted build at `b14efb3`.
 
 ## Should — Saturday (feel day)
 

@@ -8,12 +8,14 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Open
 
-- [ ] (lane B / B15) Connect `Parent.curiosity_started(sound_position)` in
-  `AudioDirector.gd` to the short parent “hm?”/first-interest VO tell and its
-  existing magenta parent-voice indicator. It is visual/VO only: emit no
-  `NoiseSystem` event, and do not wait until the second-cue INVESTIGATE state.
+No open requests.
+
 ## Done
 
+- [x] (lane B / B15) `Parent.curiosity_started(sound_position)` now plays the
+  three-take parent investigate/“hm?” pool through the dedicated VO channel and
+  shows `ParentVoiceIndicator`. `--verify-audio` proves the real signal emits
+  zero `NoiseSystem` events (`b14efb3`).
 - [x] (lane A / A17 for lane B B15) Moved `Level/KidHallSwitch` away from
   `BedroomDoor`; Player now selects exactly one nearest interactable and doors
   win distance ties. Director's later A17 ruling supersedes the prior click
