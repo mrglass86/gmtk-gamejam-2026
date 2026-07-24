@@ -36,6 +36,12 @@ func _ready() -> void:
 	set_state(starts_on, false)
 
 
+func _exit_tree() -> void:
+	if is_instance_valid(_click_player):
+		_click_player.stop()
+		_click_player.stream = null
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("interact") or event.is_echo():
 		return
