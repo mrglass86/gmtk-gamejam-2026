@@ -2646,6 +2646,12 @@ func _capture_layout(capture_path: String) -> void:
 	var capture_a21_after: bool = OS.get_cmdline_user_args().has(
 		"--capture-a21-after"
 	)
+	var capture_a22_before: bool = OS.get_cmdline_user_args().has(
+		"--capture-a22-before"
+	)
+	var capture_a22_after: bool = OS.get_cmdline_user_args().has(
+		"--capture-a22-after"
+	)
 	if (
 		capture_a10_fridge_open
 		or capture_a10_fridge_closed
@@ -2668,6 +2674,8 @@ func _capture_layout(capture_path: String) -> void:
 		_configure_a19_geometry_capture()
 	if capture_a21_before or capture_a21_after:
 		_configure_a21_wall_blocking_capture(capture_a21_before)
+	if capture_a22_before or capture_a22_after:
+		_configure_a22_hallway_capture(capture_a22_before)
 	for frame: int in range(capture_warmup_frames):
 		await get_tree().process_frame
 	if capture_a19_geometry:
@@ -2688,6 +2696,83 @@ func _capture_layout(capture_path: String) -> void:
 	else:
 		print("A0 layout capture saved: %s" % capture_path)
 	get_tree().quit()
+
+
+func _configure_a22_hallway_capture(is_before: bool) -> void:
+	var phase_director: PhaseDirector = $PhaseDirector as PhaseDirector
+	phase_director.set_process(false)
+	phase_director.set_physics_process(false)
+	phase_director.apply_phase(0)
+
+	for label: Node in find_children("*", "Label3D", true, false):
+		(label as Label3D).visible = false
+
+	var corridor_switch: DinnerWorldSwitch = (
+		$Level.get_node_or_null("CarpetHallSwitch") as DinnerWorldSwitch
+	)
+	if corridor_switch != null:
+		corridor_switch.set_state(not is_before, false)
+
+	var camera_target: Vector3 = Vector3(0.25, 0.0, 4.75)
+	var camera_rig: Node3D = $CameraRig as Node3D
+	camera_rig.global_position = camera_target + Vector3(0.0, 18.0, 5.0)
+	camera_rig.look_at(camera_target, Vector3.UP)
+	($CameraRig/OrthoCamera as Camera3D).size = 12.5
+
+	var west_probe: Vector3 = Vector3(-3.8, 0.0, 4.9)
+	var center_probe: Vector3 = Vector3(0.25, 0.0, 4.9)
+	var east_probe: Vector3 = Vector3(4.3, 0.0, 4.9)
+	var proof_layer: CanvasLayer = CanvasLayer.new()
+	proof_layer.name = "A22HallwayProof"
+	proof_layer.layer = 30
+	add_child(proof_layer)
+	var proof_label: Label = Label.new()
+	proof_label.text = (
+		(
+			"A22 BEFORE — QUIET CARPET CORRIDOR\n"
+			+ "LIGHT-RISK ROUTE MISSING • ANALYTIC W/C/E %.2f / %.2f / %.2f"
+		)
+		if is_before
+		else (
+			"A22 AFTER — SWITCHED OVERHEAD CORRIDOR LIGHTS\n"
+			+ "QUIET FLOOR / REAL LIGHT GAMBLE • ANALYTIC W/C/E %.2f / %.2f / %.2f"
+		)
+	) % [
+		LightSystem.get_brightness_at(west_probe),
+		LightSystem.get_brightness_at(center_probe),
+		LightSystem.get_brightness_at(east_probe),
+	]
+	proof_label.position = Vector2(32.0, 76.0)
+	proof_label.add_theme_font_size_override("font_size", 27)
+	proof_label.add_theme_color_override("font_color", Color("#f2f5f9"))
+	proof_label.add_theme_color_override("font_outline_color", Color("#111820"))
+	proof_label.add_theme_constant_override("outline_size", 7)
+	proof_layer.add_child(proof_label)
+
+	for marker_row: Dictionary in [
+		{
+			"text": "WEST PROBE",
+			"position": west_probe + Vector3.UP * 0.3,
+		},
+		{
+			"text": "CENTER PROBE",
+			"position": center_probe + Vector3.UP * 0.3,
+		},
+		{
+			"text": "EAST PROBE",
+			"position": east_probe + Vector3.UP * 0.3,
+		},
+	]:
+		var marker: Label3D = Label3D.new()
+		marker.text = marker_row["text"]
+		marker.position = marker_row["position"]
+		marker.font_size = 30
+		marker.outline_size = 7
+		marker.pixel_size = 0.0035
+		marker.modulate = Color("#d889de")
+		marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		marker.no_depth_test = true
+		add_child(marker)
 
 
 func _configure_a21_wall_blocking_capture(is_before: bool) -> void:

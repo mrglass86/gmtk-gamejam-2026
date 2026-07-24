@@ -61,6 +61,7 @@ func apply_phase(current_phase: int) -> void:
 	var clamped_phase: int = clampi(current_phase, 0, 4)
 	var bathroom_enabled: bool = _get_switch_state(&"bathroom", false)
 	var hall_door_enabled: bool = _get_switch_state(&"kid_hall", false)
+	var carpet_hall_enabled: bool = _get_switch_state(&"carpet_hall", true)
 	LightSystem.set_zone_enabled("bedroom", true)
 	LightSystem.set_zone_enabled("bathroom", true)
 	LightSystem.set_zone_enabled("living", clamped_phase < 1)
@@ -82,6 +83,12 @@ func apply_phase(current_phase: int) -> void:
 	_set_level_node_visible("BathroomLampVisual", bathroom_enabled)
 	LightSystem.set_light_enabled("HallDoorLampVisual", hall_door_enabled)
 	_set_level_node_visible("HallDoorLampVisual", hall_door_enabled)
+	for corridor_light_id: String in [
+		"CarpetHallLampWest",
+		"CarpetHallLampEast",
+	]:
+		LightSystem.set_light_enabled(corridor_light_id, carpet_hall_enabled)
+		_set_level_node_visible(corridor_light_id, carpet_hall_enabled)
 	if _tv_glow != null and clamped_phase < 2:
 		apply_tv_flicker()
 	for node: Node in get_tree().get_nodes_in_group("world_switch"):

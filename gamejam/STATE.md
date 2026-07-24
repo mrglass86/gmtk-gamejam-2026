@@ -8,10 +8,13 @@ a journal.
 - Jam: GMTK26 — theme: Countdown
 - Direction: Shoulda Eaten Dinner (toddler stealth; the countdown is the
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
-- Current phase: Freeze day — feature-complete after the director's positive
-  full-play verdict.
-- Next playable checkpoint: tag the green acceptance head, export Web, validate
-  the package, and upload the prepared itch page.
+- Current phase: FROZEN — `jam-friday` tagged at `3c24c07` (2026-07-24).
+  Feature-complete, director ship-it verdict given, Claude browser-validated
+  (light-bleed fixed, zero console errors, lighting good). Game is done.
+- Remaining = all optional, zero-risk post-freeze: itch draft upload, director
+  victory-lap/sneak dial-in, crayon thumbnail, audio mix walk, fake-bounce
+  lighting polish, one outside playtester. `jam-friday` + `jam-safety-1` protect
+  the banked build.
 
 ## Working build
 

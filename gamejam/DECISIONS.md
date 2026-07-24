@@ -130,6 +130,24 @@ Record decisions another session or tool would otherwise have to rediscover.
   costs a block.
 - **Evidence / handoff:** `gamejam/PLAN.md` sections 1, 1.1, 6; lane briefs
 
+## 2026-07-24 — Lane C added: adversarial QA / playtest agent
+
+- **Decision:** Add a third Codex lane (C) dedicated to breaking the game —
+  exploits, soft-locks, edge cases, state-machine collisions — via scripted
+  adversarial headless scenarios plus a randomized monkey/fuzz bot, driving
+  REAL ticked play (the gap where `--verify-*` passes but play breaks). Lane C
+  NEVER edits gameplay; it writes test scripts (`game/tests/qa/`) and a ranked
+  report (`gamejam/qa/findings.md`); fixes route to A/B via Claude. Brief:
+  `gamejam/codex/lane-c-playtest.md`.
+- **Why:** The recurring failure mode all jam has been "green gates, broken
+  play" (deaf parent, free-win-on-catch). An adversarial tester that plays the
+  game weirdly catches what checklists and the author miss.
+- **Rejected / cut:** A Claude subagent for this (can't drive the live game
+  with ticked time the way a Codex headless run can).
+- **Owner:** Noah (runs lane C), Claude (routes findings to A/B)
+- **Revisit when:** Findings dry up, or post-submission.
+- **Evidence / handoff:** `gamejam/codex/lane-c-playtest.md`
+
 ## 2026-07-24 — SHIP-IT verdict reached; lighting-gradient ruled a renderer limit
 
 - **Decision:** The director's full-play verdict is positive and definitive:
