@@ -10,9 +10,8 @@ a journal.
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Saturday — original-audio integration, mix walk, and feel
   tuning.
-- Next playable checkpoint: B14 audio-hook integration, then director
-  acceptance of light restoration, TV listening, and the escaped-child room
-  check.
+- Next playable checkpoint: director acceptance of B14 light restoration, TV
+  listening, escaped-child room check, and parent/kid room-dwell VO timing.
 
 ## Working build
 
@@ -81,7 +80,10 @@ a journal.
   assumptions. `4e39e71` adds B14's phase-expected switch restoration, TV
   listening suppression and couch restore, punishment hall light, escaped-child
   room check, silent magenta VO icon, and rate-derived door audio controls.
-  Clean committed-tree startup plus B13/B14/A15/A16 gates pass.
+  `ccc1df5` wires parent-authored VO indicators, the parent/kid room-dwell
+  sequence, and Door-derived creak pitch/volume. Acceptance head `0bfa05e`
+  passes editor startup, game startup, and all 24 verification flags under
+  strict script-error and resource-leak checks (26/26 total).
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -91,8 +93,8 @@ a journal.
 
 ## Current focus
 
-- Lane A clears B14's two AudioDirector wiring rows, then Noah plays the B14
-  route: early-dark switch recovery, TV listening, and both crib-check branches.
+- Noah plays the B14 acceptance route: early-dark switch recovery, TV
+  listening, both crib-check branches, room-dwell VO, and rate-shaped creaks.
 
 ## Known blockers or risks
 
@@ -116,8 +118,8 @@ a journal.
   at gameplay camera scale.
 - B10 mechanically defeats the scripted sprint; director run six must judge
   whether HUNT feels threatening rather than predetermined.
-- B14 actor behavior is green, but its exact parent/kid VO pool hooks and live
-  door-creak pitch application remain open in `gamejam/WIRING.md`.
+- B14 actor and AudioDirector gates are green; the remaining risk is the
+  director's live timing/mix verdict.
 - Godot MCP for lane A: 30-minute hard abort rule (brief 9.2).
 - This Claude instance has no shell — validation runs through the web build in
   the browser pane plus Noah's terminal.

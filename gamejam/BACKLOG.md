@@ -135,14 +135,16 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       interaction HUD, TV notes, and prop silhouettes. Accept: `--verify-a16`,
       labeled capture, and 150-polygon nav.
 - [x] A16 integration — fast-forwarded to main after B13 acceptance; clean
-      editor/startup plus all 24 automated gates pass at `043e990`.
+      editor/game startup plus all 24 automated gates pass under strict
+      script-error and resource-leak checks at `0bfa05e` (26/26 total).
 - [x] B14 actor behavior — phase-expected light restoration, TV listening and
       couch restore, punishment hall light, escaped-child room check, silent
       magenta VO icon, and rate-derived door audio controls (`4e39e71`,
       `--verify-b14`).
-- [ ] B14 AudioDirector integration — lane A clears the two exact open rows in
-      `gamejam/WIRING.md`: parent-only VO/icon timing plus epilogue lines, and
-      live door-rate pitch/volume.
+- [x] B14 AudioDirector integration — parent-authored pools alone trigger the
+      magenta icon; room dwell plays parent bed-check then a three-take kid
+      protest pool; active creaks use Door-derived pitch/volume every frame
+      (`ccc1df5`, `0bfa05e`, `gamejam/WIRING.md` clear).
 - [ ] B14 director acceptance — early-dark switch is restored, TV goes fully
       off while listening and returns at the couch before phase 2, escaped
       child triggers the four-second room check, and door creak rate reads.
