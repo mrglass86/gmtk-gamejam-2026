@@ -12,7 +12,7 @@
 
 - A6: inside player holding the snack wins immediately and at expiry.
 - Lane-C `crib-margin`: 2.04 m from crib centre remains PLAYING; scenario
-  passes.
+  then moves through the open end and wins; scenario passes.
 
 ## Decision
 
@@ -22,7 +22,7 @@ containment.
 ## Next acceptance
 
 Lane C reruns `--qa-scenario=crib-margin` on the integrated head; expected
-metric is `offset=2.04 state=1`.
+metrics are outside `offset=2.04 state=1`, then inside `state=2`.
 
 ## Files
 
