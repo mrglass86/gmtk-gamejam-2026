@@ -8,7 +8,15 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Open
 
-No open requests.
+- [ ] (lane B / B15) Connect `Parent.curiosity_started(sound_position)` in
+  `AudioDirector.gd` to the short parent “hm?”/first-interest VO tell and its
+  existing magenta parent-voice indicator. It is visual/VO only: emit no
+  `NoiseSystem` event, and do not wait until the second-cue INVESTIGATE state.
+- [ ] (lane B / B15) Resolve the overlapping `BedroomDoor` and
+  `Level/KidHallSwitch` interact radii: their centers are ~1.51 m apart while
+  radii are 1.6/1.45 m, so one E press can target both. Add nearest-interactable
+  arbitration or move/tighten the switch interaction without changing its
+  ruled 1.5 click loudness unless a live source trace justifies that retune.
 
 ## Done
 

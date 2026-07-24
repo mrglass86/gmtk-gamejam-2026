@@ -558,3 +558,24 @@ Record decisions another session or tool would otherwise have to rediscover.
   priority, or pool assignment.
 - **Evidence / handoff:** `assets/voice/A15_CASTING.md`,
   `game/scripts/AudioCasting.gd`, and `--verify-audio`.
+
+## 2026-07-24 — Hearing uses bounded source bursts and two-cue interest
+
+- **Decision:** Sustained emitters count suspicion at most once per source
+  every 0.4 s, and one uninterrupted sustained burst supplies only one interest
+  cue. A first received contribution of at least 10 enters CURIOUS: stop, face
+  the source, play the parent “hm?” tell, and hold about 2 s without walking.
+  A second qualifying cue within 8 s, or any visual sighting, starts the normal
+  INVESTIGATE walk. HUNT remains immediate at 75 suspicion. Bark and toy
+  single-shots are never suppressed by the sustained-source cooldown.
+- **Why:** Door streams emit every 0.12 s and were stacking a full contribution
+  per tick, while a single sound jumping straight to a walkover denied the
+  player a readable warning beat.
+- **Rejected / cut:** Per-tick full suspicion; a single 25+ sound immediately
+  walking the parent over; globally reducing the ruled 1.5 switch click before
+  source tracing distinguishes it from the door stream.
+- **Owner:** Noah (director), lane B (hearing behavior), lane A (interaction
+  overlap follow-up)
+- **Revisit when:** The director’s B15 play finds CURIOUS too permissive, or a
+  source trace proves the switch—not the door stream—is the dominant cue.
+- **Evidence / handoff:** B15 work order and director follow-up, 2026-07-24.

@@ -4,6 +4,7 @@ class_name DinnerParent
 ## Time-indexed parent routine with investigate, found chase, and carry overrides.
 
 signal state_changed(state_name: StringName)
+signal curiosity_started(sound_position: Vector3)
 signal player_caught(catch_position: Vector3, had_snack: bool)
 signal player_deposited()
 signal light_anomaly_started(switch_id: StringName)
@@ -13,6 +14,7 @@ signal epilogue_kid_protest()
 
 enum State {
 	ROUTINE,
+	CURIOUS,
 	INVESTIGATE,
 	HUNT,
 	FOUND,
@@ -209,6 +211,12 @@ enum State {
 @export var seen_max_multiplier_distance: float = 2.5
 @export var seen_max_proximity_multiplier: float = 3.0
 
+@export_group("Hearing Interest")
+@export var hearing_source_cooldown: float = 0.4
+@export var interest_threshold: float = 10.0
+@export var curious_hold_duration: float = 2.0
+@export var interest_window_duration: float = 8.0
+
 @export_group("Investigate")
 @export var investigate_speed: float = 2.2
 @export var investigate_alert_pause: float = 0.6
@@ -285,6 +293,7 @@ enum State {
 @export_group("Debug Trace")
 @export var debug_perception_trace: bool = false
 @export var debug_perception_trace_interval: float = 0.25
+@export var debug_hearing_trace: bool = false
 
 @export_group("B6 Runtime Verification")
 @export var verify_time_scale: float = 20.0
@@ -376,6 +385,15 @@ enum State {
 @export var verify_b14_timeout: float = 20.0
 @export var verify_b14_voice_duration: float = 0.3
 
+@export_group("B15 Runtime Verification")
+@export var verify_b15_door_distance: float = 12.0
+@export var verify_b15_rush_duration: float = 1.0
+@export var verify_b15_second_cue_delay: float = 0.6
+@export var verify_b15_turn_dot: float = 0.9
+@export var verify_b15_no_walk_tolerance: float = 0.1
+@export var verify_b15_investigate_move: float = 0.25
+@export var verify_b15_timeout: float = 6.0
+
 var suspicion: float = 0.0
 
 var _state: State = State.ROUTINE
@@ -399,6 +417,14 @@ var _cone_yaw_degrees: float = 0.0
 var _moved_along_path_this_frame: bool = false
 var _heard_since_last_tick: bool = false
 var _last_known_position: Vector3
+var _hearing_elapsed: float = 0.0
+var _source_next_hearing_time: Dictionary = {}
+var _source_last_event_time: Dictionary = {}
+var _interest_window_remaining: float = 0.0
+var _interest_position: Vector3
+var _curious_elapsed: float = 0.0
+var _curiosity_count: int = 0
+var _verify_b15_counted_events: int = 0
 var _investigate_elapsed: float = 0.0
 var _investigate_look_elapsed: float = 0.0
 var _found_no_sight_elapsed: float = 0.0
@@ -472,12 +498,17 @@ func _ready() -> void:
 		_run_b13_live_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--verify-b14"):
 		_run_b14_live_verification.call_deferred()
+	if OS.get_cmdline_user_args().has("--verify-b15"):
+		_run_b15_live_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--trace-parent-perception"):
 		debug_perception_trace = true
+	if OS.get_cmdline_user_args().has("--trace-parent-hearing"):
+		debug_hearing_trace = true
 
 
 func _physics_process(delta: float) -> void:
 	_repeat_cooldown_remaining = maxf(_repeat_cooldown_remaining - delta, 0.0)
+	_update_hearing_interest(delta)
 	_moved_along_path_this_frame = false
 	_enforce_tv_listening_state()
 	_update_perception(delta)
@@ -485,6 +516,8 @@ func _physics_process(delta: float) -> void:
 	match _state:
 		State.ROUTINE:
 			_update_routine(delta)
+		State.CURIOUS:
+			_update_curious(delta)
 		State.INVESTIGATE:
 			_update_investigate(delta)
 		State.HUNT:
@@ -573,6 +606,18 @@ func _set_state(next_state: State) -> void:
 	if next_state == State.INVESTIGATE or next_state == State.HUNT:
 		_suppress_tv_for_listening()
 	state_changed.emit(get_state_name())
+
+
+func _update_hearing_interest(delta: float) -> void:
+	_hearing_elapsed += delta
+	if _interest_window_remaining <= 0.0:
+		return
+	_interest_window_remaining = maxf(
+		_interest_window_remaining - delta,
+		0.0
+	)
+	if _interest_window_remaining <= 0.0:
+		_clear_interest()
 
 
 func _finish_navigation_setup() -> void:
@@ -892,6 +937,15 @@ func _set_tv_enabled(on: bool) -> void:
 			tv_bed.play()
 	elif tv_bed.playing:
 		tv_bed.stop()
+
+
+func _update_curious(delta: float) -> void:
+	_curious_elapsed += delta
+	_face_direction(_interest_position - global_position, delta)
+	if _curious_elapsed < curious_hold_duration:
+		return
+	_set_state(State.ROUTINE)
+	_set_navigation_target(get_base_target(_get_routine_time()), true)
 
 
 func _update_investigate(delta: float) -> void:
@@ -1266,10 +1320,8 @@ func _update_perception(delta: float) -> void:
 		suspicion += seen_suspicion_per_second * _get_seen_rate_multiplier() * delta
 		if suspicion >= suspicion_max:
 			_begin_found_or_carry()
-		elif was_post_deposit:
+		elif _state != State.HUNT:
 			_begin_or_update_investigate(_last_known_position, true)
-		elif suspicion >= investigate_threshold and _state != State.HUNT:
-			_begin_or_update_investigate(_last_known_position)
 	elif not _heard_since_last_tick:
 		suspicion -= suspicion_decay_per_second * delta
 	suspicion = clampf(suspicion, 0.0, suspicion_max)
@@ -1390,18 +1442,77 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 		return
 	var distance_to_noise: float = global_position.distance_to(pos)
 	if distance_to_noise >= audible_radius:
+		_trace_hearing_event(
+			source,
+			loudness,
+			distance_to_noise,
+			0.0,
+			false,
+			false,
+			&"out_of_range"
+		)
 		return
 	var falloff: float = 1.0 - distance_to_noise / audible_radius
 	var event_contribution: float = loudness * noise_suspicion_multiplier * falloff
 	if source is DinnerPet:
 		event_contribution = maxf(event_contribution, event_alert_threshold)
+	var source_id: int = source.get_instance_id() if source != null else 0
+	var sustained_source: bool = source is DinnerDoor
+	var last_event_time: float = float(
+		_source_last_event_time.get(source_id, -INF)
+	)
+	var new_source_burst: bool = (
+		not sustained_source
+		or _hearing_elapsed - last_event_time
+		> maxf(hearing_source_cooldown, 0.0)
+	)
+	_source_last_event_time[source_id] = _hearing_elapsed
+	var counts_contribution: bool = (
+		not sustained_source
+		or _hearing_elapsed
+		>= float(_source_next_hearing_time.get(source_id, -INF))
+	)
+	_heard_since_last_tick = true
+	_last_known_position = pos
+	if not counts_contribution:
+		if _state == State.HUNT:
+			_hunt_target_position = pos
+			_hunt_no_noise_elapsed = 0.0
+			_set_navigation_target(pos, true)
+		_trace_hearing_event(
+			source,
+			loudness,
+			distance_to_noise,
+			event_contribution,
+			false,
+			new_source_burst,
+			&"source_cooldown"
+		)
+		return
+	if sustained_source:
+		_source_next_hearing_time[source_id] = (
+			_hearing_elapsed + maxf(hearing_source_cooldown, 0.0)
+		)
+	if OS.get_cmdline_user_args().has("--verify-b15"):
+		_verify_b15_counted_events += 1
 	suspicion = clampf(
 		suspicion + event_contribution,
 		0.0,
 		suspicion_max
 	)
-	_heard_since_last_tick = true
-	_last_known_position = pos
+	var qualifying_interest: bool = (
+		event_contribution >= interest_threshold
+		and new_source_burst
+	)
+	_trace_hearing_event(
+		source,
+		loudness,
+		distance_to_noise,
+		event_contribution,
+		true,
+		new_source_burst,
+		&"qualifying" if qualifying_interest else &"counted"
+	)
 	if _state == State.FOUND:
 		return
 	if _state == State.HUNT:
@@ -1415,12 +1526,67 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 	if suspicion >= hunt_threshold:
 		_clear_light_anomaly()
 		_begin_hunt(pos)
-	elif event_contribution >= event_alert_threshold:
+	elif qualifying_interest:
 		_clear_light_anomaly()
-		_begin_or_update_investigate(pos, true)
-	elif suspicion >= investigate_threshold:
+		_handle_interest_cue(pos)
+	elif suspicion >= investigate_threshold and _interest_window_remaining <= 0.0:
 		_clear_light_anomaly()
 		_begin_or_update_investigate(pos)
+
+
+func _handle_interest_cue(pos: Vector3) -> void:
+	if _state == State.INVESTIGATE:
+		_begin_or_update_investigate(pos, true)
+		return
+	if _interest_window_remaining > 0.0:
+		_clear_interest()
+		_begin_or_update_investigate(pos, true)
+		return
+	_interest_position = pos
+	_interest_window_remaining = maxf(interest_window_duration, 0.0)
+	_curious_elapsed = 0.0
+	_curiosity_count += 1
+	_set_state(State.CURIOUS)
+	curiosity_started.emit(pos)
+
+
+func _clear_interest() -> void:
+	_interest_window_remaining = 0.0
+	_curious_elapsed = 0.0
+
+
+func _trace_hearing_event(
+	source: Node,
+	loudness: float,
+	distance_to_noise: float,
+	contribution: float,
+	counted: bool,
+	new_burst: bool,
+	result: StringName
+) -> void:
+	if not debug_hearing_trace:
+		return
+	var source_name: String = "<null>"
+	if source != null:
+		source_name = str(source.name)
+	print(
+		(
+			"Parent hearing: source=%s loudness=%.2f distance=%.2f "
+			+ "contribution=%.1f counted=%s new_burst=%s result=%s "
+			+ "state=%s suspicion=%.1f"
+		)
+		% [
+			source_name,
+			loudness,
+			distance_to_noise,
+			contribution,
+			counted,
+			new_burst,
+			result,
+			get_state_name(),
+			suspicion,
+		]
+	)
 
 
 func _is_post_deposit_state() -> bool:
@@ -1444,6 +1610,7 @@ func _begin_or_update_investigate(
 ) -> void:
 	if not ignore_repeat_cooldown and _is_repeat_target_suppressed(target):
 		return
+	_clear_interest()
 	_last_known_position = target
 	if _state == State.INVESTIGATE:
 		_set_navigation_target(target, true)
@@ -1457,6 +1624,7 @@ func _begin_or_update_investigate(
 
 func _begin_hunt(target: Vector3) -> void:
 	_clear_light_anomaly()
+	_clear_interest()
 	_hunt_target_position = target
 	_last_known_position = target
 	_hunt_no_noise_elapsed = 0.0
@@ -1504,6 +1672,7 @@ func _begin_found() -> void:
 		return
 	_cancel_glance()
 	_clear_light_anomaly()
+	_clear_interest()
 	suspicion = suspicion_max
 	_last_known_position = _player.global_position
 	_found_no_sight_elapsed = 0.0
@@ -1525,6 +1694,7 @@ func _begin_carry() -> void:
 		return
 	if global_position.distance_to(_player.global_position) > grab_distance:
 		return
+	_clear_interest()
 	var catch_position: Vector3 = _player.global_position
 	var had_snack: bool = _player.carrying_snack
 	if had_snack:
@@ -1626,6 +1796,8 @@ func _update_readability() -> void:
 
 func _get_current_cone_angle() -> float:
 	match _state:
+		State.CURIOUS:
+			return investigate_cone_angle_degrees
 		State.INVESTIGATE:
 			return investigate_cone_angle_degrees
 		State.HUNT:
@@ -2024,6 +2196,7 @@ func _run_b7_verification() -> void:
 		global_position = verify_bark_parent_position
 		_state = State.ROUTINE
 		suspicion = 0.0
+		_reset_hearing_interest_for_verification()
 		_has_checked_position = false
 		_repeat_cooldown_remaining = 0.0
 		_set_navigation_target(global_position, true)
@@ -2234,7 +2407,7 @@ func _run_b8_live_verification() -> void:
 		and GameClock.running
 	)
 
-	var dog_bark_investigated: bool = false
+	var dog_bark_interested: bool = false
 	var dog_bark_suspicion: float = 0.0
 	if pet != null and _player != null:
 		_player.set_physics_process(false)
@@ -2242,6 +2415,7 @@ func _run_b8_live_verification() -> void:
 		global_position = verify_bark_parent_position
 		_state = State.ROUTINE
 		suspicion = 0.0
+		_reset_hearing_interest_for_verification()
 		_has_checked_position = false
 		_repeat_cooldown_remaining = 0.0
 		_set_navigation_target(global_position, true)
@@ -2255,24 +2429,29 @@ func _run_b8_live_verification() -> void:
 		)
 		pet.bark()
 		dog_bark_suspicion = suspicion
-		dog_bark_investigated = _state == State.INVESTIGATE
+		dog_bark_interested = (
+			_state == State.CURIOUS
+			and _last_known_position.distance_to(pet.global_position)
+			<= routine_repath_distance
+		)
 		NoiseSystem.unregister_ambient_source(verify_bark_mask_id)
 
-	var toy_investigated: bool = false
+	var toy_interested: bool = false
 	var toy_suspicion: float = 0.0
 	var toy_position: Vector3 = Vector3.ZERO
 	if _player != null:
 		global_position = Vector3(0.0, verify_carry_parent_position.y, 0.0)
 		_state = State.ROUTINE
 		suspicion = 0.0
+		_reset_hearing_interest_for_verification()
 		_has_checked_position = false
 		_repeat_cooldown_remaining = 0.0
 		_set_navigation_target(global_position, true)
 		toy_position = global_position + Vector3.RIGHT * verify_toy_event_distance
 		NoiseSystem.emit_noise(toy_position, verify_toy_event_loudness, _player)
 		toy_suspicion = suspicion
-		toy_investigated = (
-			_state == State.INVESTIGATE
+		toy_interested = (
+			_state == State.CURIOUS
 			and _last_known_position.distance_to(toy_position)
 			<= routine_repath_distance
 		)
@@ -2325,8 +2504,8 @@ func _run_b8_live_verification() -> void:
 		and reached_kitchen
 		and _verify_b8_door_creak_heard
 		and door_max_reopen_openness >= post_deposit_reopen_openness
-		and dog_bark_investigated
-		and toy_investigated
+		and dog_bark_interested
+		and toy_interested
 		and decay_observed
 	)
 	print(
@@ -2362,8 +2541,8 @@ func _run_b8_live_verification() -> void:
 		"B8 capture epilogue skipped reclose or kitchen."
 	)
 	assert(_verify_b8_door_creak_heard, "B8 slow peek-open emitted no door creak.")
-	assert(dog_bark_investigated, "B8 dog bark did not immediately investigate.")
-	assert(toy_investigated, "B8 nearby toy event did not immediately investigate.")
+	assert(dog_bark_interested, "B8 dog bark did not trigger first-cue curiosity.")
+	assert(toy_interested, "B8 nearby toy event did not trigger first-cue curiosity.")
 	assert(decay_observed, "B8 suspicion did not decay at 5 points per second.")
 	print("B8 live SceneTree verification passed.")
 
@@ -2397,9 +2576,9 @@ func _run_b9_live_verification() -> void:
 		pet.bark()
 	await get_tree().physics_frame
 	var far_bark_suspicion: float = suspicion
-	var far_bark_investigated: bool = (
+	var far_bark_interested: bool = (
 		pet != null
-		and _state == State.INVESTIGATE
+		and _state == State.CURIOUS
 		and _flat_distance(_last_known_position, far_bark_position)
 		<= routine_repath_distance
 	)
@@ -2670,7 +2849,7 @@ func _run_b9_live_verification() -> void:
 		temporary_bowl.queue_free()
 
 	var verification_passed: bool = (
-		far_bark_investigated
+		far_bark_interested
 		and far_run_ignored
 		and bathroom_row_found
 		and bathroom_closed_on_arrival
@@ -2721,7 +2900,7 @@ func _run_b9_live_verification() -> void:
 	)
 	await _settle_verification_audio()
 	get_tree().quit(0 if verification_passed else 1)
-	assert(far_bark_investigated, "B9 14 m dog bark did not investigate.")
+	assert(far_bark_interested, "B9 14 m dog bark did not trigger curiosity.")
 	assert(far_run_ignored, "B9 10 m run-hardwood event reached the parent.")
 	assert(bathroom_row_found, "B9 routine has no bathroom door row.")
 	assert(bathroom_closed_on_arrival, "B9 bathroom door did not close on arrival.")
@@ -2914,6 +3093,7 @@ func _run_b10_live_verification() -> void:
 	var glance_started: bool = false
 	var glance_detected_player: bool = false
 	var glance_returned: bool = false
+	var glance_escalated: bool = false
 	var glance_start_time: float = INF
 	var glance_offset_degrees: float = 0.0
 	var glance_max_suspicion: float = 0.0
@@ -2970,10 +3150,13 @@ func _run_b10_live_verification() -> void:
 				> brightness_threshold
 			)
 			glance_max_suspicion = maxf(glance_max_suspicion, suspicion)
-			if suspicion >= verify_b10_glance_detection_min:
+			if suspicion > 0.0 or _state == State.INVESTIGATE:
 				glance_detected_player = true
+				glance_escalated = _state == State.INVESTIGATE
 				_player.global_position = verify_observer_parking_position
 				glance_player_planted = false
+				if glance_escalated:
+					break
 		if (
 			glance_started
 			and glance_detected_player
@@ -3016,14 +3199,15 @@ func _run_b10_live_verification() -> void:
 		and glance_offset_degrees <= glance_max_offset_degrees
 		and glance_player_lit
 		and glance_detected_player
-		and glance_returned
+		and (glance_returned or glance_escalated)
 	)
 	var verification_passed: bool = sprint_gate_passed and glance_gate_passed
 	print(
 		(
 			"B10 live metrics: sprint=%.2f s, HUNT at %.2f s, "
 			+ "return closest=%.2f m, hunt exit=%.2f s; "
-			+ "glance at %.2f s / %.1f deg, suspicion=%.1f, returned=%s."
+			+ "glance at %.2f s / %.1f deg, suspicion=%.1f, "
+			+ "returned=%s, escalated=%s."
 		)
 		% [
 			sprint_elapsed,
@@ -3034,6 +3218,7 @@ func _run_b10_live_verification() -> void:
 			glance_offset_degrees,
 			glance_max_suspicion,
 			glance_returned,
+			glance_escalated,
 		]
 	)
 	await _settle_verification_audio()
@@ -3062,7 +3247,10 @@ func _run_b10_live_verification() -> void:
 		glance_player_lit and glance_detected_player,
 		"B10 glance did not see the lit player behind the couch."
 	)
-	assert(glance_returned, "B10 parent did not return to the dwell facing.")
+	assert(
+		glance_returned or glance_escalated,
+		"B10 glance neither returned nor escalated after detection."
+	)
 	print("B10 live SceneTree verification passed.")
 
 
@@ -3301,7 +3489,8 @@ func _run_b13_live_verification() -> void:
 		loud_hearing_registered
 		and loud_hearing_aborted_epilogue
 		and (
-			loud_hearing_abort_state == &"INVESTIGATE"
+			loud_hearing_abort_state == &"CURIOUS"
+			or loud_hearing_abort_state == &"INVESTIGATE"
 			or loud_hearing_abort_state == &"HUNT"
 			or loud_hearing_abort_state == &"FOUND"
 		)
@@ -3696,6 +3885,348 @@ func _run_b14_live_verification() -> void:
 		"B14 parent VO icon was missing or emitted gameplay noise."
 	)
 	print("B14 live SceneTree verification passed.")
+
+
+func _run_b15_live_verification() -> void:
+	var pet: DinnerPet = get_parent().get_node_or_null("Pet") as DinnerPet
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var original_debug_hearing: bool = debug_hearing_trace
+	var original_routine_rows: Array[Dictionary] = routine_rows.duplicate(true)
+	var player_was_processing: bool = (
+		_player != null and _player.is_physics_processing()
+	)
+	var player_was_input_locked: bool = (
+		_player != null and _player.input_locked
+	)
+	var player_start_position: Vector3 = (
+		_player.global_position if _player != null else Vector3.ZERO
+	)
+	var pet_was_processing: bool = (
+		pet != null and pet.is_physics_processing()
+	)
+	var original_door_duration: float = (
+		_bedroom_door.sneak_open_duration
+		if _bedroom_door != null
+		else 0.0
+	)
+	var original_door_openness: float = (
+		_bedroom_door.openness if _bedroom_door != null else 0.0
+	)
+
+	Engine.time_scale = maxf(verify_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(verify_physics_ticks_per_second, 60)
+	debug_hearing_trace = true
+	if _player != null:
+		if _player.is_attached_to_carrier():
+			_player.detach_from_carrier(player_start_position)
+		_player.set_input_locked(true)
+		_player.set_physics_process(false)
+		_player.global_position = verify_observer_parking_position
+	if pet != null:
+		pet.set_physics_process(false)
+	for _frame_index in range(verify_warmup_frames):
+		await get_tree().physics_frame
+
+	var first_door_curious: bool = false
+	var first_door_stayed_put: bool = false
+	var first_door_turned: bool = false
+	var first_door_max_displacement: float = 0.0
+	var first_door_counted_events: int = 0
+	var first_door_suspicion: float = 0.0
+	var second_door_investigated: bool = false
+	var second_door_movement: float = 0.0
+	var switch_contribution_at_door_test: float = 0.0
+	if _bedroom_door != null:
+		var from_door: Vector3 = tv_couch_position - _bedroom_door.global_position
+		from_door.y = 0.0
+		if from_door.length_squared() <= 0.0:
+			from_door = Vector3.RIGHT
+		var door_test_position: Vector3 = (
+			_bedroom_door.global_position
+			+ from_door.normalized() * verify_b15_door_distance
+		)
+		door_test_position.y = verify_carry_parent_position.y
+		routine_rows = [
+			{
+				"time": 0.0,
+				"position": door_test_position,
+				"dwell": GameClock.run_length,
+				"facing": -from_door.normalized(),
+			},
+		]
+		global_position = door_test_position
+		rotation.y = atan2(
+			-from_door.normalized().x,
+			-from_door.normalized().z
+		)
+		_cone_yaw_degrees = 0.0
+		_state = State.ROUTINE
+		suspicion = 0.0
+		_reset_hearing_interest_for_verification()
+		_set_navigation_target(global_position, true)
+		_bedroom_door.close_immediately()
+		_bedroom_door.sneak_open_duration = maxf(
+			_bedroom_door.rush_open_duration,
+			0.001
+		)
+		GameClock.start()
+		var first_rush_start: Vector3 = global_position
+		var first_count_start: int = _verify_b15_counted_events
+		_bedroom_door.open_to(1.0)
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			first_door_max_displacement = maxf(
+				first_door_max_displacement,
+				_flat_distance(global_position, first_rush_start)
+			)
+			first_door_suspicion = maxf(first_door_suspicion, suspicion)
+			if (
+				GameClock.run_length - GameClock.time_remaining
+				>= verify_b15_rush_duration
+			):
+				break
+		first_door_counted_events = (
+			_verify_b15_counted_events - first_count_start
+		)
+		first_door_curious = _state == State.CURIOUS
+		var first_delay_start: float = (
+			GameClock.run_length - GameClock.time_remaining
+		)
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			first_door_max_displacement = maxf(
+				first_door_max_displacement,
+				_flat_distance(global_position, first_rush_start)
+			)
+			if (
+				GameClock.run_length - GameClock.time_remaining
+				- first_delay_start
+				>= verify_b15_second_cue_delay
+			):
+				break
+		var toward_door: Vector3 = (
+			_bedroom_door.global_position - global_position
+		)
+		toward_door.y = 0.0
+		var parent_forward: Vector3 = -global_transform.basis.z
+		parent_forward.y = 0.0
+		first_door_turned = (
+			parent_forward.normalized().dot(toward_door.normalized())
+			>= verify_b15_turn_dot
+		)
+		first_door_stayed_put = (
+			first_door_max_displacement <= verify_b15_no_walk_tolerance
+			and _state == State.CURIOUS
+			and suspicion < hunt_threshold
+		)
+
+		_bedroom_door.close_immediately()
+		var second_rush_start: Vector3 = global_position
+		var second_rush_start_time: float = (
+			GameClock.run_length - GameClock.time_remaining
+		)
+		_bedroom_door.open_to(1.0)
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			second_door_investigated = (
+				second_door_investigated
+				or _state == State.INVESTIGATE
+			)
+			second_door_movement = maxf(
+				second_door_movement,
+				_flat_distance(global_position, second_rush_start)
+			)
+			var second_elapsed: float = (
+				GameClock.run_length - GameClock.time_remaining
+				- second_rush_start_time
+			)
+			if (
+				second_door_investigated
+				and second_door_movement >= verify_b15_investigate_move
+			):
+				break
+			if second_elapsed >= verify_b15_timeout:
+				break
+
+		if _kid_hall_switch != null:
+			var switch_radius: float = minf(
+				1.5 * ring_radius_per_loudness,
+				ring_radius_cap
+			)
+			var switch_distance: float = door_test_position.distance_to(
+				_kid_hall_switch.global_position
+			)
+			if switch_distance < switch_radius:
+				switch_contribution_at_door_test = (
+					1.5
+					* noise_suspicion_multiplier
+					* (1.0 - switch_distance / switch_radius)
+				)
+		_bedroom_door.close_immediately()
+
+	var first_bark_curious: bool = false
+	var first_bark_stayed_put: bool = false
+	var first_bark_turned: bool = false
+	var first_bark_suspicion: float = 0.0
+	var first_bark_displacement: float = 0.0
+	var second_bark_investigated: bool = false
+	var second_bark_movement: float = 0.0
+	if pet != null:
+		var bark_parent_position: Vector3 = verify_bark_parent_position
+		var bark_position: Vector3 = verify_bark_pet_position
+		routine_rows = [
+			{
+				"time": 0.0,
+				"position": bark_parent_position,
+				"dwell": GameClock.run_length,
+				"facing": Vector3.LEFT,
+			},
+		]
+		global_position = bark_parent_position
+		rotation.y = 0.0
+		pet.global_position = bark_position
+		_state = State.ROUTINE
+		suspicion = 0.0
+		_reset_hearing_interest_for_verification()
+		_set_navigation_target(global_position, true)
+		GameClock.start()
+		var first_bark_start: Vector3 = global_position
+		pet.bark()
+		first_bark_curious = _state == State.CURIOUS
+		first_bark_suspicion = suspicion
+		var bark_delay_start: float = (
+			GameClock.run_length - GameClock.time_remaining
+		)
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			if (
+				GameClock.run_length - GameClock.time_remaining
+				- bark_delay_start
+				>= verify_b15_second_cue_delay
+			):
+				break
+		first_bark_stayed_put = (
+			_flat_distance(global_position, first_bark_start)
+			<= verify_b15_no_walk_tolerance
+		)
+		first_bark_displacement = _flat_distance(
+			global_position,
+			first_bark_start
+		)
+		var toward_bark: Vector3 = bark_position - global_position
+		toward_bark.y = 0.0
+		var bark_forward: Vector3 = -global_transform.basis.z
+		bark_forward.y = 0.0
+		first_bark_turned = (
+			bark_forward.normalized().dot(toward_bark.normalized())
+			>= verify_b15_turn_dot
+		)
+		var second_bark_start: Vector3 = global_position
+		var second_bark_start_time: float = (
+			GameClock.run_length - GameClock.time_remaining
+		)
+		pet.bark()
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			second_bark_investigated = (
+				second_bark_investigated
+				or _state == State.INVESTIGATE
+			)
+			second_bark_movement = maxf(
+				second_bark_movement,
+				_flat_distance(global_position, second_bark_start)
+			)
+			var bark_elapsed: float = (
+				GameClock.run_length - GameClock.time_remaining
+				- second_bark_start_time
+			)
+			if (
+				second_bark_investigated
+				and second_bark_movement >= verify_b15_investigate_move
+			):
+				break
+			if bark_elapsed >= verify_b15_timeout:
+				break
+
+	var door_gate_passed: bool = (
+		first_door_curious
+		and first_door_stayed_put
+		and first_door_turned
+		and first_door_counted_events >= 2
+		and first_door_counted_events <= 4
+		and second_door_investigated
+		and second_door_movement >= verify_b15_investigate_move
+	)
+	var bark_gate_passed: bool = (
+		first_bark_curious
+		and first_bark_stayed_put
+		and first_bark_turned
+		and second_bark_investigated
+		and second_bark_movement >= verify_b15_investigate_move
+	)
+	var verification_passed: bool = door_gate_passed and bark_gate_passed
+
+	GameClock.running = false
+	routine_rows = original_routine_rows
+	debug_hearing_trace = original_debug_hearing
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+	if _bedroom_door != null:
+		_bedroom_door.sneak_open_duration = original_door_duration
+		_bedroom_door.close_immediately()
+		_bedroom_door.openness = original_door_openness
+	if _player != null:
+		_player.global_position = player_start_position
+		_player.set_input_locked(player_was_input_locked)
+		_player.set_physics_process(player_was_processing)
+	if pet != null:
+		pet.set_physics_process(pet_was_processing)
+
+	print(
+		(
+			"B15 live metrics: first door state=%s, counted=%d, "
+			+ "suspicion=%.1f, turn=%s, drift=%.3f m; second door "
+			+ "investigate=%s, move=%.2f m; switch-at-test=%.1f; "
+			+ "first bark state=%s, suspicion=%.1f, turn=%s, "
+			+ "drift=%.3f m; second bark investigate=%s, move=%.2f m."
+		)
+		% [
+			&"CURIOUS" if first_door_curious else get_state_name(),
+			first_door_counted_events,
+			first_door_suspicion,
+			first_door_turned,
+			first_door_max_displacement,
+			second_door_investigated,
+			second_door_movement,
+			switch_contribution_at_door_test,
+			&"CURIOUS" if first_bark_curious else get_state_name(),
+			first_bark_suspicion,
+			first_bark_turned,
+			first_bark_displacement,
+			second_bark_investigated,
+			second_bark_movement,
+		]
+	)
+	await _settle_verification_audio()
+	get_tree().quit(0 if verification_passed else 1)
+	assert(
+		door_gate_passed,
+		"B15 rushed door did not produce CURIOUS then INVESTIGATE."
+	)
+	assert(
+		bark_gate_passed,
+		"B15 two barks did not produce CURIOUS then INVESTIGATE."
+	)
+	print("B15 live SceneTree verification passed.")
+
+
+func _reset_hearing_interest_for_verification() -> void:
+	_source_next_hearing_time.clear()
+	_source_last_event_time.clear()
+	_clear_interest()
+	_curiosity_count = 0
+	_verify_b15_counted_events = 0
 
 
 func _settle_verification_audio() -> void:

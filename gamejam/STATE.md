@@ -10,8 +10,8 @@ a journal.
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Saturday — original-audio integration, mix walk, and feel
   tuning.
-- Next playable checkpoint: director acceptance of B14 light restoration, TV
-  listening, escaped-child room check, and parent/kid room-dwell VO timing.
+- Next playable checkpoint: B15 hearing acceptance — first door rush/bark
+  produces a stationary CURIOUS turn; the second cue produces INVESTIGATE.
 
 ## Working build
 
@@ -93,8 +93,8 @@ a journal.
 
 ## Current focus
 
-- Noah plays the B14 acceptance route: early-dark switch recovery, TV
-  listening, both crib-check branches, room-dwell VO, and rate-shaped creaks.
+- Lane B ships B15's sustained-source cooldown and two-cue interest model,
+  including a source-labelled live door/switch trace.
 
 ## Known blockers or risks
 
