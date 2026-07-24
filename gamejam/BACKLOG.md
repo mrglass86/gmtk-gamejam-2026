@@ -121,11 +121,11 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 ## Must — Saturday regression gate
 
-- [ ] B15 hearing model — sustained sources count at most once per 0.4 s and
+- [x] B15 hearing model — sustained sources count at most once per 0.4 s and
       one uninterrupted burst supplies one cue; first 10+ contribution enters
       stationary CURIOUS for ~2 s; second cue inside 8 s or sight enters
       INVESTIGATE; HUNT remains 75. Accept: live 12 m bedroom-door and two-bark
-      sequences, with source-labelled metrics.
+      sequences, with source-labelled metrics (`5e84967`, `--verify-b15`).
 - [x] B13 detection/grab regressions — perception remains active throughout
       the post-deposit epilogue and aborts it on sight or loud hearing;
       `grab_distance` is 1.5 m and FOUND lunges directly inside 2.5 m with

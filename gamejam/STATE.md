@@ -11,7 +11,8 @@ a journal.
 - Current phase: Saturday — original-audio integration, mix walk, and feel
   tuning.
 - Next playable checkpoint: B15 hearing acceptance — first door rush/bark
-  produces a stationary CURIOUS turn; the second cue produces INVESTIGATE.
+  produces a stationary CURIOUS turn; the second cue produces INVESTIGATE,
+  with the “hm?” VO fold-in active.
 
 ## Working build
 
@@ -84,6 +85,10 @@ a journal.
   sequence, and Door-derived creak pitch/volume. Acceptance head `0bfa05e`
   passes editor startup, game startup, and all 24 verification flags under
   strict script-error and resource-leak checks (26/26 total).
+  `5e84967` adds B15's per-door-source 0.4 s hearing cooldown, one-cue burst
+  grouping, stationary CURIOUS turn, 8 s two-cue escalation window, immediate
+  visual escalation, source trace, and live door/bark gate. Exact committed
+  startup plus B6–B10/B12–B15 pass.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -93,8 +98,9 @@ a journal.
 
 ## Current focus
 
-- Lane B ships B15's sustained-source cooldown and two-cue interest model,
-  including a source-labelled live door/switch trace.
+- Lane A folds B15's `curiosity_started` signal into the short parent “hm?” VO
+  and resolves the bedroom-door/kid-hall-switch interaction overlap; then Noah
+  runs the B15 acceptance walk.
 
 ## Known blockers or risks
 
