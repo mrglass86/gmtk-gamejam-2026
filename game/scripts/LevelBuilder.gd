@@ -22,6 +22,7 @@ const WORLD_SWITCH_SCRIPT: Script = preload("res://scripts/WorldSwitch.gd")
 @export var omni_shadow_blur: float = 2.0
 @export_range(0.0, 1.0) var shadow_opacity: float = 0.8
 @export var wall_shadow_occluder_height: float = 5.2
+@export var doorway_shadow_opening_height: float = 2.4
 
 @export_group("Practical Light Fixtures")
 @export var fixture_stand_color: Color = Color("#3c4654")
@@ -96,6 +97,29 @@ func _build_walls() -> void:
 	_add_wall("LVertical", Vector3(-4.25, wall_height * 0.5, 2.4875), Vector3(wall_thickness, wall_height, 2.175))
 	_add_wall("LHorizontal", Vector3(0.3125, wall_height * 0.5, 3.45), Vector3(9.375, wall_height, wall_thickness))
 	_add_wall("PantryWest", Vector3(11.2, wall_height * 0.5, 4.3625), Vector3(wall_thickness, wall_height, 4.325))
+	# The low greybox walls need an invisible upper frame around each opening.
+	# Segment occluders stop light at solid wall; these lintels stop a 4.5 m
+	# source from treating a doorway as an unbounded floor-to-ceiling hole.
+	_add_doorway_shadow_lintel(
+		"KidDoorShadowLintel",
+		Vector3(-12.75, 0.0, -1.5),
+		Vector2(2.3, wall_thickness)
+	)
+	_add_doorway_shadow_lintel(
+		"BathroomDoorShadowLintel",
+		Vector3(-5.65, 0.0, -1.5),
+		Vector2(2.95, wall_thickness)
+	)
+	_add_doorway_shadow_lintel(
+		"AdultDoorShadowLintel",
+		Vector3(-12.75, 0.0, 1.5),
+		Vector2(2.3, wall_thickness)
+	)
+	_add_doorway_shadow_lintel(
+		"PantryDoorShadowLintel",
+		Vector3(13.1, 0.0, 2.2),
+		Vector2(3.55, wall_thickness)
+	)
 
 
 func _build_props() -> void:
@@ -336,22 +360,63 @@ func _add_wall_shadow_occluder(
 	wall: StaticBody3D,
 	dimensions: Vector3
 ) -> void:
+	var resolved_height: float = maxf(
+		wall_shadow_occluder_height,
+		omni_source_height + 0.7
+	)
 	var occluder: MeshInstance3D = MeshInstance3D.new()
 	occluder.name = "ShadowOccluder"
 	occluder.position.y = (
-		wall_shadow_occluder_height - dimensions.y
+		resolved_height - dimensions.y
 	) * 0.5
 	occluder.cast_shadow = (
 		GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 	)
+	occluder.add_to_group("wall_shadow_occluder")
+	occluder.set_meta("wall_name", wall.name)
 	var occluder_mesh: BoxMesh = BoxMesh.new()
 	occluder_mesh.size = Vector3(
 		dimensions.x,
-		wall_shadow_occluder_height,
+		resolved_height,
 		dimensions.z
 	)
 	occluder.mesh = occluder_mesh
 	wall.add_child(occluder)
+
+
+func _add_doorway_shadow_lintel(
+	node_name: String,
+	floor_center: Vector3,
+	opening_size: Vector2
+) -> void:
+	var resolved_height: float = maxf(
+		wall_shadow_occluder_height,
+		omni_source_height + 0.7
+	)
+	var opening_height: float = clampf(
+		doorway_shadow_opening_height,
+		wall_height,
+		resolved_height - 0.1
+	)
+	var lintel: MeshInstance3D = MeshInstance3D.new()
+	lintel.name = node_name
+	lintel.position = Vector3(
+		floor_center.x,
+		(opening_height + resolved_height) * 0.5,
+		floor_center.z
+	)
+	lintel.cast_shadow = (
+		GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+	)
+	lintel.add_to_group("doorway_shadow_lintel")
+	var lintel_mesh: BoxMesh = BoxMesh.new()
+	lintel_mesh.size = Vector3(
+		opening_size.x,
+		resolved_height - opening_height,
+		opening_size.y
+	)
+	lintel.mesh = lintel_mesh
+	add_child(lintel)
 
 
 func _add_prop(node_name: String, center: Vector3, dimensions: Vector3, color: Color) -> void:

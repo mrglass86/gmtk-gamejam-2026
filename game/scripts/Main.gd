@@ -90,6 +90,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a20"):
 		_verify_a20_snack_identity()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a21"):
+		_verify_a21_light_and_switch_support()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -673,6 +676,135 @@ func _verify_a20_snack_identity() -> void:
 	for settle_frame: int in range(8):
 		await get_tree().process_frame
 	await _settle_verification_audio()
+	get_tree().quit()
+
+
+func _verify_a21_light_and_switch_support() -> void:
+	for settle_frame: int in range(12):
+		await get_tree().physics_frame
+	var level: Node3D = $Level as Node3D
+	var required_height: float = maxf(
+		float(level.get("wall_shadow_occluder_height")),
+		float(level.get("omni_source_height")) + 0.7
+	)
+	var wall_names: PackedStringArray = [
+		"NorthWall",
+		"SouthWall",
+		"WestWall",
+		"EastWall",
+		"KidSouthA",
+		"KidSouthB",
+		"KidBathDivider",
+		"BathLivingDivider",
+		"DogKitchenDivider",
+		"AdultNorthA",
+		"AdultNorthB",
+		"AdultEast",
+		"LVertical",
+		"LHorizontal",
+		"PantryWest",
+	]
+	for wall_name: String in wall_names:
+		var wall: StaticBody3D = level.get_node(wall_name) as StaticBody3D
+		var visible_wall: MeshInstance3D = wall.get_child(0) as MeshInstance3D
+		var occluder: MeshInstance3D = (
+			wall.get_node("ShadowOccluder") as MeshInstance3D
+		)
+		var wall_aabb: AABB = (
+			visible_wall.global_transform * visible_wall.get_aabb()
+		)
+		var occluder_aabb: AABB = (
+			occluder.global_transform * occluder.get_aabb()
+		)
+		assert(occluder.is_in_group("wall_shadow_occluder"))
+		assert(
+			occluder.cast_shadow
+			== GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+		)
+		assert(
+			is_equal_approx(occluder_aabb.position.y, 0.0)
+			and occluder_aabb.end.y >= required_height - 0.001,
+			"%s shadow blocker does not span floor-to-source." % wall_name
+		)
+		assert(
+			is_equal_approx(occluder_aabb.position.x, wall_aabb.position.x)
+			and is_equal_approx(occluder_aabb.end.x, wall_aabb.end.x)
+			and is_equal_approx(occluder_aabb.position.z, wall_aabb.position.z)
+			and is_equal_approx(occluder_aabb.end.z, wall_aabb.end.z),
+			"%s shadow blocker does not cover its visible wall." % wall_name
+		)
+
+	var lintel_rows: Array[Dictionary] = [
+		{"name": "KidDoorShadowLintel", "width": 2.3},
+		{"name": "BathroomDoorShadowLintel", "width": 2.95},
+		{"name": "AdultDoorShadowLintel", "width": 2.3},
+		{"name": "PantryDoorShadowLintel", "width": 3.55},
+	]
+	for lintel_row: Dictionary in lintel_rows:
+		var lintel: MeshInstance3D = level.get_node(
+			lintel_row["name"]
+		) as MeshInstance3D
+		var lintel_aabb: AABB = lintel.global_transform * lintel.get_aabb()
+		assert(lintel.is_in_group("doorway_shadow_lintel"))
+		assert(
+			lintel.cast_shadow
+			== GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+		)
+		assert(
+			is_equal_approx(
+				lintel_aabb.position.y,
+				float(level.get("doorway_shadow_opening_height"))
+			)
+			and lintel_aabb.end.y >= required_height - 0.001
+		)
+		assert(
+			is_equal_approx(
+				lintel_aabb.size.x,
+				float(lintel_row["width"])
+			)
+		)
+
+	var kid_wall_occluder: MeshInstance3D = (
+		$Level/KidSouthB/ShadowOccluder as MeshInstance3D
+	)
+	assert(
+		(kid_wall_occluder.global_transform * kid_wall_occluder.get_aabb()).end.y
+		> ($Level/HallDoorLampVisual/Light as OmniLight3D).global_position.y
+	)
+
+	var switch_count: int = 0
+	for switch_node: Node in get_tree().get_nodes_in_group("world_switch"):
+		var wall_switch: DinnerWorldSwitch = switch_node as DinnerWorldSwitch
+		var nearest: Dictionary = LightSystem.nearest_switch_to(
+			wall_switch.global_position
+		)
+		assert(nearest["switch"] == wall_switch)
+		assert(
+			nearest["light_id"]
+			== StringName(wall_switch.target_light_id)
+		)
+		assert(is_zero_approx(float(nearest["distance"])))
+		switch_count += 1
+	assert(switch_count == 5)
+
+	var navigation_region: NavigationRegion3D = (
+		$Level/NavigationRegion3D as NavigationRegion3D
+	)
+	var polygon_count: int = (
+		navigation_region.navigation_mesh.get_polygon_count()
+	)
+	assert(polygon_count == 164)
+	print(
+		"A21 metrics: %d floor-to-%.1f m wall blockers, %d doorway lintels, "
+		% [wall_names.size(), required_height, lintel_rows.size()]
+		+ "%d nearest-switch mappings; nav=%d polygons."
+		% [switch_count, polygon_count]
+	)
+	print(
+		"A21 verification passed: solid inter-room walls block above-source "
+		+ "light, doorway openings retain spill, and LightSystem resolves the "
+		+ "nearest switch plus controlled light id."
+	)
 	get_tree().quit()
 
 
@@ -2508,6 +2640,12 @@ func _capture_layout(capture_path: String) -> void:
 	var capture_a19_geometry: bool = OS.get_cmdline_user_args().has(
 		"--capture-a19-geometry"
 	)
+	var capture_a21_before: bool = OS.get_cmdline_user_args().has(
+		"--capture-a21-before"
+	)
+	var capture_a21_after: bool = OS.get_cmdline_user_args().has(
+		"--capture-a21-after"
+	)
 	if (
 		capture_a10_fridge_open
 		or capture_a10_fridge_closed
@@ -2528,6 +2666,8 @@ func _capture_layout(capture_path: String) -> void:
 		_configure_a18_wall_blocking_capture()
 	if capture_a19_geometry:
 		_configure_a19_geometry_capture()
+	if capture_a21_before or capture_a21_after:
+		_configure_a21_wall_blocking_capture(capture_a21_before)
 	for frame: int in range(capture_warmup_frames):
 		await get_tree().process_frame
 	if capture_a19_geometry:
@@ -2548,6 +2688,79 @@ func _capture_layout(capture_path: String) -> void:
 	else:
 		print("A0 layout capture saved: %s" % capture_path)
 	get_tree().quit()
+
+
+func _configure_a21_wall_blocking_capture(is_before: bool) -> void:
+	var phase_director: PhaseDirector = $PhaseDirector as PhaseDirector
+	phase_director.set_process(false)
+	phase_director.set_physics_process(false)
+
+	for fixture_name: String in [
+		"KidLampVisual",
+		"LivingLampVisual",
+		"KitchenLampVisual",
+		"MidLampVisual",
+		"AlcoveLampVisual",
+		"BathroomLampVisual",
+	]:
+		var fixture: Node3D = $Level.get_node(fixture_name) as Node3D
+		fixture.visible = false
+	for area_name: String in ["TVGlow", "WindowGlow", "DoorStripGlow"]:
+		($Level.get_node(area_name) as Light3D).visible = false
+	($Level/KidHallSwitch as DinnerWorldSwitch).set_state(true, false)
+
+	var bedroom_door: DinnerDoor = $BedroomDoor as DinnerDoor
+	bedroom_door.openness = 1.0
+	bedroom_door.call("_apply_visual")
+
+	var camera_target: Vector3 = Vector3(-10.8, 0.0, -1.5)
+	var camera_rig: Node3D = $CameraRig as Node3D
+	camera_rig.global_position = camera_target + Vector3(0.0, 18.0, 7.0)
+	camera_rig.look_at(camera_target, Vector3.UP)
+	($CameraRig/OrthoCamera as Camera3D).size = 10.5
+
+	var proof_layer: CanvasLayer = CanvasLayer.new()
+	proof_layer.name = "A21WallBlockingProof"
+	proof_layer.layer = 30
+	add_child(proof_layer)
+	var proof_label: Label = Label.new()
+	proof_label.text = (
+		"A21 BEFORE — HALL LIGHT / KID WALL AUDIT\n"
+		+ "UNBOUNDED DOOR GAP OVERSPILLS ABOVE THE HALF-HEIGHT WALL"
+		if is_before
+		else
+		"A21 AFTER — HALL LIGHT / KID WALL AUDIT\n"
+		+ "FULL-HEIGHT WALL BLOCK • ONLY THE DOOR OPENING SPILLS"
+	)
+	proof_label.position = Vector2(32.0, 76.0)
+	proof_label.add_theme_font_size_override("font_size", 27)
+	proof_label.add_theme_color_override("font_color", Color("#f2f5f9"))
+	proof_label.add_theme_color_override("font_outline_color", Color("#111820"))
+	proof_label.add_theme_constant_override("outline_size", 7)
+	proof_layer.add_child(proof_label)
+
+	for marker_row: Dictionary in [
+		{
+			"text": "KID ROOM — SOLID WALL",
+			"position": Vector3(-9.4, 0.35, -3.0),
+			"color": Color("#c8d2df"),
+		},
+		{
+			"text": "OPEN DOORWAY",
+			"position": Vector3(-12.75, 0.35, -2.5),
+			"color": Color("#d889de"),
+		},
+	]:
+		var marker: Label3D = Label3D.new()
+		marker.text = marker_row["text"]
+		marker.position = marker_row["position"]
+		marker.font_size = 34
+		marker.outline_size = 7
+		marker.pixel_size = 0.004
+		marker.modulate = marker_row["color"]
+		marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		marker.no_depth_test = true
+		add_child(marker)
 
 
 func _configure_a19_geometry_capture() -> void:

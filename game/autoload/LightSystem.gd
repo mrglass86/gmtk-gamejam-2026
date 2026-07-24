@@ -64,6 +64,36 @@ func is_light_enabled(id: String) -> bool:
 	return _lights.has(id) and bool((_lights[id] as Dictionary)["enabled"])
 
 
+## Freeze-day additive helper for actor staging. The switch node remains the
+## interaction authority; callers receive its controlled practical id without
+## duplicating LevelBuilder's switch table.
+func nearest_switch_to(pos: Vector3) -> Dictionary:
+	var closest_switch: Node3D
+	var closest_distance: float = INF
+	for candidate: Node in get_tree().get_nodes_in_group("world_switch"):
+		var wall_switch: Node3D = candidate as Node3D
+		if wall_switch == null:
+			continue
+		var candidate_distance: float = wall_switch.global_position.distance_to(
+			pos
+		)
+		if candidate_distance >= closest_distance:
+			continue
+		closest_switch = wall_switch
+		closest_distance = candidate_distance
+	if closest_switch == null:
+		return {
+			"switch": null,
+			"light_id": &"",
+			"distance": INF,
+		}
+	return {
+		"switch": closest_switch,
+		"light_id": StringName(closest_switch.get("target_light_id")),
+		"distance": closest_distance,
+	}
+
+
 ## Dynamic lights are intentionally outside VALID_ZONES: the fridge is a
 ## transient analytic spill, not a routine-controlled room lamp.
 func register_dynamic_light(id: String, pos: Vector3) -> void:
