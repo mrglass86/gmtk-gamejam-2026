@@ -135,7 +135,9 @@ a journal.
   routing now makes one nearest-off-switch diversion during dark INVESTIGATE
   or HUNT, turns it on, and resumes the live target without retry oscillation;
   working-tree B18 observes one attempt/completion and 0.51 m resumed motion
-  in both states.
+  in both states. B19 lowers only Player's exported sneak multiplier to 0.2:
+  live hardwood/creaky/toy emissions are 0.2/0.6/0.8, run-hardwood remains
+  1.2, and only the plain sneak step stays below the 0.25 indicator gate.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.

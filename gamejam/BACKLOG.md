@@ -124,6 +124,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 ## Must — Saturday regression gate
 
+- [x] B19 stealth-feel tuning — Player's exported sneak multiplier is 0.2;
+      hardwood/creaky/toys emit 0.2/0.6/0.8, run-hardwood remains 1.2, and only
+      plain sneak-hardwood falls below the existing 0.25 indicator gate.
+      Accept: live `--verify-b19` plus A3/B10/B16 regression.
 - [x] A21 light + switch support — all 15 wall segments have shadow-only
       blockers from floor to 5.2 m, four bounded doorways have 2.4–5.2 m
       lintels, and the kid/hall proof shows spill only through the doorway.

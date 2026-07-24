@@ -774,3 +774,19 @@ Record decisions another session or tool would otherwise have to rediscover.
   new room places its nearest switch outside the reachable nav region.
 - **Evidence / handoff:** `94c3879`, `--verify-a21`, and live
   `--verify-b18`, 2026-07-24.
+
+## 2026-07-24 — Plain sneak footsteps sit below the visible-noise gate
+
+- **Decision:** Set Player's exported `sneak_noise_multiplier` to 0.2. Keep
+  surface multipliers unchanged at hardwood 1.0, creaky 3.0, toys 4.0, and
+  keep the run multiplier at 1.2. The resulting unmasked profile is 0.2 on
+  hardwood, 0.6 on creaky boards, 0.8 on toys, and 1.2 for run-hardwood.
+- **Why:** Quiet floors plus shadows need to support deliberate stealth, while
+  authored boards and toys remain obvious risk gates instead of every sneak
+  step producing the same visible warning.
+- **Rejected / cut:** Lowering all surfaces; lowering run noise; adding a new
+  stealth mode or threshold system; hiding creaky/toy tells.
+- **Owner:** Noah (director), lane B (Player tuning)
+- **Revisit when:** Export play finds plain sneak inaudible to the player
+  rather than merely low-risk, or trap surfaces fail to read.
+- **Evidence / handoff:** B19 work order and live `--verify-b19`, 2026-07-24.

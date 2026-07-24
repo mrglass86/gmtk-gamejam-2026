@@ -12,7 +12,7 @@ const INTERACTION_TIE_EPSILON: float = 0.001
 @export_group("Movement")
 @export var sneak_speed: float = 1.7
 @export var run_speed: float = 3.6
-@export var sneak_noise_multiplier: float = 0.4
+@export var sneak_noise_multiplier: float = 0.2
 @export var run_noise_multiplier: float = 1.2
 @export var gravity: float = 18.0
 
@@ -57,6 +57,13 @@ const INTERACTION_TIE_EPSILON: float = 0.001
 @export var verify_b16_clock_tolerance: float = 0.75
 @export var verify_b16_ring_tolerance: float = 0.01
 
+@export_group("B19 Runtime Verification")
+@export var verify_b19_hardwood_position: Vector3 = Vector3(-11.1, 0.6, 3.95)
+@export var verify_b19_creaky_position: Vector3 = Vector3(6.2, 0.6, 0.0)
+@export var verify_b19_toys_position: Vector3 = Vector3(-2.6, 0.6, 2.4)
+@export var verify_b19_loudness_tolerance: float = 0.03
+@export var verify_b19_sample_timeout: float = 1.0
+
 @export_group("Capsule Readout")
 @export_node_path("MeshInstance3D") var capsule_mesh_path: NodePath = NodePath("Capsule")
 @export var shadow_albedo: Color = Color("29323d")
@@ -89,6 +96,9 @@ var _verify_b16_noise_count: int = 0
 var _verify_b16_signal_count: int = 0
 var _verify_b16_last_loudness: float = 0.0
 var _verify_b16_last_position: Vector3
+var _verify_b19_noise_count: int = 0
+var _verify_b19_last_loudness: float = -1.0
+var _verify_b19_last_surface_multiplier: float = -1.0
 
 
 func _ready() -> void:
@@ -107,6 +117,8 @@ func _ready() -> void:
 	_update_capsule_readout()
 	if OS.get_cmdline_user_args().has("--verify-b16"):
 		_run_b16_live_verification.call_deferred()
+	if OS.get_cmdline_user_args().has("--verify-b19"):
+		_run_b19_live_verification.call_deferred()
 
 
 func _physics_process(delta: float) -> void:
@@ -682,6 +694,251 @@ func _run_b16_live_verification() -> void:
 	)
 	assert(resumed_in_play, "B16 giggle did not resume during free play.")
 	print("B16 live SceneTree verification passed.")
+
+
+func _run_b19_live_verification() -> void:
+	var parent_actor: DinnerParent = (
+		get_parent().get_node_or_null("Parent") as DinnerParent
+	)
+	var pet_actor: DinnerPet = (
+		get_parent().get_node_or_null("Pet") as DinnerPet
+	)
+	var indicator_manager: Node3D = (
+		get_parent().get_node_or_null("NoiseIndicatorManager") as Node3D
+	)
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var original_game_state: DinnerGameFlow.State = (
+		_game_flow.state
+		if _game_flow != null
+		else DinnerGameFlow.State.PLAYING
+	)
+	var original_clock_running: bool = GameClock.running
+	var original_clock_remaining: float = GameClock.time_remaining
+	var original_clock_phase: int = GameClock.phase
+	var original_input_locked: bool = input_locked
+	var original_carrying_snack: bool = carrying_snack
+	var original_position: Vector3 = global_position
+	var parent_was_processing: bool = (
+		parent_actor != null and parent_actor.is_physics_processing()
+	)
+	var pet_was_processing: bool = (
+		pet_actor != null and pet_actor.is_physics_processing()
+	)
+
+	Engine.time_scale = maxf(verify_b16_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(
+		verify_b16_physics_ticks_per_second,
+		60
+	)
+	if parent_actor != null:
+		parent_actor.set_physics_process(false)
+	if pet_actor != null:
+		pet_actor.set_physics_process(false)
+	if is_attached_to_carrier():
+		detach_from_carrier(original_position)
+	set_carrying_snack(false)
+	set_input_locked(false)
+	if _game_flow != null:
+		_game_flow.state = DinnerGameFlow.State.PLAYING
+	if not NoiseSystem.noise_emitted.is_connected(_capture_b19_noise):
+		NoiseSystem.noise_emitted.connect(_capture_b19_noise)
+	GameClock.start()
+	NoiseSystem.set_ambient_source_enabled("tv", false)
+	NoiseSystem.set_ambient_source_enabled("kitchen_speaker", false)
+	for _frame_index in range(verify_b16_warmup_frames):
+		await get_tree().physics_frame
+
+	var hardwood_indicator_start: int = (
+		indicator_manager.get_child_count()
+		if indicator_manager != null
+		else 0
+	)
+	var hardwood_sample: Dictionary = await _sample_b19_footstep(
+		verify_b19_hardwood_position,
+		false
+	)
+	var hardwood_indicator_end: int = (
+		indicator_manager.get_child_count()
+		if indicator_manager != null
+		else hardwood_indicator_start
+	)
+	var creaky_indicator_start: int = hardwood_indicator_end
+	var creaky_sample: Dictionary = await _sample_b19_footstep(
+		verify_b19_creaky_position,
+		false
+	)
+	var creaky_indicator_end: int = (
+		indicator_manager.get_child_count()
+		if indicator_manager != null
+		else creaky_indicator_start
+	)
+	var toys_indicator_start: int = creaky_indicator_end
+	var toys_sample: Dictionary = await _sample_b19_footstep(
+		verify_b19_toys_position,
+		false
+	)
+	var toys_indicator_end: int = (
+		indicator_manager.get_child_count()
+		if indicator_manager != null
+		else toys_indicator_start
+	)
+	var run_indicator_start: int = toys_indicator_end
+	var run_sample: Dictionary = await _sample_b19_footstep(
+		verify_b19_hardwood_position,
+		true
+	)
+	var run_indicator_end: int = (
+		indicator_manager.get_child_count()
+		if indicator_manager != null
+		else run_indicator_start
+	)
+
+	var hardwood_loudness: float = float(
+		hardwood_sample.get("loudness", -1.0)
+	)
+	var creaky_loudness: float = float(
+		creaky_sample.get("loudness", -1.0)
+	)
+	var toys_loudness: float = float(
+		toys_sample.get("loudness", -1.0)
+	)
+	var run_loudness: float = float(run_sample.get("loudness", -1.0))
+	var values_correct: bool = (
+		absf(hardwood_loudness - 0.2) <= verify_b19_loudness_tolerance
+		and absf(creaky_loudness - 0.6) <= verify_b19_loudness_tolerance
+		and absf(toys_loudness - 0.8) <= verify_b19_loudness_tolerance
+		and absf(run_loudness - 1.2) <= verify_b19_loudness_tolerance
+	)
+	var surfaces_correct: bool = (
+		is_equal_approx(
+			float(hardwood_sample.get("surface", -1.0)),
+			hardwood_surface_multiplier
+		)
+		and is_equal_approx(
+			float(creaky_sample.get("surface", -1.0)),
+			creaky_surface_multiplier
+		)
+		and is_equal_approx(
+			float(toys_sample.get("surface", -1.0)),
+			toys_surface_multiplier
+		)
+		and is_equal_approx(
+			float(run_sample.get("surface", -1.0)),
+			hardwood_surface_multiplier
+		)
+	)
+	var indicator_gate_correct: bool = (
+		hardwood_indicator_end <= hardwood_indicator_start
+		and creaky_indicator_end > creaky_indicator_start
+		and toys_indicator_end > toys_indicator_start
+		and run_indicator_end > run_indicator_start
+	)
+	var verification_passed: bool = (
+		values_correct
+		and surfaces_correct
+		and indicator_gate_correct
+	)
+
+	Input.action_release("move_right")
+	Input.action_release("run")
+	if NoiseSystem.noise_emitted.is_connected(_capture_b19_noise):
+		NoiseSystem.noise_emitted.disconnect(_capture_b19_noise)
+	NoiseSystem.set_ambient_source_enabled("tv", GameClock.phase < 2)
+	NoiseSystem.set_ambient_source_enabled(
+		"kitchen_speaker",
+		GameClock.phase < 3
+	)
+	global_position = original_position
+	velocity = Vector3.ZERO
+	set_carrying_snack(original_carrying_snack)
+	set_input_locked(original_input_locked)
+	if _game_flow != null:
+		_game_flow.state = original_game_state
+	GameClock.running = original_clock_running
+	GameClock.time_remaining = original_clock_remaining
+	GameClock.phase = original_clock_phase
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+	if parent_actor != null:
+		parent_actor.set_physics_process(parent_was_processing)
+	if pet_actor != null:
+		pet_actor.set_physics_process(pet_was_processing)
+
+	print(
+		(
+			"B19 live metrics: sneak hardwood/creaky/toys="
+			+ "%.2f/%.2f/%.2f, run hardwood=%.2f; "
+			+ "indicator deltas=%d/%d/%d/%d."
+		)
+		% [
+			hardwood_loudness,
+			creaky_loudness,
+			toys_loudness,
+			run_loudness,
+			hardwood_indicator_end - hardwood_indicator_start,
+			creaky_indicator_end - creaky_indicator_start,
+			toys_indicator_end - toys_indicator_start,
+			run_indicator_end - run_indicator_start,
+		]
+	)
+	get_tree().quit(0 if verification_passed else 1)
+	assert(
+		values_correct and surfaces_correct,
+		"B19 live footsteps did not preserve the 0.2/0.6/0.8/1.2 profile."
+	)
+	assert(
+		indicator_gate_correct,
+		"B19 0.25 indicator gate did not hide only sneak-hardwood."
+	)
+	print("B19 live SceneTree verification passed.")
+
+
+func _sample_b19_footstep(
+	sample_position: Vector3,
+	is_running: bool
+) -> Dictionary:
+	Input.action_release("move_right")
+	Input.action_release("run")
+	global_position = sample_position
+	velocity = Vector3.ZERO
+	_footstep_elapsed = 0.0
+	_verify_b19_noise_count = 0
+	_verify_b19_last_loudness = -1.0
+	_verify_b19_last_surface_multiplier = -1.0
+	for _frame_index in range(4):
+		await get_tree().physics_frame
+	Input.action_press("move_right")
+	if is_running:
+		Input.action_press("run")
+	var sample_start: float = _get_b16_clock_elapsed()
+	for _frame_index in range(verify_b16_max_physics_frames):
+		await get_tree().physics_frame
+		if _verify_b19_noise_count > 0:
+			break
+		if (
+			_get_b16_clock_elapsed() - sample_start
+			>= verify_b19_sample_timeout
+		):
+			break
+	Input.action_release("move_right")
+	Input.action_release("run")
+	return {
+		"loudness": _verify_b19_last_loudness,
+		"surface": _verify_b19_last_surface_multiplier,
+	}
+
+
+func _capture_b19_noise(
+	_pos: Vector3,
+	loudness: float,
+	source: Node
+) -> void:
+	if source != self or _idle_giggle_emitting or carrying_snack:
+		return
+	_verify_b19_noise_count += 1
+	_verify_b19_last_loudness = loudness
+	_verify_b19_last_surface_multiplier = _current_surface_multiplier
 
 
 func _wait_b16_clock_duration(duration: float) -> void:
