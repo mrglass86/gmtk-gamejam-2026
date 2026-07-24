@@ -87,11 +87,32 @@ enum State {
 @export var bark_loudness: float = 5.0
 @export var bark_duration: float = 0.6
 
+@export_group("Hearing Ring")
+@export var hearing_ring_width: float = 0.08
+@export_range(24, 96, 1) var hearing_ring_segments: int = 64
+@export var hearing_ring_floor_offset: float = -0.41
+@export var hearing_ring_calm_color: Color = Color(0.68, 0.56, 0.92, 1.0)
+@export var hearing_ring_alert_color: Color = Color(1.0, 0.82, 0.2, 1.0)
+@export_range(0.0, 1.0, 0.01) var hearing_ring_calm_alpha: float = 0.05
+@export_range(0.0, 1.0, 0.01) var hearing_ring_alert_alpha_min: float = 0.16
+@export_range(0.0, 1.0, 0.01) var hearing_ring_alert_alpha_max: float = 0.32
+@export var hearing_ring_pulse_frequency: float = 2.5
+
 @export_group("Readability")
 @export var base_color: Color = Color(0.63, 0.56, 0.82, 1.0)
 @export var investigate_color: Color = Color(1.0, 0.82, 0.2, 1.0)
 @export var bark_color: Color = Color(1.0, 0.15, 0.12, 1.0)
 @export var alert_scale: Vector3 = Vector3(0.9, 1.2, 0.9)
+
+@export_group("B12 Runtime Verification")
+@export var verify_b12_time_scale: float = 20.0
+@export var verify_b12_physics_ticks_per_second: int = 1200
+@export var verify_b12_warmup_frames: int = 12
+@export var verify_b12_max_physics_frames: int = 18000
+@export var verify_b12_wake_time: float = 31.0
+@export var verify_b12_alpha_tolerance: float = 0.015
+@export var verify_b12_radius_tolerance: float = 0.05
+@export var verify_b12_pulse_min_spread: float = 0.05
 
 var _state: State = State.BASE
 var _player: DinnerPlayer
@@ -99,6 +120,12 @@ var _navigation_agent: NavigationAgent3D
 var _body: MeshInstance3D
 var _kitchen_bowl: Node3D
 var _body_material: StandardMaterial3D
+var _hearing_ring: MeshInstance3D
+var _hearing_ring_material: StandardMaterial3D
+var _hearing_ring_built_radius: float = -1.0
+var _hearing_ring_built_width: float = -1.0
+var _hearing_ring_built_segments: int = -1
+var _hearing_ring_pulse_time: float = 0.0
 var _body_base_scale: Vector3 = Vector3.ONE
 var _body_base_position: Vector3
 var _navigation_ready: bool = false
@@ -127,9 +154,12 @@ func _ready() -> void:
 	_bowl_rng.seed = bowl_random_seed
 	_schedule_next_bowl_visit()
 	_setup_body_material()
+	_setup_hearing_ring()
 	if not NoiseSystem.noise_emitted.is_connected(_on_noise_emitted):
 		NoiseSystem.noise_emitted.connect(_on_noise_emitted)
 	_finish_navigation_setup.call_deferred()
+	if OS.get_cmdline_user_args().has("--verify-b12"):
+		_run_b12_verification.call_deferred()
 
 
 func _physics_process(delta: float) -> void:
@@ -147,6 +177,7 @@ func _physics_process(delta: float) -> void:
 			_update_investigate(delta)
 		State.BARK:
 			_update_bark(delta)
+	_update_hearing_ring(delta)
 
 
 func get_base_target(time_elapsed: float) -> Vector3:
@@ -464,6 +495,334 @@ func _apply_state_visual() -> void:
 			_body_material.albedo_color = investigate_color
 		State.BARK:
 			_body_material.albedo_color = bark_color
+
+
+func _setup_hearing_ring() -> void:
+	_hearing_ring = MeshInstance3D.new()
+	_hearing_ring.name = "HearingRing"
+	_hearing_ring.position.y = hearing_ring_floor_offset
+	add_child(_hearing_ring)
+
+	_hearing_ring_material = StandardMaterial3D.new()
+	_hearing_ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_hearing_ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_hearing_ring_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_hearing_ring_material.albedo_color = _ring_color_with_alpha(
+		hearing_ring_calm_color,
+		hearing_ring_calm_alpha
+	)
+	_build_hearing_ring_mesh()
+	_update_hearing_ring(0.0)
+
+
+func _update_hearing_ring(delta: float) -> void:
+	if _hearing_ring == null or _hearing_ring_material == null:
+		return
+	if (
+		not is_equal_approx(_hearing_ring_built_radius, alert_radius)
+		or not is_equal_approx(_hearing_ring_built_width, hearing_ring_width)
+		or _hearing_ring_built_segments != hearing_ring_segments
+	):
+		_build_hearing_ring_mesh()
+	_hearing_ring.position.y = hearing_ring_floor_offset
+	_hearing_ring.visible = not _is_initially_sleeping()
+	if not _hearing_ring.visible:
+		_hearing_ring_pulse_time = 0.0
+		return
+
+	var is_alerting: bool = _state == State.ALERT or _state == State.INVESTIGATE
+	if not is_alerting:
+		_hearing_ring_pulse_time = 0.0
+		_hearing_ring_material.albedo_color = _ring_color_with_alpha(
+			hearing_ring_calm_color,
+			hearing_ring_calm_alpha
+		)
+		return
+
+	_hearing_ring_pulse_time += delta
+	var pulse_weight: float = (
+		0.5
+		+ 0.5
+		* sin(_hearing_ring_pulse_time * maxf(hearing_ring_pulse_frequency, 0.0) * TAU)
+	)
+	_hearing_ring_material.albedo_color = _ring_color_with_alpha(
+		hearing_ring_alert_color,
+		lerpf(
+			hearing_ring_alert_alpha_min,
+			hearing_ring_alert_alpha_max,
+			pulse_weight
+		)
+	)
+
+
+func _build_hearing_ring_mesh() -> void:
+	if _hearing_ring == null or _hearing_ring_material == null:
+		return
+	var outer_radius: float = maxf(alert_radius, 0.0)
+	var ring_width: float = clampf(
+		hearing_ring_width,
+		0.0,
+		outer_radius
+	)
+	var inner_radius: float = outer_radius - ring_width
+	var segment_count: int = maxi(hearing_ring_segments, 3)
+	var ring_mesh: ImmediateMesh = ImmediateMesh.new()
+	ring_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, _hearing_ring_material)
+	for segment_index in range(segment_count):
+		var angle_a: float = TAU * float(segment_index) / float(segment_count)
+		var angle_b: float = TAU * float(segment_index + 1) / float(segment_count)
+		var outer_a: Vector3 = Vector3(
+			cos(angle_a) * outer_radius,
+			0.0,
+			sin(angle_a) * outer_radius
+		)
+		var outer_b: Vector3 = Vector3(
+			cos(angle_b) * outer_radius,
+			0.0,
+			sin(angle_b) * outer_radius
+		)
+		var inner_a: Vector3 = Vector3(
+			cos(angle_a) * inner_radius,
+			0.0,
+			sin(angle_a) * inner_radius
+		)
+		var inner_b: Vector3 = Vector3(
+			cos(angle_b) * inner_radius,
+			0.0,
+			sin(angle_b) * inner_radius
+		)
+		ring_mesh.surface_add_vertex(outer_a)
+		ring_mesh.surface_add_vertex(inner_a)
+		ring_mesh.surface_add_vertex(outer_b)
+		ring_mesh.surface_add_vertex(outer_b)
+		ring_mesh.surface_add_vertex(inner_a)
+		ring_mesh.surface_add_vertex(inner_b)
+	ring_mesh.surface_end()
+	_hearing_ring.mesh = ring_mesh
+	_hearing_ring_built_radius = alert_radius
+	_hearing_ring_built_width = hearing_ring_width
+	_hearing_ring_built_segments = hearing_ring_segments
+
+
+func _ring_color_with_alpha(color: Color, alpha: float) -> Color:
+	var result: Color = color
+	result.a = clampf(alpha, 0.0, 1.0)
+	return result
+
+
+func _run_b12_verification() -> void:
+	var parent_actor: DinnerParent = get_parent().get_node_or_null("Parent") as DinnerParent
+	var parent_cone_material: StandardMaterial3D = null
+	if parent_actor != null:
+		parent_cone_material = parent_actor.get("_cone_material") as StandardMaterial3D
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var player_was_processing: bool = _player != null and _player.is_physics_processing()
+	var player_was_input_locked: bool = _player != null and _player.input_locked
+
+	Engine.time_scale = maxf(verify_b12_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(
+		verify_b12_physics_ticks_per_second,
+		60
+	)
+	if _player != null:
+		_player.set_input_locked(true)
+		_player.set_physics_process(false)
+		_player.global_position = (
+			parent_actor.verify_observer_parking_position
+			if parent_actor != null
+			else Vector3(-30.0, 0.6, -20.0)
+		)
+
+	for _frame_index in range(verify_b12_warmup_frames):
+		await get_tree().physics_frame
+
+	GameClock.start()
+	await get_tree().physics_frame
+	var ring_hidden_while_sleeping: bool = (
+		_hearing_ring != null
+		and not _hearing_ring.visible
+	)
+	var cone_base_observed_alpha: float = (
+		parent_cone_material.albedo_color.a
+		if parent_cone_material != null
+		else -1.0
+	)
+
+	var reached_wake_time: bool = false
+	for _frame_index in range(verify_b12_max_physics_frames):
+		await get_tree().physics_frame
+		if _get_clock_elapsed() >= verify_b12_wake_time:
+			reached_wake_time = true
+			break
+
+	var ring_visible_after_waking: bool = (
+		_hearing_ring != null
+		and _hearing_ring.visible
+	)
+	var ring_observed_radius: float = -1.0
+	if _hearing_ring != null and _hearing_ring.mesh != null:
+		ring_observed_radius = _hearing_ring.mesh.get_aabb().size.x * 0.5
+	var ring_calm_observed_alpha: float = (
+		_hearing_ring_material.albedo_color.a
+		if _hearing_ring_material != null
+		else -1.0
+	)
+
+	NoiseSystem.emit_noise(global_position, 1.0, parent_actor)
+	var alert_observed: bool = false
+	var investigate_observed: bool = false
+	var alert_yellow_observed: bool = false
+	var pulse_min_alpha: float = INF
+	var pulse_max_alpha: float = -INF
+	for _frame_index in range(verify_b12_max_physics_frames):
+		await get_tree().physics_frame
+		var state_name: StringName = get_state_name()
+		if state_name == &"ALERT" or state_name == &"INVESTIGATE":
+			alert_observed = alert_observed or state_name == &"ALERT"
+			investigate_observed = investigate_observed or state_name == &"INVESTIGATE"
+			if _hearing_ring_material != null:
+				var pulse_color: Color = _hearing_ring_material.albedo_color
+				pulse_min_alpha = minf(pulse_min_alpha, pulse_color.a)
+				pulse_max_alpha = maxf(pulse_max_alpha, pulse_color.a)
+				alert_yellow_observed = (
+					alert_yellow_observed
+					or pulse_color.r > pulse_color.b
+					and pulse_color.g > pulse_color.b
+				)
+		if (
+			investigate_observed
+			and pulse_max_alpha - pulse_min_alpha >= verify_b12_pulse_min_spread
+		):
+			break
+
+	var cone_suspicious_observed_alpha: float = -1.0
+	var cone_suspicious_value: float = -1.0
+	if parent_actor != null:
+		NoiseSystem.emit_noise(parent_actor.global_position, 2.5, self)
+		await get_tree().physics_frame
+		cone_suspicious_value = parent_actor.suspicion
+		if parent_cone_material != null:
+			cone_suspicious_observed_alpha = parent_cone_material.albedo_color.a
+
+	var found_observed: bool = false
+	var cone_found_observed_alpha: float = -1.0
+	if parent_actor != null and _player != null:
+		parent_actor.call("_prepare_point_blank_verification")
+		GameClock.start()
+		for _frame_index in range(verify_b12_max_physics_frames):
+			await get_tree().physics_frame
+			var parent_state: StringName = parent_actor.get_state_name()
+			if parent_state == &"FOUND" or parent_state == &"CARRY":
+				found_observed = true
+				if parent_cone_material != null:
+					cone_found_observed_alpha = parent_cone_material.albedo_color.a
+				break
+			if _get_clock_elapsed() >= parent_actor.verify_point_blank_duration:
+				break
+
+	var expected_suspicious_alpha: float = -1.0
+	if parent_actor != null:
+		var suspicious_weight: float = clampf(
+			cone_suspicious_value / maxf(parent_actor.suspicion_max, 0.001),
+			0.0,
+			1.0
+		)
+		expected_suspicious_alpha = lerpf(
+			parent_actor.cone_base_alpha,
+			parent_actor.cone_suspicious_alpha,
+			suspicious_weight
+		)
+
+	var ring_radius_matches: bool = absf(
+		ring_observed_radius - alert_radius
+	) <= verify_b12_radius_tolerance
+	var cone_base_matches: bool = (
+		parent_actor != null
+		and absf(
+			cone_base_observed_alpha - parent_actor.cone_base_alpha
+		) <= verify_b12_alpha_tolerance
+	)
+	var cone_suspicious_matches: bool = (
+		parent_actor != null
+		and cone_suspicious_observed_alpha > cone_base_observed_alpha
+		and absf(
+			cone_suspicious_observed_alpha - expected_suspicious_alpha
+		) <= verify_b12_alpha_tolerance
+	)
+	var cone_found_matches: bool = (
+		parent_actor != null
+		and found_observed
+		and absf(
+			cone_found_observed_alpha - parent_actor.cone_found_alpha
+		) <= verify_b12_alpha_tolerance
+	)
+	var ring_calm_matches: bool = absf(
+		ring_calm_observed_alpha - hearing_ring_calm_alpha
+	) <= verify_b12_alpha_tolerance
+	var ring_pulsed: bool = (
+		pulse_min_alpha < INF
+		and pulse_max_alpha > -INF
+		and pulse_max_alpha - pulse_min_alpha >= verify_b12_pulse_min_spread
+	)
+	var verification_passed: bool = (
+		ring_hidden_while_sleeping
+		and reached_wake_time
+		and ring_visible_after_waking
+		and ring_radius_matches
+		and ring_calm_matches
+		and alert_observed
+		and investigate_observed
+		and alert_yellow_observed
+		and ring_pulsed
+		and cone_base_matches
+		and cone_suspicious_matches
+		and cone_found_matches
+	)
+
+	GameClock.running = false
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+	if _player != null:
+		_player.set_physics_process(player_was_processing)
+		_player.set_input_locked(player_was_input_locked)
+
+	print(
+		(
+			"B12 live metrics: cone alpha %.3f -> %.3f -> %.3f; "
+			+ "dog ring hidden=%s, radius=%.2f m, calm=%.3f, "
+			+ "alert pulse=%.3f..%.3f, investigate=%s."
+		)
+		% [
+			cone_base_observed_alpha,
+			cone_suspicious_observed_alpha,
+			cone_found_observed_alpha,
+			ring_hidden_while_sleeping,
+			ring_observed_radius,
+			ring_calm_observed_alpha,
+			pulse_min_alpha,
+			pulse_max_alpha,
+			investigate_observed,
+		]
+	)
+	get_tree().quit(0 if verification_passed else 1)
+	assert(ring_hidden_while_sleeping, "B12 dog hearing ring showed during sleep.")
+	assert(reached_wake_time, "B12 clock did not tick through the dog sleep.")
+	assert(ring_visible_after_waking, "B12 dog hearing ring stayed hidden after waking.")
+	assert(ring_radius_matches, "B12 dog hearing ring did not match alert_radius.")
+	assert(ring_calm_matches, "B12 calm dog ring alpha missed its export.")
+	assert(
+		alert_observed and investigate_observed and alert_yellow_observed,
+		"B12 dog ring missed its yellow ALERT/INVESTIGATE states."
+	)
+	assert(ring_pulsed, "B12 alert dog ring did not visibly pulse.")
+	assert(cone_base_matches, "B12 parent base cone alpha missed its export.")
+	assert(
+		cone_suspicious_matches,
+		"B12 parent cone alpha did not rise with suspicion."
+	)
+	assert(cone_found_matches, "B12 FOUND cone alpha missed its export.")
+	print("B12 live SceneTree verification passed.")
 
 
 func _get_clock_elapsed() -> float:

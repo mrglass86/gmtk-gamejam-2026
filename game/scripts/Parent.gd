@@ -237,10 +237,14 @@ enum State {
 @export var post_deposit_kitchen_speed: float = 2.2
 
 @export_group("Readability")
-@export var cone_base_color: Color = Color(0.68, 0.56, 0.92, 0.24)
-@export var cone_suspicious_color: Color = Color(1.0, 0.68, 0.18, 0.34)
-@export var cone_hunt_color: Color = Color(1.0, 0.38, 0.12, 0.4)
-@export var cone_found_color: Color = Color(1.0, 0.12, 0.12, 0.45)
+@export var cone_base_color: Color = Color(0.68, 0.56, 0.92, 1.0)
+@export var cone_suspicious_color: Color = Color(1.0, 0.68, 0.18, 1.0)
+@export var cone_hunt_color: Color = Color(1.0, 0.38, 0.12, 1.0)
+@export var cone_found_color: Color = Color(1.0, 0.12, 0.12, 1.0)
+@export_range(0.0, 1.0, 0.01) var cone_base_alpha: float = 0.12
+@export_range(0.0, 1.0, 0.01) var cone_suspicious_alpha: float = 0.34
+@export_range(0.0, 1.0, 0.01) var cone_hunt_alpha: float = 0.4
+@export_range(0.0, 1.0, 0.01) var cone_found_alpha: float = 0.45
 
 @export_group("B6 Runtime Verification")
 @export var verify_time_scale: float = 20.0
@@ -1114,13 +1118,32 @@ func _update_readability() -> void:
 		return
 	var cone_angle: float = _get_current_cone_angle()
 	_build_cone_mesh(cone_angle)
-	var suspicion_weight: float = clampf(suspicion / suspicion_max, 0.0, 1.0)
+	var suspicion_weight: float = clampf(
+		suspicion / maxf(suspicion_max, 0.001),
+		0.0,
+		1.0
+	)
 	if _state == State.FOUND or _state == State.CARRY:
-		_cone_material.albedo_color = cone_found_color
+		_cone_material.albedo_color = _color_with_alpha(
+			cone_found_color,
+			cone_found_alpha
+		)
 	elif _state == State.HUNT:
-		_cone_material.albedo_color = cone_hunt_color
+		_cone_material.albedo_color = _color_with_alpha(
+			cone_hunt_color,
+			cone_hunt_alpha
+		)
 	else:
-		_cone_material.albedo_color = cone_base_color.lerp(cone_suspicious_color, suspicion_weight)
+		var cone_color: Color = cone_base_color.lerp(
+			cone_suspicious_color,
+			suspicion_weight
+		)
+		cone_color.a = lerpf(
+			cone_base_alpha,
+			cone_suspicious_alpha,
+			suspicion_weight
+		)
+		_cone_material.albedo_color = cone_color
 
 
 func _get_current_cone_angle() -> float:
@@ -1144,9 +1167,18 @@ func _setup_cone() -> void:
 	_cone_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_cone_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_cone_material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_cone_material.albedo_color = cone_base_color
+	_cone_material.albedo_color = _color_with_alpha(
+		cone_base_color,
+		cone_base_alpha
+	)
 	_vision_cone.position.y = cone_floor_offset
 	_build_cone_mesh(_get_current_cone_angle())
+
+
+func _color_with_alpha(color: Color, alpha: float) -> Color:
+	var result: Color = color
+	result.a = clampf(alpha, 0.0, 1.0)
+	return result
 
 
 func _build_cone_mesh(cone_angle_degrees: float) -> void:
@@ -2281,7 +2313,8 @@ func _run_b10_live_verification() -> void:
 				hunt_color_observed
 				or (
 					_cone_material != null
-					and _cone_material.albedo_color == cone_hunt_color
+					and _cone_material.albedo_color
+					== _color_with_alpha(cone_hunt_color, cone_hunt_alpha)
 				)
 			)
 			hunt_retarget_observed = (
