@@ -632,3 +632,21 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** The design adds a third snack or permits exchanging one
   carried snack for another during the same run.
 - **Evidence / handoff:** B17 work order and `--verify-b17`, 2026-07-24.
+
+## 2026-07-24 — Practical shadows use invisible full-height wall blockers
+
+- **Decision:** Keep practical sources high at 4.5 m, but extend each authored
+  wall to 5.2 m with a shadow-only mesh. Every practical Omni casts soft
+  shadows at renderer attenuation 1.45 and 7.8 m visual range; ambient remains
+  0.05 and the 5.8 m analytic light model remains unchanged.
+- **Why:** High decoupled sources otherwise leak over the intentionally low
+  greybox walls. Shadow-only extensions make pools end at walls while allowing
+  honest spill through door gaps without changing collision, nav, or sight.
+- **Rejected / cut:** Lowering sources back to fixture height; raising visible
+  walls into the fixed camera; changing analytic brightness or sight thresholds.
+- **Owner:** Noah (contrast verdict), lane A (renderer implementation)
+- **Revisit when:** The director's in-motion walk finds lit rooms flat, a
+  doorway spill unclear, or any Compatibility/Web shadow discrepancy.
+- **Evidence / handoff:** `338de63`, `--verify-a18`,
+  `gamejam/handoffs/2026-07-24-a18-lighting.png`, and
+  `gamejam/handoffs/2026-07-24-a18-wall-blocking.png`.

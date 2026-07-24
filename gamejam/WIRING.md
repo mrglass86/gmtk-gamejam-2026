@@ -13,15 +13,13 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
   Update `SnackVisualPresenter.gd` and `AudioDirector.gd` to consume this value
   for their B17 type-specific presentation/audio mapping; never infer identity
   from the snack's current/drop position.
-- [ ] (lane B / B16) In `AudioDirector.gd`, connect
-  `Player.idle_giggled(giggle_position)` to a soft playback from the existing
-  no-repeat `chase_giggle` pool (volume as an export). While
-  `Player.is_emitting_idle_giggle()` is true, `_on_noise_emitted` must skip
-  footstep/wrapper inference. Audio must not emit another `NoiseSystem` event;
-  Player's single 0.5 event already creates the magenta indicator.
-
 ## Done
 
+- [x] (lane B / B16) `AudioDirector.gd` connects
+  `Player.idle_giggled(giggle_position)` to a soft -8 dB playback from the
+  existing no-repeat three-take giggle pool. Player remains the sole author of
+  the 0.5 gameplay event; `--verify-audio` and `--verify-b16` prove no
+  duplicate noise (`338de63`).
 - [x] (lane B / B15) `Parent.curiosity_started(sound_position)` now plays the
   three-take parent investigate/“hm?” pool through the dedicated VO channel and
   shows `ParentVoiceIndicator`. `--verify-audio` proves the real signal emits

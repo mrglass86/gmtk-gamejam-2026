@@ -125,10 +125,12 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       the shared Snack exposes the type and preserves it across pickup,
       drop, and re-collection. Accept: live two-door `--verify-b17` round trip
       plus presenter/audio consumption.
-- [ ] B16 idle giggle — while free in PLAYING, Player randomizes each interval
+- [x] B16 idle giggle — while free in PLAYING, Player randomizes each interval
       over 20–45 s, plays one soft giggle, and emits exactly one unmasked 0.5
       event with a 4 m magenta tell. No giggle while carried or on TITLE/WON/LOST.
-      Accept: live `--verify-b16` plus audio-pool/no-duplicate-noise integration.
+      Audio uses the existing three-take pool at -8 dB without emitting a
+      second gameplay event (`34b3e9f`, `338de63`, `--verify-b16`,
+      `--verify-audio`).
 - [x] B15 hearing model — sustained sources count at most once per 0.4 s and
       one uninterrupted burst supplies one cue; first 10+ contribution enters
       stationary CURIOUS for ~2 s; second cue inside 8 s or sight enters
@@ -138,6 +140,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       hinge-origin door audio, nearest-only anchored interaction HUD, 0.8
       switch noise, and dark-start bathroom ceiling fixture/toilet
       (`2d4e142`, `--verify-a17`, 155 nav polygons, 29/29 full battery).
+- [x] A18 polish — 69 conservative family denoise A/B copies with 19 rejected
+      to CC0 fallback; wall-blocked room-scale practicals; near-silent sneak
+      mix; one-shot pickup; 2.5 s wrapper audio over unchanged 0.6 s noise; and
+      soft idle-giggle playback (`338de63`, `--verify-a18`, `--verify-audio`).
 - [x] B15 curiosity VO wiring — the first qualifying cue plays the director's
       parent investigate/“hm?” pool and magenta parent indicator with zero
       gameplay-noise emissions (`b14efb3`, `--verify-audio`, 29/29 battery).

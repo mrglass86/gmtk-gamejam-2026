@@ -10,13 +10,13 @@ a journal.
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Saturday — original-audio integration, mix walk, and feel
   tuning.
-- Next playable checkpoint: B16/B17 audio-presentation integration, then CP5
+- Next playable checkpoint: B17 snack presentation/audio integration, then CP5
   manual full run — title-card start through both win and expiry-loss outcomes,
   restart, then freeze/export.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A17 plus actor B6–B15 and the
+- Godot version: 4.7.1-stable — A0.2 through A18 plus actor B6–B17 and the
   original/CC0 audio pass are in `game/` (Compatibility renderer). The approved
   director layout bakes a connected 155-polygon navmesh; input, lighting, noise,
   indicator, route, ambient-mask, countdown, game-flow, audio, and A9
@@ -103,6 +103,13 @@ a journal.
   `a3d0e01` adds B17's Door-to-Snack `ice_cream`/`chips` identity contract and
   persistent public Snack type. Committed startup plus A6/A7/A8/audio/B7/B8/
   B16/B17 pass.
+  `338de63` adds A18: conservative clip-profiled denoise for 69 family takes
+  with 19 rejected to CC0 fallback; near-silent sneak-step mix; single pickup
+  playback and 2.5 s wrapper-audio cadence without changing 0.6 s noise;
+  soft B16 idle-giggle playback; and wall-blocked, room-scale practical light
+  at 1.45 renderer attenuation/7.8 m range with analytic lighting unchanged.
+  Focused A9/A11/A12/A16–A18/audio/B16/B17 gates pass; fresh full-house and
+  doorway-spill proof captures are committed.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -112,8 +119,8 @@ a journal.
 
 ## Current focus
 
-- Lane A connects B16's soft giggle VO and consumes B17's stable snack identity
-  in presentation/audio. Then Noah runs CP5.
+- Lane A consumes B17's stable snack identity in presentation/audio. Then Noah
+  runs CP5.
 
 ## Known blockers or risks
 
@@ -139,8 +146,9 @@ a journal.
   whether HUNT feels threatening rather than predetermined.
 - B14 actor and AudioDirector gates are green; the remaining risk is the
   director's live timing/mix verdict.
-- A17's renderer gate and labeled capture are green; the 32.0 practical energy
-  is renderer-only but still needs the director's in-motion contrast verdict.
+- A18's renderer gate and labeled captures are green; 6.5 practical energy at
+  1.45 attenuation/7.8 m range is renderer-only and still needs the director's
+  in-motion contrast verdict.
 - Godot MCP for lane A: 30-minute hard abort rule (brief 9.2).
 - This Claude instance has no shell — validation runs through the web build in
   the browser pane plus Noah's terminal.
