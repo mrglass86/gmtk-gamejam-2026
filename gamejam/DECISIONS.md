@@ -790,3 +790,27 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** Export play finds plain sneak inaudible to the player
   rather than merely low-risk, or trap surfaces fail to read.
 - **Evidence / handoff:** B19 work order and live `--verify-b19`, 2026-07-24.
+
+## 2026-07-24 — Quiet carpet corridor is a switchable light gamble
+
+- **Decision:** Light the bottom carpet corridor with two shadow-casting
+  overhead practicals controlled together by a new `carpet_hall` wall switch.
+  The switch exposes one stable primary light id to
+  `LightSystem.nearest_switch_to`, while its secondary target follows the same
+  state. Lit west/center/east probes must exceed the unchanged 0.35 detection
+  threshold; switching the pair off must return all three below it. Dining,
+  kitchen, kid-hall, and foyer practicals become flush ceiling discs; the kid
+  nightstand remains a lamp.
+- **Why:** The quiet carpet route had no meaningful light tradeoff and could
+  hide a point-blank player. A player-controlled pair makes it a readable
+  stealth choice without changing global ambient, analytic falloff, or sight
+  thresholds.
+- **Rejected / cut:** Raising ambient light; widening unrelated room lights;
+  adding analytic-only spill without a visible source; changing inverse-square
+  renderer settings, shadow casting, or the 0.35 gameplay threshold; restyling
+  the kid nightstand.
+- **Owner:** Noah (director), lane A (lighting and switch implementation)
+- **Revisit when:** The director's in-motion pass finds the lit corridor too
+  punishing, the switch hard to read, or either overhead pool visually weak.
+- **Evidence / handoff:** `281cbab`, `--verify-a22`, and the labeled A22
+  before/after and fixture captures, 2026-07-24.

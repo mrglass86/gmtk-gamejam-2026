@@ -8,14 +8,14 @@ a journal.
 - Jam: GMTK26 — theme: Countdown
 - Direction: Shoulda Eaten Dinner (toddler stealth; the countdown is the
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
-- Current phase: Freeze day — feature-complete after the director's positive
-  full-play verdict.
+- Current phase: `jam-friday` is banked; freeze-safe A22 post-freeze lighting
+  polish is complete after the director's positive full-play verdict.
 - Next playable checkpoint: tag the green acceptance head, export Web, validate
   the package, and upload the prepared itch page.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A21 plus actor B6–B18 and the
+- Godot version: 4.7.1-stable — A0.2 through A22 plus actor B6–B20 and the
   original/CC0 audio pass are in `game/` (Compatibility renderer). The approved
   director layout bakes a connected 164-polygon navmesh; input, lighting, noise,
   indicator, route, ambient-mask, countdown, game-flow, audio, and A9
@@ -138,6 +138,12 @@ a journal.
   in both states. B19 lowers only Player's exported sneak multiplier to 0.2:
   live hardwood/creaky/toy emissions are 0.2/0.6/0.8, run-hardwood remains
   1.2, and only the plain sneak step stays below the 0.25 indicator gate.
+  `cf2f26f` closes B20's caught-snack win exploit. `281cbab` adds A22's two
+  switchable overhead corridor fixtures and flush-ceiling dining, kitchen,
+  hall, and foyer restyle. Corridor analytic probes read 0.72/0.58/0.72 on
+  and 0.05/0.30/0.31 off, so point-blank parent sight crosses the unchanged
+  0.35 threshold only while the route is lit. Exact editor, startup, and all
+  38 verification flags pass (40/40); nav remains 164 polygons.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -147,7 +153,8 @@ a journal.
 
 ## Current focus
 
-- Freeze/export/upload. Fake-bounce lighting is optional post-freeze work only.
+- Freeze/export/upload. A22 is implemented; only its director in-motion
+  lighting verdict remains before export.
 
 ## Known blockers or risks
 
@@ -181,6 +188,8 @@ a journal.
 - A18's renderer gate and labeled captures are green; 6.5 practical energy at
   1.45 attenuation/7.8 m range is renderer-only and still needs the director's
   in-motion contrast verdict.
+- A22's analytic threshold proof is green, but the director must still judge
+  the corridor exposure and overhead-fixture readability in motion.
 - A19's 164-polygon nav and actor-route gates are green. Its collider fit is
   intentionally tighter than A18; the director still judges the closed
   bathroom/pantry silhouettes at gameplay scale.

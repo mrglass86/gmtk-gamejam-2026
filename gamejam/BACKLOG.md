@@ -124,6 +124,13 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 ## Must — Saturday regression gate
 
+- [x] A22 hallway light + fixture restyle — two switch-linked overhead
+      corridor practicals produce west/center/east analytic brightness
+      0.72/0.58/0.72 on and 0.05/0.30/0.31 off, crossing the unchanged 0.35
+      point-blank sight threshold only while lit. Hall, dining, kitchen, and
+      foyer sources read as flush ceiling discs; the kid nightstand remains a
+      lamp (`281cbab`, `--verify-a22`, labeled before/after captures; exact
+      editor/startup/all 38 flags pass, 40/40; nav 164).
 - [x] B20 caught-snack exploit — capture atomically clears snack ownership,
       input-locked/carried players cannot auto-recollect it, and CARRY
       defensively preserves the catch-point drop. Accept: live
