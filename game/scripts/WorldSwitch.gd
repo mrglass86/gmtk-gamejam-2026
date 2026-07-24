@@ -37,9 +37,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	if is_instance_valid(_click_player):
-		_click_player.stop()
-		_click_player.stream = null
+	stop_click_audio()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -75,6 +73,14 @@ func is_player_in_range() -> bool:
 		and _player.global_position.distance_to(global_position)
 		<= interaction_radius
 	)
+
+
+func stop_click_audio(release_player: bool = false) -> void:
+	if is_instance_valid(_click_player):
+		_click_player.stop()
+		_click_player.stream = null
+		if release_player:
+			_click_player.queue_free()
 
 
 func sync_state_from_target() -> void:

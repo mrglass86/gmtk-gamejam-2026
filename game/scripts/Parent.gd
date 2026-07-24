@@ -2104,6 +2104,7 @@ func _run_b7_verification() -> void:
 			bark_max_suspicion,
 		]
 	)
+	await _settle_verification_switch_audio()
 	get_tree().quit(0 if verification_passed else 1)
 	assert(catch_started, "B7 catch did not attach and lock the player.")
 	assert(carry_cycle_completed, "B7 parent did not complete the capture epilogue.")
@@ -3659,6 +3660,7 @@ func _run_b14_live_verification() -> void:
 			_verify_b14_visual_noise_count,
 		]
 	)
+	await _settle_verification_switch_audio()
 	get_tree().quit(0 if verification_passed else 1)
 	assert(click_started_investigate, "B14 switch click did not investigate.")
 	assert(click_restored, "B14 parent did not restore the expected light state.")
@@ -3672,6 +3674,15 @@ func _run_b14_live_verification() -> void:
 		"B14 parent VO icon was missing or emitted gameplay noise."
 	)
 	print("B14 live SceneTree verification passed.")
+
+
+func _settle_verification_switch_audio() -> void:
+	for node in get_tree().get_nodes_in_group("world_switch"):
+		var world_switch: DinnerWorldSwitch = node as DinnerWorldSwitch
+		if world_switch != null:
+			world_switch.stop_click_audio(true)
+	await get_tree().process_frame
+	await get_tree().create_timer(0.5).timeout
 
 
 func _get_live_cone_hit_distances(cone_angle_degrees: float) -> Array[float]:
