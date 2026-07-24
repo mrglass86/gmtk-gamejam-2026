@@ -124,6 +124,11 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 ## Must — Saturday regression gate
 
+- [x] B20 caught-snack exploit — capture atomically clears snack ownership,
+      input-locked/carried players cannot auto-recollect it, and CARRY
+      defensively preserves the catch-point drop. Accept: live
+      `--verify-b20` real pickup/catch/deposit leaves the snack 2.62 m from
+      the crib, presenter detached, and `GameFlow` still PLAYING (`cf2f26f`).
 - [x] B19 stealth-feel tuning — Player's exported sneak multiplier is 0.2;
       hardwood/creaky/toys emit 0.2/0.6/0.8, run-hardwood remains 1.2, and only
       plain sneak-hardwood falls below the existing 0.25 indicator gate.
