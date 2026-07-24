@@ -10,9 +10,9 @@ a journal.
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Saturday — original-audio integration, mix walk, and feel
   tuning.
-- Next playable checkpoint: B16 idle-giggle integration, then CP5 manual full
-  run — title-card start through both win and expiry-loss outcomes, restart,
-  then freeze/export.
+- Next playable checkpoint: B16/B17 audio-presentation integration, then CP5
+  manual full run — title-card start through both win and expiry-loss outcomes,
+  restart, then freeze/export.
 
 ## Working build
 
@@ -109,8 +109,8 @@ a journal.
 
 ## Current focus
 
-- Lane A connects B16's soft giggle VO without duplicating or misclassifying
-  Player's gameplay event. Then Noah runs CP5.
+- Lane A connects B16's soft giggle VO and consumes B17's stable snack identity
+  in presentation/audio. Then Noah runs CP5.
 
 ## Known blockers or risks
 

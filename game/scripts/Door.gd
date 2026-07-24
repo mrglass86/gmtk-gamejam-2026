@@ -17,6 +17,7 @@ enum DoorKind {
 @export_group("Identity")
 @export var door_kind: DoorKind = DoorKind.BEDROOM
 @export var provides_snack: bool = false
+@export var snack_type: StringName = &""
 
 @export_group("Interaction")
 @export_node_path("Node3D") var player_path: NodePath = NodePath("../Player")
@@ -72,6 +73,8 @@ var _programmatic_open_target: float = -1.0
 
 func _ready() -> void:
 	add_to_group("interactable")
+	if provides_snack and snack_type == &"":
+		snack_type = _get_default_snack_type()
 	_player = get_node_or_null(player_path) as DinnerPlayer
 	_snack = get_node_or_null(snack_path) as DinnerSnack
 	_door_visual = get_node_or_null(door_visual_path) as Node3D
@@ -256,7 +259,7 @@ func _try_reveal_snack() -> void:
 	if not provides_snack or openness < snack_open_threshold or _snack == null:
 		return
 	if not _snack_revealed:
-		_snack.reveal_at(global_position)
+		_snack.reveal_at(global_position, snack_type)
 		_snack_revealed = true
 	if _snack.available_for_pickup and _is_player_in_range():
 		_snack.pick_up(_player)
@@ -314,3 +317,13 @@ func _get_blocker_size() -> Vector3:
 			return fridge_blocker_size
 		_:
 			return bedroom_blocker_size
+
+
+func _get_default_snack_type() -> StringName:
+	match door_kind:
+		DoorKind.FRIDGE:
+			return DinnerSnack.TYPE_ICE_CREAM
+		DoorKind.PANTRY:
+			return DinnerSnack.TYPE_CHIPS
+		_:
+			return &""

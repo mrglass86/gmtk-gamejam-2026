@@ -615,3 +615,20 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** CP5 finds the giggle too frequent, too loud in the mix, or
   unfair during a close pass.
 - **Evidence / handoff:** B16 work order and `--verify-b16`, 2026-07-24.
+
+## 2026-07-24 — Snack identity belongs to the shared Snack
+
+- **Decision:** Goal doors pass an explicit `StringName` identity on reveal:
+  FRIDGE defaults to `ice_cream`, PANTRY to `chips`. The shared `DinnerSnack`
+  stores the value in its public `snack_type` property and emits
+  `snack_type_changed`; pickup, carry, catch-drop, ground drop, and re-collection
+  never mutate it.
+- **Why:** Visual and audio presentation need stable item identity throughout
+  the round trip, independent of where the shared Snack node currently sits.
+- **Rejected / cut:** Inferring type from world position after reveal; storing
+  type only on Door or Player; clearing/reselecting type on drop or pickup.
+- **Owner:** Noah (director), lane B (identity authority/API), lane A
+  (presentation/audio consumption)
+- **Revisit when:** The design adds a third snack or permits exchanging one
+  carried snack for another during the same run.
+- **Evidence / handoff:** B17 work order and `--verify-b17`, 2026-07-24.

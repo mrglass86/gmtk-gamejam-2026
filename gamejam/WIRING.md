@@ -8,6 +8,11 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Open
 
+- [ ] (lane B / B17) `DinnerSnack.snack_type` is now the stable public identity
+  (`ice_cream`/`chips`) and `snack_type_changed` announces replacements.
+  Update `SnackVisualPresenter.gd` and `AudioDirector.gd` to consume this value
+  for their B17 type-specific presentation/audio mapping; never infer identity
+  from the snack's current/drop position.
 - [ ] (lane B / B16) In `AudioDirector.gd`, connect
   `Player.idle_giggled(giggle_position)` to a soft playback from the existing
   no-repeat `chase_giggle` pool (volume as an export). While
