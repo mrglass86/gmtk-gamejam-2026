@@ -663,6 +663,7 @@ func _verify_a7_presentation() -> void:
 	var audio_director: DinnerAudioDirector = $AudioDirector as DinnerAudioDirector
 	audio_director.call("_on_game_started")
 	var bedroom_door: DinnerDoor = $BedroomDoor as DinnerDoor
+	bedroom_door.openness_rate = bedroom_door.creak_slow_rate
 	bedroom_door.openness += 0.2 / 60.0
 	audio_director.call("_update_door_creak", 1.0 / 60.0)
 	var door_creak_player: AudioStreamPlayer3D = (
@@ -675,6 +676,7 @@ func _verify_a7_presentation() -> void:
 	var slow_creak_volume: float = door_creak_player.volume_db
 	audio_director.call("_update_door_creak", 1.0 / 60.0)
 	assert(not door_creak_player.playing)
+	bedroom_door.openness_rate = bedroom_door.creak_fast_rate
 	bedroom_door.openness += 1.0 / 60.0
 	audio_director.call("_update_door_creak", 1.0 / 60.0)
 	assert(door_creak_player.playing)
