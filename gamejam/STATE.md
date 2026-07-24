@@ -108,7 +108,8 @@ a journal.
   playback and 2.5 s wrapper-audio cadence without changing 0.6 s noise;
   soft B16 idle-giggle playback; and wall-blocked, room-scale practical light
   at 1.45 renderer attenuation/7.8 m range with analytic lighting unchanged.
-  Focused A9/A11/A12/A16–A18/audio/B16/B17 gates pass; fresh full-house and
+  Editor import, clean startup, and all 30 verification flags pass on
+  `e8f75d5` (32/32); nav remains 155 polygons. Fresh full-house and
   doorway-spill proof captures are committed.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the

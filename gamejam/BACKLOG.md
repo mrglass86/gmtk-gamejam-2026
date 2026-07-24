@@ -143,7 +143,8 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [x] A18 polish — 69 conservative family denoise A/B copies with 19 rejected
       to CC0 fallback; wall-blocked room-scale practicals; near-silent sneak
       mix; one-shot pickup; 2.5 s wrapper audio over unchanged 0.6 s noise; and
-      soft idle-giggle playback (`338de63`, `--verify-a18`, `--verify-audio`).
+      soft idle-giggle playback (`338de63`, `--verify-a18`, `--verify-audio`;
+      editor/startup/all 30 flags pass, 32/32 on `e8f75d5`).
 - [x] B15 curiosity VO wiring — the first qualifying cue plays the director's
       parent investigate/“hm?” pool and magenta parent indicator with zero
       gameplay-noise emissions (`b14efb3`, `--verify-audio`, 29/29 battery).
