@@ -204,7 +204,7 @@ enum State {
 @export var noise_suspicion_multiplier: float = 10.0
 @export var ring_radius_per_loudness: float = 8.0
 @export var ring_radius_cap: float = 20.0
-@export var seen_suspicion_per_second: float = 25.0
+@export var seen_suspicion_per_second: float = 40.0
 @export var suspicion_decay_per_second: float = 5.0
 @export var event_alert_threshold: float = 25.0
 @export var seen_full_rate_distance: float = 4.0
@@ -215,6 +215,7 @@ enum State {
 @export var hearing_source_cooldown: float = 0.4
 @export var interest_threshold: float = 10.0
 @export var big_event_threshold: float = 30.0
+@export var solid_stomp_loudness_threshold: float = 3.0
 @export var curious_hold_duration: float = 2.0
 @export var interest_window_duration: float = 8.0
 
@@ -265,6 +266,7 @@ enum State {
 
 @export_group("Light Expectations")
 @export var light_anomaly_scan_interval: float = 0.2
+@export var light_change_memory_duration: float = 2.0
 @export var light_restore_delay: float = 2.0
 @export var light_switch_arrival_distance: float = 0.8
 @export var light_anomaly_cone_padding: float = 0.35
@@ -292,6 +294,10 @@ enum State {
 @export_range(0.0, 1.0, 0.01) var cone_suspicious_alpha: float = 0.34
 @export_range(0.0, 1.0, 0.01) var cone_hunt_alpha: float = 0.4
 @export_range(0.0, 1.0, 0.01) var cone_found_alpha: float = 0.45
+@export_range(4, 12, 1) var cone_brightness_band_count: int = 8
+@export var cone_dark_color: Color = Color(0.2, 0.18, 0.28, 1.0)
+@export_range(0.0, 1.0, 0.01) var cone_dark_color_mix: float = 0.55
+@export_range(0.0, 1.0, 0.01) var cone_dark_alpha_multiplier: float = 0.28
 
 @export_group("Debug Trace")
 @export var debug_perception_trace: bool = false
@@ -346,6 +352,14 @@ enum State {
 @export var verify_b20_cycle_duration: float = 25.0
 @export var verify_b20_drop_tolerance: float = 0.3
 @export var verify_b20_crib_clearance: float = 1.5
+
+@export_group("B21 Runtime Verification")
+@export var verify_b21_light_memory_delay: float = 1.0
+@export var verify_b21_light_expiry_margin: float = 0.35
+@export var verify_b21_toy_distance: float = 6.0
+@export var verify_b21_toy_loudness: float = 4.0
+@export var verify_b21_far_sight_distance: float = 6.0
+@export var verify_b21_far_sight_deadline: float = 1.5
 
 @export_group("B9 Runtime Verification")
 @export var verify_b9_far_bark_distance: float = 14.0
@@ -424,7 +438,12 @@ var _bathroom_door: DinnerDoor
 var _level: Node3D
 var _kid_hall_switch: DinnerWorldSwitch
 var _cone_material: StandardMaterial3D
+var _cone_dark_material: StandardMaterial3D
 var _cone_ray_distances: Array[float] = []
+var _cone_bright_cell_count: int = 0
+var _cone_dark_cell_count: int = 0
+var _cone_bright_sample_min: float = INF
+var _cone_dark_sample_max: float = -INF
 var _glance_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _navigation_ready: bool = false
 var _last_navigation_target: Vector3
@@ -477,6 +496,8 @@ var _light_restore_elapsed: float = 0.0
 var _parent_operating_switch: bool = false
 var _light_state_snapshot: Dictionary = {}
 var _light_change_check_pending: bool = false
+var _light_awareness_elapsed: float = 0.0
+var _recent_light_changes: Dictionary = {}
 var _searchlight_switch: DinnerWorldSwitch
 var _searchlight_light_id: StringName
 var _searchlight_active: bool = false
@@ -534,6 +555,8 @@ func _ready() -> void:
 		_run_b18_searchlight_live_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--verify-b20"):
 		_run_b20_live_verification.call_deferred()
+	if OS.get_cmdline_user_args().has("--verify-b21"):
+		_run_b21_live_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--trace-parent-perception"):
 		debug_perception_trace = true
 	if OS.get_cmdline_user_args().has("--trace-parent-hearing"):
@@ -543,6 +566,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_repeat_cooldown_remaining = maxf(_repeat_cooldown_remaining - delta, 0.0)
 	_update_hearing_interest(delta)
+	_update_recent_light_change_awareness(delta)
 	_moved_along_path_this_frame = false
 	_enforce_tv_listening_state()
 	_update_perception(delta)
@@ -671,9 +695,6 @@ func _finish_navigation_setup() -> void:
 
 
 func _update_routine(delta: float) -> void:
-	_scan_for_visible_light_anomaly(delta)
-	if _state != State.ROUTINE:
-		return
 	_try_restore_tv_at_couch()
 	var routine_time: float = _get_routine_time()
 	_update_routine_door_staging(routine_time)
@@ -864,7 +885,7 @@ func _evaluate_stable_light_changes() -> void:
 		if is_on == was_on or _parent_operating_switch:
 			continue
 		if is_on != _is_switch_expected_on(wall_switch.switch_id):
-			_begin_light_anomaly_investigation(wall_switch)
+			_remember_light_change(wall_switch)
 
 
 func _on_world_switch_toggled(
@@ -892,7 +913,7 @@ func _on_world_switch_toggled(
 		or _light_anomaly_switch == wall_switch
 	):
 		return
-	_begin_light_anomaly_investigation(wall_switch)
+	_remember_light_change(wall_switch)
 
 
 func _update_searchlight_diversion(delta: float, speed: float) -> bool:
@@ -964,25 +985,53 @@ func _clear_searchlight_diversion(clear_attempts: bool) -> void:
 		_searchlight_completion_count = 0
 
 
-func _scan_for_visible_light_anomaly(delta: float) -> void:
-	if _light_anomaly_switch != null or _state != State.ROUTINE:
+func _remember_light_change(wall_switch: DinnerWorldSwitch) -> void:
+	if wall_switch == null:
+		return
+	var switch_key: int = wall_switch.get_instance_id()
+	_recent_light_changes[switch_key] = {
+		"switch": wall_switch,
+		"expires_at": (
+			_light_awareness_elapsed
+			+ maxf(light_change_memory_duration, 0.0)
+		),
+	}
+	var observation_position: Vector3 = (
+		_get_switch_observation_position(wall_switch)
+	)
+	if _is_point_in_active_cone(observation_position):
+		_recent_light_changes.erase(switch_key)
+		_begin_light_anomaly_investigation(wall_switch)
+
+
+func _update_recent_light_change_awareness(delta: float) -> void:
+	_light_awareness_elapsed += delta
+	if _recent_light_changes.is_empty():
 		return
 	_light_anomaly_scan_elapsed += delta
 	if _light_anomaly_scan_elapsed < light_anomaly_scan_interval:
 		return
 	_light_anomaly_scan_elapsed = 0.0
-	for node: Node in get_tree().get_nodes_in_group("world_switch"):
-		var wall_switch: DinnerWorldSwitch = node as DinnerWorldSwitch
-		if wall_switch == null:
+	for switch_key: Variant in _recent_light_changes.keys():
+		var change: Dictionary = _recent_light_changes.get(
+			switch_key,
+			{}
+		)
+		var wall_switch: DinnerWorldSwitch = (
+			change.get("switch") as DinnerWorldSwitch
+		)
+		var expires_at: float = float(change.get("expires_at", -INF))
+		if wall_switch == null or _light_awareness_elapsed > expires_at:
+			_recent_light_changes.erase(switch_key)
 			continue
-		var expected_on: bool = _is_switch_expected_on(wall_switch.switch_id)
-		if wall_switch.is_on == expected_on:
+		if _light_anomaly_switch != null:
 			continue
 		var observation_position: Vector3 = (
 			_get_switch_observation_position(wall_switch)
 		)
 		if not _is_point_in_active_cone(observation_position):
 			continue
+		_recent_light_changes.erase(switch_key)
 		_begin_light_anomaly_investigation(wall_switch)
 		return
 
@@ -1013,6 +1062,44 @@ func _get_switch_observation_position(
 		if fixture != null:
 			return fixture.global_position
 	return wall_switch.global_position
+
+
+func _find_visible_switch_observer_pose(
+	wall_switch: DinnerWorldSwitch
+) -> Dictionary:
+	if wall_switch == null:
+		return {}
+	var observation_position: Vector3 = (
+		_get_switch_observation_position(wall_switch)
+	)
+	for observer_distance: float in [1.5, 2.5, 3.5]:
+		for observer_direction: Vector3 in [
+			Vector3.RIGHT,
+			Vector3.LEFT,
+			Vector3.FORWARD,
+			Vector3.BACK,
+			Vector3(1.0, 0.0, 1.0).normalized(),
+			Vector3(-1.0, 0.0, 1.0).normalized(),
+			Vector3(1.0, 0.0, -1.0).normalized(),
+			Vector3(-1.0, 0.0, -1.0).normalized(),
+		]:
+			var observer_position: Vector3 = (
+				observation_position
+				- observer_direction * observer_distance
+			)
+			observer_position.y = verify_bark_parent_position.y
+			global_position = observer_position
+			rotation.y = atan2(
+				-observer_direction.x,
+				-observer_direction.z
+			)
+			_cone_yaw_degrees = 0.0
+			if _is_point_in_active_cone(observation_position):
+				return {
+					"position": observer_position,
+					"rotation": rotation.y,
+				}
+	return {}
 
 
 func _is_point_in_active_cone(point: Vector3) -> bool:
@@ -1615,7 +1702,9 @@ func _has_clear_line_of_sight() -> bool:
 func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 	if source == self or _state == State.CARRY:
 		return
-	if _parent_operating_switch and source is DinnerWorldSwitch:
+	# Switch clicks remain real player feedback, but the parent notices the
+	# changed light only through the sight/recency path.
+	if source is DinnerWorldSwitch:
 		return
 	if source == _bedroom_door and _is_post_deposit_state():
 		return
@@ -1648,6 +1737,11 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 	var event_contribution: float = loudness * noise_suspicion_multiplier * falloff
 	if source is DinnerPet:
 		event_contribution = maxf(event_contribution, event_alert_threshold)
+	if (
+		source is DinnerPlayer
+		and loudness >= solid_stomp_loudness_threshold
+	):
+		event_contribution = maxf(event_contribution, big_event_threshold)
 	var source_id: int = source.get_instance_id() if source != null else 0
 	var sustained_source: bool = source is DinnerDoor
 	var last_event_time: float = float(
@@ -1717,9 +1811,6 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 		_hunt_target_position = pos
 		_hunt_no_noise_elapsed = 0.0
 		_set_navigation_target(pos, true)
-		return
-	if source is DinnerWorldSwitch:
-		_begin_light_anomaly_investigation(source as DinnerWorldSwitch)
 		return
 	if suspicion >= hunt_threshold:
 		_clear_light_anomaly()
@@ -1981,27 +2072,30 @@ func _update_sweep(delta: float) -> void:
 
 
 func _update_readability() -> void:
-	if _vision_cone == null or _cone_material == null:
+	if (
+		_vision_cone == null
+		or _cone_material == null
+		or _cone_dark_material == null
+	):
 		return
-	var cone_angle: float = _get_current_cone_angle()
-	_build_cone_mesh(cone_angle)
 	var suspicion_weight: float = clampf(
 		suspicion / maxf(suspicion_max, 0.001),
 		0.0,
 		1.0
 	)
+	var cone_color: Color
 	if _state == State.FOUND or _state == State.CARRY:
-		_cone_material.albedo_color = _color_with_alpha(
+		cone_color = _color_with_alpha(
 			cone_found_color,
 			cone_found_alpha
 		)
 	elif _state == State.HUNT:
-		_cone_material.albedo_color = _color_with_alpha(
+		cone_color = _color_with_alpha(
 			cone_hunt_color,
 			cone_hunt_alpha
 		)
 	else:
-		var cone_color: Color = cone_base_color.lerp(
+		cone_color = cone_base_color.lerp(
 			cone_suspicious_color,
 			suspicion_weight
 		)
@@ -2010,7 +2104,18 @@ func _update_readability() -> void:
 			cone_suspicious_alpha,
 			suspicion_weight
 		)
-		_cone_material.albedo_color = cone_color
+	_cone_material.albedo_color = cone_color
+	var dark_color: Color = cone_color.lerp(
+		cone_dark_color,
+		clampf(cone_dark_color_mix, 0.0, 1.0)
+	)
+	dark_color.a = cone_color.a * clampf(
+		cone_dark_alpha_multiplier,
+		0.0,
+		1.0
+	)
+	_cone_dark_material.albedo_color = dark_color
+	_build_cone_mesh(_get_current_cone_angle())
 
 
 func _get_current_cone_angle() -> float:
@@ -2032,16 +2137,32 @@ func _get_current_cone_angle() -> float:
 func _setup_cone() -> void:
 	if _vision_cone == null:
 		return
-	_cone_material = StandardMaterial3D.new()
-	_cone_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_cone_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_cone_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_cone_material = _make_cone_material()
 	_cone_material.albedo_color = _color_with_alpha(
 		cone_base_color,
 		cone_base_alpha
 	)
+	_cone_dark_material = _make_cone_material()
+	var initial_dark_color: Color = cone_base_color.lerp(
+		cone_dark_color,
+		clampf(cone_dark_color_mix, 0.0, 1.0)
+	)
+	initial_dark_color.a = cone_base_alpha * clampf(
+		cone_dark_alpha_multiplier,
+		0.0,
+		1.0
+	)
+	_cone_dark_material.albedo_color = initial_dark_color
 	_vision_cone.position.y = cone_floor_offset
 	_build_cone_mesh(_get_current_cone_angle())
+
+
+func _make_cone_material() -> StandardMaterial3D:
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return material
 
 
 func _setup_voice_indicator() -> void:
@@ -2112,7 +2233,11 @@ func _color_with_alpha(color: Color, alpha: float) -> Color:
 
 
 func _build_cone_mesh(cone_angle_degrees: float) -> void:
-	if _vision_cone == null or _cone_material == null:
+	if (
+		_vision_cone == null
+		or _cone_material == null
+		or _cone_dark_material == null
+	):
 		return
 	var ray_count: int = maxi(cone_raycast_count, 2)
 	var reset_distances: bool = _cone_ray_distances.size() != ray_count
@@ -2146,14 +2271,77 @@ func _build_cone_mesh(cone_angle_degrees: float) -> void:
 		_cone_ray_distances[ray_index] = clipped_distance
 		ray_points.append(local_direction * clipped_distance)
 
-	var cone_mesh: ImmediateMesh = ImmediateMesh.new()
-	cone_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, _cone_material)
+	var bright_triangles: Array[Vector3] = []
+	var dark_triangles: Array[Vector3] = []
+	_cone_bright_cell_count = 0
+	_cone_dark_cell_count = 0
+	_cone_bright_sample_min = INF
+	_cone_dark_sample_max = -INF
+	var band_count: int = maxi(cone_brightness_band_count, 1)
 	for point_index in range(ray_points.size() - 1):
-		cone_mesh.surface_add_vertex(Vector3.ZERO)
-		cone_mesh.surface_add_vertex(ray_points[point_index])
-		cone_mesh.surface_add_vertex(ray_points[point_index + 1])
-	cone_mesh.surface_end()
+		for band_index in range(band_count):
+			var near_weight: float = float(band_index) / float(band_count)
+			var far_weight: float = float(band_index + 1) / float(band_count)
+			var near_left: Vector3 = ray_points[point_index] * near_weight
+			var near_right: Vector3 = (
+				ray_points[point_index + 1] * near_weight
+			)
+			var far_left: Vector3 = ray_points[point_index] * far_weight
+			var far_right: Vector3 = (
+				ray_points[point_index + 1] * far_weight
+			)
+			var sample_local: Vector3 = (
+				near_left + near_right + far_left + far_right
+			) * 0.25
+			var sample_brightness: float = LightSystem.get_brightness_at(
+				_vision_cone.to_global(sample_local)
+			)
+			var triangle_target: Array[Vector3] = (
+				bright_triangles
+				if sample_brightness >= brightness_threshold
+				else dark_triangles
+			)
+			if band_index == 0:
+				triangle_target.append(Vector3.ZERO)
+				triangle_target.append(far_left)
+				triangle_target.append(far_right)
+			else:
+				triangle_target.append(near_left)
+				triangle_target.append(far_left)
+				triangle_target.append(far_right)
+				triangle_target.append(near_left)
+				triangle_target.append(far_right)
+				triangle_target.append(near_right)
+			if sample_brightness >= brightness_threshold:
+				_cone_bright_cell_count += 1
+				_cone_bright_sample_min = minf(
+					_cone_bright_sample_min,
+					sample_brightness
+				)
+			else:
+				_cone_dark_cell_count += 1
+				_cone_dark_sample_max = maxf(
+					_cone_dark_sample_max,
+					sample_brightness
+				)
+
+	var cone_mesh: ImmediateMesh = ImmediateMesh.new()
+	_add_cone_surface(cone_mesh, bright_triangles, _cone_material)
+	_add_cone_surface(cone_mesh, dark_triangles, _cone_dark_material)
 	_vision_cone.mesh = cone_mesh
+
+
+func _add_cone_surface(
+	cone_mesh: ImmediateMesh,
+	triangles: Array[Vector3],
+	material: Material
+) -> void:
+	if triangles.is_empty():
+		return
+	cone_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
+	for vertex: Vector3 in triangles:
+		cone_mesh.surface_add_vertex(vertex)
+	cone_mesh.surface_end()
 
 
 func _get_static_hit_distance(world_direction: Vector3) -> float:
@@ -2950,6 +3138,430 @@ func _run_b20_live_verification() -> void:
 	assert(presenter_detached, "B20 snack presenter remained attached to the player.")
 	assert(run_still_playing, "B20 snackless crib deposit triggered a win.")
 	print("B20 live SceneTree verification passed.")
+
+
+func _run_b21_live_verification() -> void:
+	var pet: DinnerPet = get_parent().get_node_or_null("Pet") as DinnerPet
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var original_routine_rows: Array[Dictionary] = routine_rows.duplicate(true)
+	var original_facing_turn_speed: float = facing_turn_speed
+	var original_investigate_pause: float = investigate_alert_pause
+	var original_parent_processing: bool = is_physics_processing()
+	var player_was_processing: bool = (
+		_player != null and _player.is_physics_processing()
+	)
+	var player_was_input_locked: bool = (
+		_player != null and _player.input_locked
+	)
+	var player_start_position: Vector3 = (
+		_player.global_position if _player != null else Vector3.ZERO
+	)
+	var pet_was_processing: bool = (
+		pet != null and pet.is_physics_processing()
+	)
+	var dining_switch: DinnerWorldSwitch
+	for node: Node in get_tree().get_nodes_in_group("world_switch"):
+		var candidate_switch: DinnerWorldSwitch = node as DinnerWorldSwitch
+		if (
+			candidate_switch != null
+			and candidate_switch.switch_id == &"dining"
+		):
+			dining_switch = candidate_switch
+			break
+	var dining_original_on: bool = (
+		dining_switch != null and dining_switch.is_on
+	)
+	var original_click_loudness: float = (
+		dining_switch.click_loudness if dining_switch != null else 0.0
+	)
+
+	Engine.time_scale = maxf(verify_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(
+		verify_physics_ticks_per_second,
+		60
+	)
+	if _player != null:
+		if _player.is_attached_to_carrier():
+			_player.detach_from_carrier(player_start_position)
+		_player.set_input_locked(true)
+		_player.set_physics_process(false)
+		_player.global_position = verify_observer_parking_position
+	if pet != null:
+		pet.set_physics_process(false)
+	GameClock.start()
+	for _frame_index in range(verify_warmup_frames):
+		await get_tree().physics_frame
+
+	# The actual wall-clipped cone must contain both truthful bright cells and
+	# faint dark cells somewhere in the live phase-zero house.
+	var cone_two_tone: bool = false
+	var cone_surface_count: int = 0
+	var cone_bright_cells: int = 0
+	var cone_dark_cells: int = 0
+	var cone_bright_min: float = INF
+	var cone_dark_max: float = -INF
+	for cone_origin: Vector3 in [
+		tv_couch_position,
+		Vector3(5.5, 0.7, -4.2),
+		Vector3(-2.0, 0.7, -0.8),
+		Vector3(5.0, 0.7, 4.8),
+	]:
+		if cone_two_tone:
+			break
+		global_position = cone_origin
+		for yaw_degrees: int in range(0, 360, 30):
+			rotation.y = deg_to_rad(float(yaw_degrees))
+			_cone_yaw_degrees = 0.0
+			if _vision_cone != null:
+				_vision_cone.rotation.y = 0.0
+			_cone_ray_distances.clear()
+			_update_readability()
+			cone_bright_cells = _cone_bright_cell_count
+			cone_dark_cells = _cone_dark_cell_count
+			cone_bright_min = _cone_bright_sample_min
+			cone_dark_max = _cone_dark_sample_max
+			var immediate_mesh: ImmediateMesh = (
+				_vision_cone.mesh as ImmediateMesh
+				if _vision_cone != null
+				else null
+			)
+			cone_surface_count = (
+				immediate_mesh.get_surface_count()
+				if immediate_mesh != null
+				else 0
+			)
+			cone_two_tone = (
+				cone_bright_cells > 0
+				and cone_dark_cells > 0
+				and cone_surface_count == 2
+				and cone_bright_min >= brightness_threshold
+				and cone_dark_max < brightness_threshold
+			)
+			if cone_two_tone:
+				break
+
+	# Find one real, wall-honest observation pose for the dining light.
+	var switch_visible_pose_found: bool = false
+	var switch_visible_position: Vector3
+	var switch_visible_rotation: float = 0.0
+	if dining_switch != null:
+		var visible_pose: Dictionary = (
+			_find_visible_switch_observer_pose(dining_switch)
+		)
+		switch_visible_pose_found = not visible_pose.is_empty()
+		if switch_visible_pose_found:
+			switch_visible_position = visible_pose["position"]
+			switch_visible_rotation = float(visible_pose["rotation"])
+
+	var visible_toggle_investigated: bool = false
+	var hidden_click_ignored: bool = false
+	var recent_sweep_investigated: bool = false
+	var expired_change_ignored: bool = false
+	if dining_switch != null and switch_visible_pose_found:
+		facing_turn_speed = 0.0
+		dining_switch.click_loudness = verify_b21_toy_loudness
+		routine_rows = [
+			{
+				"time": 0.0,
+				"position": switch_visible_position,
+				"dwell": GameClock.run_length,
+				"facing": Vector3.FORWARD,
+			},
+		]
+
+		_parent_operating_switch = true
+		dining_switch.set_state(true, false)
+		_parent_operating_switch = false
+		_refresh_light_state_snapshot()
+		_recent_light_changes.clear()
+		_clear_light_anomaly()
+		_state = State.ROUTINE
+		suspicion = 0.0
+		global_position = switch_visible_position
+		rotation.y = switch_visible_rotation
+		dining_switch.set_state(false, true)
+		visible_toggle_investigated = (
+			_state == State.INVESTIGATE
+			and _light_anomaly_switch == dining_switch
+		)
+
+		_parent_operating_switch = true
+		dining_switch.set_state(true, false)
+		_parent_operating_switch = false
+		_refresh_light_state_snapshot()
+		_recent_light_changes.clear()
+		_clear_light_anomaly()
+		_state = State.ROUTINE
+		suspicion = 0.0
+		global_position = switch_visible_position
+		rotation.y = switch_visible_rotation + PI
+		dining_switch.set_state(false, true)
+		hidden_click_ignored = (
+			_state == State.ROUTINE
+			and is_zero_approx(suspicion)
+			and _light_anomaly_switch == null
+		)
+		var memory_observation_start: float = _light_awareness_elapsed
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			if (
+				_light_awareness_elapsed - memory_observation_start
+				>= verify_b21_light_memory_delay
+			):
+				break
+		rotation.y = switch_visible_rotation
+		_light_anomaly_scan_elapsed = light_anomaly_scan_interval
+		await get_tree().physics_frame
+		recent_sweep_investigated = (
+			_state == State.INVESTIGATE
+			and _light_anomaly_switch == dining_switch
+		)
+
+		_parent_operating_switch = true
+		dining_switch.set_state(true, false)
+		_parent_operating_switch = false
+		_refresh_light_state_snapshot()
+		_recent_light_changes.clear()
+		_clear_light_anomaly()
+		_state = State.ROUTINE
+		suspicion = 0.0
+		global_position = switch_visible_position
+		rotation.y = switch_visible_rotation + PI
+		dining_switch.set_state(false, true)
+		var expiry_start: float = _light_awareness_elapsed
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			if (
+				_light_awareness_elapsed - expiry_start
+				>= (
+					light_change_memory_duration
+					+ verify_b21_light_expiry_margin
+				)
+			):
+				break
+		rotation.y = switch_visible_rotation
+		_light_anomaly_scan_elapsed = light_anomaly_scan_interval
+		await get_tree().physics_frame
+		expired_change_ignored = (
+			_state == State.ROUTINE
+			and is_zero_approx(suspicion)
+			and _light_anomaly_switch == null
+		)
+
+	# A solid player stomp gets the big-event floor even when falloff alone
+	# would leave this six-metre case below the threshold.
+	global_position = verify_bark_parent_position
+	_state = State.ROUTINE
+	suspicion = 0.0
+	_reset_hearing_interest_for_verification()
+	_clear_light_anomaly()
+	_recent_light_changes.clear()
+	var toy_position: Vector3 = (
+		global_position + Vector3.RIGHT * verify_b21_toy_distance
+	)
+	var toy_radius: float = minf(
+		verify_b21_toy_loudness * ring_radius_per_loudness,
+		ring_radius_cap
+	)
+	var toy_falloff_contribution: float = (
+		verify_b21_toy_loudness
+		* noise_suspicion_multiplier
+		* (1.0 - verify_b21_toy_distance / toy_radius)
+	)
+	if _player != null:
+		NoiseSystem.emit_noise(
+			toy_position,
+			verify_b21_toy_loudness,
+			_player
+		)
+	var toy_investigated_immediately: bool = (
+		_state == State.INVESTIGATE
+		and _flat_distance(_last_known_position, toy_position)
+		<= routine_repath_distance
+		and suspicion >= big_event_threshold
+	)
+
+	# Search the actual lit/LOS geometry for a far-cone pose, then let the
+	# normal perception loop accumulate suspicion with movement paused.
+	var far_pose_found: bool = false
+	var far_parent_position: Vector3
+	var far_player_position: Vector3
+	set_physics_process(false)
+	if _player != null:
+		for sight_origin: Vector3 in [
+			tv_couch_position,
+			Vector3(5.5, 0.7, -4.2),
+			Vector3(9.5, 0.7, -3.8),
+			Vector3(-2.0, 0.7, -0.8),
+			Vector3(5.0, 0.7, 4.8),
+		]:
+			if far_pose_found:
+				break
+			for yaw_degrees: int in range(0, 360, 15):
+				var sight_direction: Vector3 = Vector3.FORWARD.rotated(
+					Vector3.UP,
+					deg_to_rad(float(yaw_degrees))
+				)
+				global_position = sight_origin
+				_player.global_position = (
+					sight_origin
+					+ sight_direction * verify_b21_far_sight_distance
+				)
+				_player.global_position.y = player_start_position.y
+				rotation.y = atan2(
+					-sight_direction.x,
+					-sight_direction.z
+				)
+				_cone_yaw_degrees = 0.0
+				await get_tree().physics_frame
+				if _can_see_player():
+					far_pose_found = true
+					far_parent_position = global_position
+					far_player_position = _player.global_position
+					break
+
+	var far_detection_elapsed: float = INF
+	var far_detection_suspicion: float = 0.0
+	var far_lit_brightness: float = 0.0
+	var far_detected_on_time: bool = false
+	if far_pose_found and _player != null:
+		global_position = far_parent_position
+		_player.global_position = far_player_position
+		var sight_direction: Vector3 = far_player_position - far_parent_position
+		sight_direction.y = 0.0
+		rotation.y = atan2(
+			-sight_direction.normalized().x,
+			-sight_direction.normalized().z
+		)
+		routine_rows = [
+			{
+				"time": 0.0,
+				"position": far_parent_position,
+				"dwell": GameClock.run_length,
+				"facing": sight_direction.normalized(),
+			},
+		]
+		_state = State.ROUTINE
+		suspicion = 0.0
+		_clear_light_anomaly()
+		_recent_light_changes.clear()
+		investigate_alert_pause = verify_b21_far_sight_deadline + 1.0
+		far_lit_brightness = LightSystem.get_brightness_at(
+			_player.global_position
+		)
+		GameClock.start()
+		var far_sight_start: float = (
+			GameClock.run_length - GameClock.time_remaining
+		)
+		set_physics_process(true)
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			far_detection_suspicion = maxf(
+				far_detection_suspicion,
+				suspicion
+			)
+			var sight_elapsed: float = (
+				GameClock.run_length - GameClock.time_remaining
+				- far_sight_start
+			)
+			if suspicion >= investigate_threshold:
+				far_detection_elapsed = sight_elapsed
+				break
+			if sight_elapsed >= verify_b21_far_sight_deadline + 0.2:
+				break
+		far_detected_on_time = (
+			far_lit_brightness > brightness_threshold
+			and far_detection_suspicion >= investigate_threshold
+			and far_detection_elapsed <= verify_b21_far_sight_deadline
+		)
+	else:
+		set_physics_process(true)
+
+	var verification_passed: bool = (
+		cone_two_tone
+		and switch_visible_pose_found
+		and visible_toggle_investigated
+		and hidden_click_ignored
+		and recent_sweep_investigated
+		and expired_change_ignored
+		and toy_investigated_immediately
+		and far_pose_found
+		and far_detected_on_time
+	)
+
+	GameClock.running = false
+	routine_rows = original_routine_rows
+	facing_turn_speed = original_facing_turn_speed
+	investigate_alert_pause = original_investigate_pause
+	_recent_light_changes.clear()
+	_clear_light_anomaly()
+	_parent_operating_switch = true
+	if dining_switch != null:
+		dining_switch.click_loudness = original_click_loudness
+		dining_switch.set_state(dining_original_on, false)
+	_parent_operating_switch = false
+	_refresh_light_state_snapshot()
+	if _player != null:
+		_player.global_position = player_start_position
+		_player.set_input_locked(player_was_input_locked)
+		_player.set_physics_process(player_was_processing)
+	if pet != null:
+		pet.set_physics_process(pet_was_processing)
+	set_physics_process(original_parent_processing)
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+
+	print(
+		(
+			"B21 live metrics: cone bright/dark=%d/%d surfaces=%d "
+			+ "samples=%.2f/%.2f; light visible/hidden/recent/expired="
+			+ "%s/%s/%s/%s; toy raw/final=%.1f/%.1f state=%s; "
+			+ "far brightness=%.2f threshold-time=%.2f s suspicion=%.1f."
+		)
+		% [
+			cone_bright_cells,
+			cone_dark_cells,
+			cone_surface_count,
+			cone_bright_min,
+			cone_dark_max,
+			visible_toggle_investigated,
+			hidden_click_ignored,
+			recent_sweep_investigated,
+			expired_change_ignored,
+			toy_falloff_contribution,
+			big_event_threshold,
+			&"INVESTIGATE" if toy_investigated_immediately else get_state_name(),
+			far_lit_brightness,
+			far_detection_elapsed,
+			far_detection_suspicion,
+		]
+	)
+	await _settle_verification_audio()
+	get_tree().quit(0 if verification_passed else 1)
+	assert(cone_two_tone, "B21 cone did not split live bright/dark floor cells.")
+	assert(
+		visible_toggle_investigated,
+		"B21 visible light toggle did not investigate."
+	)
+	assert(hidden_click_ignored, "B21 hidden switch click was heard.")
+	assert(
+		recent_sweep_investigated,
+		"B21 recent hidden light change was not noticed by a later cone sweep."
+	)
+	assert(
+		expired_change_ignored,
+		"B21 expired out-of-sight light change still investigated."
+	)
+	assert(
+		toy_investigated_immediately,
+		"B21 one solid toy stomp did not investigate immediately."
+	)
+	assert(
+		far_detected_on_time,
+		"B21 lit far-cone player did not reach detection threshold in 1.5 s."
+	)
+	print("B21 live SceneTree verification passed.")
 
 
 func _run_b9_live_verification() -> void:
@@ -4031,8 +4643,23 @@ func _run_b14_live_verification() -> void:
 
 	if dining_switch != null:
 		GameClock.start()
+		var visible_pose: Dictionary = (
+			_find_visible_switch_observer_pose(dining_switch)
+		)
+		var visible_position: Vector3 = visible_pose.get(
+			"position",
+			dining_switch.global_position + Vector3.RIGHT
+		)
+		var visible_rotation: float = float(
+			visible_pose.get("rotation", rotation.y)
+		)
+		_parent_operating_switch = true
 		dining_switch.set_state(true, false)
-		global_position = dining_switch.global_position + Vector3(1.0, -0.3, 0.0)
+		_parent_operating_switch = false
+		_refresh_light_state_snapshot()
+		_recent_light_changes.clear()
+		global_position = visible_position
+		rotation.y = visible_rotation
 		_state = State.ROUTINE
 		suspicion = 0.0
 		_clear_light_anomaly()
@@ -4046,6 +4673,13 @@ func _run_b14_live_verification() -> void:
 			_state == State.INVESTIGATE
 			and _light_anomaly_switch == dining_switch
 		)
+		if click_started_investigate:
+			# Keep the visual-observation proof independent from the legacy
+			# B14 nav/TV return path, whose known reachable start is here.
+			global_position = (
+				dining_switch.global_position + Vector3(1.0, -0.3, 0.0)
+			)
+			_set_navigation_target(dining_switch.global_position, true)
 		tv_stopped_for_listening = (
 			_tv_suppressed_for_listening
 			and (tv_bed == null or not tv_bed.playing)
@@ -4077,22 +4711,17 @@ func _run_b14_live_verification() -> void:
 				break
 
 		_parent_operating_switch = true
-		dining_switch.set_state(false, false)
+		dining_switch.set_state(true, false)
 		_parent_operating_switch = false
-		var observation_position: Vector3 = (
-			_get_switch_observation_position(dining_switch)
-		)
-		var observation_direction: Vector3 = (
-			observation_position - tv_couch_position
-		)
-		observation_direction.y = 0.0
-		global_position = tv_couch_position
-		rotation.y = atan2(
-			-observation_direction.normalized().x,
-			-observation_direction.normalized().z
-		)
+		_refresh_light_state_snapshot()
+		_recent_light_changes.clear()
+		_clear_light_anomaly()
+		global_position = visible_position
+		rotation.y = visible_rotation + PI
 		facing_turn_speed = 0.0
 		_state = State.ROUTINE
+		dining_switch.set_state(false, false)
+		rotation.y = visible_rotation
 		_light_anomaly_scan_elapsed = light_anomaly_scan_interval
 		_set_navigation_target(global_position, true)
 		await get_tree().physics_frame
@@ -4252,8 +4881,8 @@ func _run_b14_live_verification() -> void:
 	)
 	print(
 		(
-			"B14 live metrics: click investigate=%s, restored=%s, "
-			+ "TV off/on=%s/%s, visual anomaly=%s, phase2 off=%s; "
+			"B14 live metrics: visible toggle investigate=%s, restored=%s, "
+			+ "TV off/on=%s/%s, recent cone notice=%s, phase2 off=%s; "
 			+ "punishment=%s, room enter/dwell/protest/exit=%s/%s/%s/%s "
 			+ "(%.2f s), resumed=%s; room VO parent/icon/kid=%s/%s/%s; "
 			+ "VO icon=%s, noise events=%d."
@@ -4281,11 +4910,17 @@ func _run_b14_live_verification() -> void:
 	)
 	await _settle_verification_audio()
 	get_tree().quit(0 if verification_passed else 1)
-	assert(click_started_investigate, "B14 switch click did not investigate.")
+	assert(
+		click_started_investigate,
+		"B14 visible light change did not investigate."
+	)
 	assert(click_restored, "B14 parent did not restore the expected light state.")
 	assert(tv_stopped_for_listening, "B14 parent did not silence the TV to listen.")
 	assert(tv_restored_at_couch, "B14 TV did not return at the couch.")
-	assert(visual_anomaly_detected, "B14 cone did not notice an early-dark zone.")
+	assert(
+		visual_anomaly_detected,
+		"B14 cone did not notice a recent light change."
+	)
 	assert(phase_two_tv_stayed_off, "B14 phase 2 TV shutdown was not permanent.")
 	assert(epilogue_gate_passed, "B14 escaped-child room check did not complete.")
 	assert(
@@ -4663,7 +5298,6 @@ func _run_b18_core_live_verification() -> void:
 		pet != null and pet.is_physics_processing()
 	)
 	var parent_start: Vector3 = verify_bark_parent_position
-	var dining_switch: DinnerWorldSwitch
 
 	Engine.time_scale = maxf(verify_time_scale, 1.0)
 	Engine.physics_ticks_per_second = maxi(verify_physics_ticks_per_second, 60)
@@ -4675,11 +5309,6 @@ func _run_b18_core_live_verification() -> void:
 		_player.global_position = verify_observer_parking_position
 	if pet != null:
 		pet.set_physics_process(false)
-	for node: Node in get_tree().get_nodes_in_group("world_switch"):
-		var candidate: DinnerWorldSwitch = node as DinnerWorldSwitch
-		if candidate != null and candidate.switch_id == &"dining":
-			dining_switch = candidate
-			break
 	GameClock.start()
 	for _frame_index in range(verify_warmup_frames):
 		await get_tree().physics_frame
@@ -4791,47 +5420,6 @@ func _run_b18_core_live_verification() -> void:
 			<= routine_repath_distance
 		)
 
-	var player_toggle_investigated: bool = false
-	var off_schedule_change_investigated: bool = false
-	var dining_original_on: bool = false
-	if dining_switch != null:
-		dining_original_on = dining_switch.is_on
-		_parent_operating_switch = true
-		dining_switch.set_state(true, false)
-		_parent_operating_switch = false
-		_refresh_light_state_snapshot()
-		global_position = parent_start
-		_state = State.ROUTINE
-		suspicion = 0.0
-		_reset_hearing_interest_for_verification()
-		_clear_light_anomaly()
-		_set_navigation_target(global_position, true)
-		dining_switch.set_state(false, false)
-		player_toggle_investigated = (
-			_state == State.INVESTIGATE
-			and _light_anomaly_switch == dining_switch
-		)
-
-		_parent_operating_switch = true
-		dining_switch.set_state(true, false)
-		_parent_operating_switch = false
-		_refresh_light_state_snapshot()
-		global_position = parent_start
-		_state = State.ROUTINE
-		suspicion = 0.0
-		_reset_hearing_interest_for_verification()
-		_clear_light_anomaly()
-		_set_navigation_target(global_position, true)
-		LightSystem.set_light_enabled(
-			dining_switch.target_light_id,
-			false
-		)
-		await get_tree().physics_frame
-		off_schedule_change_investigated = (
-			_state == State.INVESTIGATE
-			and _light_anomaly_switch == dining_switch
-		)
-
 	var quiet_radius: float = minf(
 		verify_b18_quiet_loudness * ring_radius_per_loudness,
 		ring_radius_cap
@@ -4856,17 +5444,10 @@ func _run_b18_core_live_verification() -> void:
 		and big_investigated_immediately
 		and big_movement >= verify_b15_investigate_move
 		and bark_investigated_immediately
-		and player_toggle_investigated
-		and off_schedule_change_investigated
 	)
 
 	GameClock.running = false
 	routine_rows = original_routine_rows
-	_parent_operating_switch = true
-	if dining_switch != null:
-		dining_switch.set_state(dining_original_on, false)
-	_parent_operating_switch = false
-	_refresh_light_state_snapshot()
 	Engine.time_scale = original_time_scale
 	Engine.physics_ticks_per_second = original_physics_ticks
 	if _player != null:
@@ -4880,7 +5461,7 @@ func _run_b18_core_live_verification() -> void:
 		(
 			"B18 core live metrics: quiet %.1f -> curious=%s, drift=%.3f m; "
 			+ "big %.1f -> investigate=%s, move=%.2f m; bark suspicion=%.1f "
-			+ "-> investigate=%s; player/off-schedule light=%s/%s."
+			+ "-> investigate=%s; light awareness covered by B21."
 		)
 		% [
 			quiet_contribution,
@@ -4891,8 +5472,6 @@ func _run_b18_core_live_verification() -> void:
 			big_movement,
 			bark_suspicion,
 			bark_investigated_immediately,
-			player_toggle_investigated,
-			off_schedule_change_investigated,
 		]
 	)
 	await _settle_verification_audio()
@@ -4909,10 +5488,6 @@ func _run_b18_core_live_verification() -> void:
 	assert(
 		bark_investigated_immediately,
 		"B18 nearby bark did not bypass CURIOUS."
-	)
-	assert(
-		player_toggle_investigated and off_schedule_change_investigated,
-		"B18 non-parent light change did not investigate immediately."
 	)
 	print("B18 core live SceneTree verification passed.")
 
