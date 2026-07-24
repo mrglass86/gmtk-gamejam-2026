@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import shutil
 import subprocess
@@ -30,9 +31,42 @@ SOURCE_GROUP_HINTS = {
 SEGMENT_GROUP_OVERRIDES: dict[tuple[str, int], str] = {
     **{
         ("kid_5", segment_index): "laughing"
-        for segment_index in [7, 9, 12, 14, 15, 16, 17, 18, 19, 20, 21, 24, 25]
+        for segment_index in [
+            4,
+            7,
+            9,
+            12,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            24,
+            25,
+        ]
     },
+    **{
+        ("kid_6", segment_index): "laughing"
+        for segment_index in [1, 15, 16, 17, 20]
+    },
+    **{
+        ("kid_6", segment_index): "crying"
+        for segment_index in [8, 21, 27, 28]
+    },
+    **{
+        ("kid_12", segment_index): "crying"
+        for segment_index in [3, 4, 5, 6, 9]
+    },
+    ("kid_6", 5): "no_no_no",
+    ("kid_6", 9): "no_no_no",
     ("kid_6", 14): "no_no_no",
+    ("kid_10", 4): "no_no_no",
+    ("kid_10", 6): "laughing",
+    ("kid_10", 7): "laughing",
+    ("kid_12", 10): "no_no_no",
 }
 
 
@@ -250,9 +284,9 @@ def write_manifest(
             "tone; -33 dBFS was the closest effective threshold."
         ),
         (
-            "- Broad source hints: kid_3/kid_8 = no_no_no; kid_5 = mixed "
-            "crying/laughing split with local transcription hints; the isolated "
-            "kid_6 “No!” is no_no_no; all others = other."
+            "- Broad source hints were refined with a per-clip local "
+            "transcription pass. Transcript text and grouping remain audition "
+            "hints, not keeper assignments."
         ),
         "",
         "## Counts",
@@ -266,14 +300,18 @@ def write_manifest(
             "",
             "## Candidates",
             "",
-            "| Candidate | Guess | Duration (s) | Source | Source range (s) | Peak (dBFS) |",
-            "|---|---:|---:|---|---:|---:|",
+            (
+                "| Candidate | Guess | Transcript hint | Duration (s) | "
+                "Source | Segment | Source range (s) | Peak (dBFS) |"
+            ),
+            "|---|---:|---|---:|---|---:|---:|---:|",
         ]
     )
     for row in rows:
         lines.append(
-            "| {candidate} | {group} | {duration:.3f} | {source} | "
-            "{start:.3f}–{end:.3f} | {peak:.1f} |".format(**row)
+            "| {candidate} | {group} | {transcript} | {duration:.3f} | "
+            "{source} | {segment} | {start:.3f}–{end:.3f} | "
+            "{peak:.1f} |".format(**row)
         )
     manifest_path = output_directory / "MANIFEST.md"
     manifest_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -290,6 +328,11 @@ def main() -> None:
         "--output-dir",
         type=Path,
         default=Path("assets/voice/candidates"),
+    )
+    parser.add_argument(
+        "--transcript-hints",
+        type=Path,
+        default=Path("assets/voice/transcript_hints.json"),
     )
     args = parser.parse_args()
 
@@ -309,20 +352,26 @@ def main() -> None:
     if args.output_dir.exists() and any(args.output_dir.iterdir()):
         raise SystemExit(f"Output directory must be empty: {args.output_dir}")
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    transcript_hints: dict[str, str] = {}
+    if args.transcript_hints.exists():
+        transcript_hints = json.loads(
+            args.transcript_hints.read_text(encoding="utf-8")
+        )
 
     counters: Counter[str] = Counter()
     rows: list[dict[str, object]] = []
     with tempfile.TemporaryDirectory(prefix="gmtk-family-voice-") as temp_name:
         temp_directory = Path(temp_name)
-        for source_path in source_paths:
-            source_stem = source_path.stem
-            default_group = SOURCE_GROUP_HINTS.get(source_stem, "other")
+        for source_index, source_path in enumerate(source_paths, start=1):
+            source_id = f"kid_{source_index}"
+            public_source_name = f"recording_{source_index:02d}.m4a"
+            default_group = SOURCE_GROUP_HINTS.get(source_id, "other")
             for segment_index, (start_time, end_time) in enumerate(
                 nonsilent_ranges(source_path),
                 start=1,
             ):
                 group_name = SEGMENT_GROUP_OVERRIDES.get(
-                    (source_stem, segment_index),
+                    (source_id, segment_index),
                     default_group,
                 )
                 counters[group_name] += 1
@@ -339,8 +388,16 @@ def main() -> None:
                     {
                         "candidate": candidate_name,
                         "group": group_name,
+                        "transcript": transcript_hints.get(
+                            f"{source_id}:{segment_index}",
+                            "",
+                        )
+                        .replace("|", "/")
+                        .replace("\n", " ")
+                        .strip(),
                         "duration": candidate_duration,
-                        "source": source_path.name,
+                        "source": public_source_name,
+                        "segment": segment_index,
                         "start": start_time,
                         "end": end_time,
                         "peak": candidate_peak,

@@ -7,10 +7,12 @@ the 13 iPhone M4A takes into mono 48 kHz OGG candidates, high-passes at 70 Hz,
 splits at effective -33 dBFS / 300 ms silence, trims boundaries, and iteratively
 peak-normalizes to -3 dBFS. The requested -35 dBFS was below the room tone.
 
-`assets/voice/candidates/` contains 124 clips: 13 laughing, 13 crying, 12
-no-no-no, and 86 other. `MANIFEST.md` records duration, source, source range,
-group guess, and final peak. Raw takes are ignored by Git. Anonymous family
-credit is recorded. Nothing is wired; CC0 fallbacks remain authoritative.
+`assets/voice/candidates/` contains 124 clips: 21 laughing, 21 crying, 16
+no-no-no, and 66 other. A second per-clip local transcription pass corrected
+the broad first-pass groupings. `MANIFEST.md` records a transcript hint,
+sanitized source ID, segment/range, duration, group guess, and final peak. Raw
+takes are ignored by Git. Anonymous family credit is recorded. Nothing is
+wired; CC0 fallbacks remain authoritative.
 
 ## Next
 
