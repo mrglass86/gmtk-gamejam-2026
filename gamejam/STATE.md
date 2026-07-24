@@ -97,6 +97,9 @@ a journal.
   `b14efb3` closes the last WIRING request: B15 CURIOUS plays the director's
   three-take parent investigate/“hm?” pool and its magenta parent indicator
   without gameplay noise. The exact committed head passes 29/29.
+  `34b3e9f` adds B16's randomized free-play giggle scheduler and exact 0.5
+  gameplay event. Committed startup, A4/A4.1/A6/audio/B7/B15, and the live B16
+  timing/carry/result-screen gate pass.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -106,8 +109,8 @@ a journal.
 
 ## Current focus
 
-- Lane B ships B16's free-play giggle timer/noise gate; lane A connects its
-  soft VO without duplicating the gameplay event. Then Noah runs CP5.
+- Lane A connects B16's soft giggle VO without duplicating or misclassifying
+  Player's gameplay event. Then Noah runs CP5.
 
 ## Known blockers or risks
 
