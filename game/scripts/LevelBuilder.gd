@@ -112,9 +112,9 @@ func _build_props() -> void:
 	_add_toilet()
 	_add_prop("AdultBed", Vector3(-9.8, 0.4, 4.75), Vector3(4.6, 0.8, 3.1), prop_color)
 	_add_prop("HallShelf", Vector3(10.1, 0.55, 4.35), Vector3(1.4, 1.1, 3.5), prop_color)
-	_add_prop("AdultDoorPanel", Vector3(-12.75, 0.6, 1.5), Vector3(2.3, 1.2, 0.12), wall_color)
+	_add_prop("AdultDoorPanel", Vector3(-12.75, 0.6, 1.5), Vector3(2.3, 1.2, 0.25), wall_color)
 	_add_prop("KitchenSpeaker", Vector3(8.5, 1.15, -5.3), Vector3(0.5, 0.5, 0.5), Color("#6f7882"))
-	_add_visual_prop("FrontDoor", Vector3(8.0, 0.575, 6.3), Vector3(2.4, 1.15, 0.15), Color("#59616b"))
+	_add_visual_prop("FrontDoor", Vector3(8.0, 0.6, 6.2), Vector3(2.4, 1.2, 0.15), Color("#59616b"))
 	_add_visual_prop("DoorMat", Vector3(8.0, 0.01, 5.85), Vector3(1.6, 0.02, 0.9), carpet_color)
 	_add_front_door_side_table()
 
@@ -125,7 +125,7 @@ func _build_lights() -> void:
 		"bedroom",
 		Vector3(-10.2, 1.12, -5.6),
 		0.85,
-		0.72,
+		0.70,
 		-1.0,
 		Vector3(-10.8, 4.5, -3.8)
 	)
@@ -143,7 +143,7 @@ func _build_lights() -> void:
 		"kitchen",
 		Vector3(9.8, 1.28, -5.05),
 		1.0,
-		0.92,
+		0.90,
 		-1.0,
 		Vector3(10.7, 4.5, -2.3)
 	)
@@ -152,7 +152,7 @@ func _build_lights() -> void:
 		"hall",
 		Vector3(0.95, 1.42, 0.9),
 		0.9,
-		0.0,
+		0.86,
 		-1.0,
 		Vector3(0.95, 4.5, 0.9),
 		Vector3(-0.5, 0.0, 0.5)
@@ -162,14 +162,14 @@ func _build_lights() -> void:
 		"hall",
 		Vector3(9.7, 1.25, 5.85),
 		0.85,
-		0.66,
+		0.68,
 		-1.0,
 		Vector3(8.3, 4.5, 4.7)
 	)
 	_add_omni(
 		"BathroomLampVisual",
 		"bathroom",
-		Vector3(-5.75, 1.12, -3.9),
+		Vector3(-5.75, 1.16, -3.9),
 		0.78,
 		0.0,
 		-1.0,
@@ -206,37 +206,42 @@ func _build_switches() -> void:
 	_add_world_switch(
 		"DiningSwitch",
 		&"dining",
-		Vector3(-4.05, 1.0, 0.85),
+		Vector3(-4.065, 1.0, 0.85),
 		"MidLampVisual",
-		true
+		true,
+		Vector3.RIGHT
 	)
 	_add_world_switch(
 		"KitchenSwitch",
 		&"kitchen",
-		Vector3(6.95, 1.0, -1.15),
+		Vector3(6.985, 1.0, -1.15),
 		"KitchenLampVisual",
-		true
+		true,
+		Vector3.RIGHT
 	)
 	_add_world_switch(
 		"FoyerSwitch",
 		&"foyer",
-		Vector3(8.75, 1.0, 6.2),
+		Vector3(8.75, 1.0, 6.215),
 		"AlcoveLampVisual",
-		true
+		true,
+		Vector3.FORWARD
 	)
 	_add_world_switch(
 		"BathroomSwitch",
 		&"bathroom",
-		Vector3(-4.48, 1.0, -2.15),
+		Vector3(-4.485, 1.0, -2.15),
 		"BathroomLampVisual",
-		false
+		false,
+		Vector3.LEFT
 	)
 	_add_world_switch(
 		"KidHallSwitch",
 		&"kid_hall",
-		Vector3(-10.15, 1.0, -1.34),
+		Vector3(-10.15, 1.0, -1.315),
 		"HallDoorLampVisual",
-		false
+		false,
+		Vector3.BACK
 	)
 
 
@@ -372,7 +377,6 @@ func _add_crib() -> void:
 	crib.name = "CribBlock"
 	crib.position = Vector3(-8.7, 0.0, -4.7)
 	crib.add_to_group("nav_source")
-	_add_box_collision(crib, Vector3(2.3, 0.9, 3.0), Vector3(0.0, 0.45, 0.0))
 	for post_x: float in [-1.02, 1.02]:
 		for post_z: float in [-1.36, 1.36]:
 			_add_box_visual_part(
@@ -391,6 +395,7 @@ func _add_crib() -> void:
 				Vector3(0.14, 0.12, 2.55),
 				prop_color
 			)
+	_add_visual_bounds_box_collision(crib)
 	add_child(crib)
 
 
@@ -399,11 +404,10 @@ func _add_couch() -> void:
 	couch.name = "Couch"
 	couch.position = Vector3(1.55, 0.0, -4.4)
 	couch.add_to_group("nav_source")
-	_add_box_collision(couch, Vector3(2.3, 0.8, 3.0), Vector3(0.0, 0.4, 0.0))
 	_add_box_visual_part(
 		couch,
 		"Seat",
-		Vector3(-0.15, 0.28, 0.0),
+		Vector3(-0.15, 0.19, 0.0),
 		Vector3(1.75, 0.38, 2.65),
 		prop_color
 	)
@@ -422,13 +426,14 @@ func _add_couch() -> void:
 			Vector3(1.78, 0.62, 0.26),
 			prop_color
 		)
+	_add_visual_bounds_box_collision(couch)
 	add_child(couch)
 
 
 func _add_kitchen_bowl() -> void:
 	var bowl: Node3D = Node3D.new()
 	bowl.name = "KitchenBowl"
-	bowl.position = Vector3(5.5, 0.08, -3.05)
+	bowl.position = Vector3(5.5, 0.06, -3.05)
 	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
 	mesh_instance.name = "Bowl"
 	var mesh: CylinderMesh = CylinderMesh.new()
@@ -449,11 +454,6 @@ func _add_dog_station() -> void:
 	station.name = "DogBed"
 	station.position = Vector3(5.5, 0.0, -4.75)
 	station.add_to_group("nav_source")
-	_add_box_collision(
-		station,
-		Vector3(1.9, 0.28, 2.8),
-		Vector3(0.0, 0.14, 0.0)
-	)
 	var bed: MeshInstance3D = MeshInstance3D.new()
 	bed.name = "RoundBed"
 	bed.position.y = 0.14
@@ -468,6 +468,14 @@ func _add_dog_station() -> void:
 	material.roughness = 1.0
 	bed.material_override = material
 	station.add_child(bed)
+	var collision: CollisionShape3D = CollisionShape3D.new()
+	collision.name = "CollisionShape3D"
+	collision.position.y = 0.14
+	var shape: CylinderShape3D = CylinderShape3D.new()
+	shape.radius = 1.18
+	shape.height = 0.28
+	collision.shape = shape
+	station.add_child(collision)
 	add_child(station)
 
 
@@ -484,11 +492,7 @@ func _add_fridge_block() -> void:
 		Vector3(2.4, 2.2, 2.15),
 		Color("#9aa5b0")
 	)
-	_add_box_collision(
-		fridge_body,
-		Vector3(2.4, 2.2, 2.2),
-		Vector3(13.75, 1.1, -5.3)
-	)
+	_add_visual_bounds_box_collision(fridge_body)
 	add_child(fridge_body)
 
 
@@ -503,7 +507,6 @@ func _add_dining_table() -> void:
 		"DiningTable",
 		Vector3(0.95, 0.0, 0.9),
 		Vector3(4.25, 0.16, 1.5),
-		Vector3(5.1, 0.9, 2.75),
 		chair_rows
 	)
 
@@ -518,7 +521,6 @@ func _add_kitchen_table() -> void:
 		"KitchenTable",
 		Vector3(10.55, 0.0, -1.2),
 		Vector3(2.0, 0.16, 1.8),
-		Vector3(3.25, 0.9, 3.25),
 		chair_rows
 	)
 
@@ -527,18 +529,12 @@ func _add_table_group(
 	node_name: String,
 	center: Vector3,
 	top_size: Vector3,
-	collision_size: Vector3,
 	chair_rows: Array[Dictionary]
 ) -> void:
 	var table: StaticBody3D = StaticBody3D.new()
 	table.name = node_name
 	table.position = center
 	table.add_to_group("nav_source")
-	_add_box_collision(
-		table,
-		collision_size,
-		Vector3(0.0, collision_size.y * 0.5, 0.0)
-	)
 	_add_box_visual_part(
 		table,
 		"Top",
@@ -563,6 +559,7 @@ func _add_table_group(
 			chair_row["position"] as Vector3,
 			float(chair_row["yaw"])
 		)
+	_add_visual_bounds_box_collision(table)
 	add_child(table)
 
 
@@ -597,11 +594,6 @@ func _add_front_door_side_table() -> void:
 	table.name = "FrontDoorSideTable"
 	table.position = Vector3(9.7, 0.0, 5.85)
 	table.add_to_group("nav_source")
-	_add_box_collision(
-		table,
-		Vector3(1.0, 0.66, 0.55),
-		Vector3(0.0, 0.33, 0.0)
-	)
 	_add_box_visual_part(
 		table,
 		"Top",
@@ -618,6 +610,7 @@ func _add_front_door_side_table() -> void:
 				Vector3(0.1, 0.6, 0.1),
 				prop_color
 			)
+	_add_visual_bounds_box_collision(table)
 	add_child(table)
 
 
@@ -626,21 +619,16 @@ func _add_toilet() -> void:
 	toilet.name = "BathroomToilet"
 	toilet.position = Vector3(-6.45, 0.0, -5.55)
 	toilet.add_to_group("nav_source")
-	_add_box_collision(
-		toilet,
-		Vector3(0.9, 0.78, 1.2),
-		Vector3(0.0, 0.39, 0.0)
-	)
 	_add_box_visual_part(
 		toilet,
 		"Tank",
-		Vector3(0.0, 0.55, -0.37),
+		Vector3(0.0, 0.47, -0.37),
 		Vector3(0.78, 0.72, 0.38),
 		Color("#aeb8c4")
 	)
 	var bowl: MeshInstance3D = MeshInstance3D.new()
 	bowl.name = "Bowl"
-	bowl.position = Vector3(0.0, 0.28, 0.22)
+	bowl.position = Vector3(0.0, 0.19, 0.22)
 	var bowl_mesh: CylinderMesh = CylinderMesh.new()
 	bowl_mesh.top_radius = 0.38
 	bowl_mesh.bottom_radius = 0.32
@@ -648,6 +636,7 @@ func _add_toilet() -> void:
 	bowl.mesh = bowl_mesh
 	bowl.material_override = _make_material(Color("#c3ccd6"))
 	toilet.add_child(bowl)
+	_add_visual_bounds_box_collision(toilet)
 	add_child(toilet)
 
 
@@ -716,7 +705,8 @@ func _add_world_switch(
 	switch_id: StringName,
 	position_value: Vector3,
 	target_fixture_name: String,
-	starts_on: bool
+	starts_on: bool,
+	surface_normal: Vector3
 ) -> void:
 	var wall_switch: Node3D = WORLD_SWITCH_SCRIPT.new() as Node3D
 	wall_switch.name = node_name
@@ -728,17 +718,27 @@ func _add_world_switch(
 		NodePath("../%s" % target_fixture_name)
 	)
 	wall_switch.set("starts_on", starts_on)
-	_add_box_visual(
-		wall_switch,
-		Vector3(0.24, 0.34, 0.12),
-		Color("#8d96a2")
+	var mounted_on_x: bool = absf(surface_normal.x) > 0.5
+	var plate_size: Vector3 = (
+		Vector3(0.12, 0.34, 0.24)
+		if mounted_on_x
+		else Vector3(0.24, 0.34, 0.12)
 	)
+	_add_box_visual(wall_switch, plate_size, Color("#8d96a2"))
 	var toggle: MeshInstance3D = MeshInstance3D.new()
 	toggle.name = "Toggle"
-	toggle.position = Vector3(0.0, 0.0, -0.08)
-	toggle.rotation_degrees.x = -18.0 if starts_on else 18.0
+	toggle.position = surface_normal * 0.08
+	var tilt: float = -18.0 if starts_on else 18.0
+	if mounted_on_x:
+		toggle.rotation_degrees.z = tilt * signf(surface_normal.x)
+	else:
+		toggle.rotation_degrees.x = -tilt * signf(surface_normal.z)
 	var toggle_mesh: BoxMesh = BoxMesh.new()
-	toggle_mesh.size = Vector3(0.08, 0.17, 0.06)
+	toggle_mesh.size = (
+		Vector3(0.06, 0.17, 0.08)
+		if mounted_on_x
+		else Vector3(0.08, 0.17, 0.06)
+	)
 	toggle.mesh = toggle_mesh
 	toggle.material_override = _make_material(Color("#dbe3ee"))
 	wall_switch.add_child(toggle)
@@ -898,6 +898,33 @@ func _add_box_collision(
 	collision.shape = shape
 	collision.position = local_position
 	parent.add_child(collision)
+
+
+func _add_visual_bounds_box_collision(parent: Node3D) -> void:
+	var visual_bounds: Array[AABB] = []
+	_collect_visual_bounds(parent, Transform3D.IDENTITY, visual_bounds)
+	assert(not visual_bounds.is_empty())
+	var combined: AABB = visual_bounds[0]
+	for bounds_index: int in range(1, visual_bounds.size()):
+		combined = combined.merge(visual_bounds[bounds_index])
+	_add_box_collision(parent, combined.size, combined.get_center())
+
+
+func _collect_visual_bounds(
+	node: Node3D,
+	transform_from_parent: Transform3D,
+	result: Array[AABB]
+) -> void:
+	for child_node: Node in node.get_children():
+		if not child_node is Node3D:
+			continue
+		var child: Node3D = child_node as Node3D
+		var child_transform: Transform3D = transform_from_parent * child.transform
+		if child is MeshInstance3D:
+			var mesh_instance: MeshInstance3D = child as MeshInstance3D
+			if mesh_instance.mesh != null:
+				result.append(child_transform * mesh_instance.get_aabb())
+		_collect_visual_bounds(child, child_transform, result)
 
 
 func _bake_navigation_once() -> void:

@@ -253,19 +253,19 @@ script = ExtResource("9_door")
 door_kind = 2
 provides_snack = true
 open_rotation_degrees = Vector3(0, -90, 0)
-fridge_blocker_size = Vector3(2.4, 2.1, 0.12)
+fridge_blocker_size = Vector3(2.4, 2.2, 0.12)
 blocker_center_offset = Vector3(1.2, 0, 0)
 
 [node name="DoorVisual" type="StaticBody3D" parent="Fridge"]
 
 [node name="Panel" type="MeshInstance3D" parent="Fridge/DoorVisual"]
-position = Vector3(1.2, 1.05, 0)
-scale = Vector3(2.4, 2.1, 0.12)
+position = Vector3(1.2, 1.1, 0)
+scale = Vector3(2.4, 2.2, 0.12)
 mesh = SubResource("DoorPanelMesh")
 material_override = SubResource("DoorPanelMaterial")
 
 [node name="SpillLight" type="OmniLight3D" parent="Fridge"]
-position = Vector3(0, 1.05, 0)
+position = Vector3(0, 1.1, 0)
 light_color = Color(0.78, 0.88, 1, 1)
 light_energy = 0.0
 omni_range = 0.0
@@ -274,17 +274,18 @@ shadow_blur = 2.0
 shadow_opacity = 0.8
 
 [node name="Pantry" type="Node3D" parent="." groups=["interactable"]]
-position = Vector3(13.2, 0.0, 2.5)
+position = Vector3(13.1, 0.0, 2.2)
 script = ExtResource("9_door")
 door_kind = 1
 provides_snack = true
+pantry_blocker_size = Vector3(3.55, 1.2, 0.25)
 
 [node name="DoorVisual" type="StaticBody3D" parent="Pantry"]
-position = Vector3(-1.7, 0, 0)
+position = Vector3(-1.775, 0, 0)
 
 [node name="Panel" type="MeshInstance3D" parent="Pantry/DoorVisual"]
-position = Vector3(1.7, 1.0, 0)
-scale = Vector3(3.4, 2.0, 0.12)
+position = Vector3(1.775, 0.6, 0)
+scale = Vector3(3.55, 1.2, 0.25)
 mesh = SubResource("DoorPanelMesh")
 material_override = SubResource("DoorPanelMaterial")
 
@@ -298,23 +299,24 @@ position = Vector3(-1.15, 0, 0)
 
 [node name="Panel" type="MeshInstance3D" parent="BedroomDoor/DoorVisual"]
 position = Vector3(1.15, 0.6, 0)
-scale = Vector3(2.3, 1.2, 0.12)
+scale = Vector3(2.3, 1.2, 0.25)
 mesh = SubResource("DoorPanelMesh")
 material_override = SubResource("DoorPanelMaterial")
 
 [node name="BathroomDoor" type="Node3D" parent="Level" groups=["interactable"]]
-position = Vector3(-5.85, 0.0, -1.5)
+position = Vector3(-5.65, 0.0, -1.5)
 script = ExtResource("9_door")
 player_path = NodePath("../../Player")
 snack_path = NodePath("../../Snack")
 open_rotation_degrees = Vector3(0, 90, 0)
+bedroom_blocker_size = Vector3(2.95, 1.2, 0.25)
 
 [node name="DoorVisual" type="StaticBody3D" parent="Level/BathroomDoor"]
-position = Vector3(-1.15, 0, 0)
+position = Vector3(-1.475, 0, 0)
 
 [node name="Panel" type="MeshInstance3D" parent="Level/BathroomDoor/DoorVisual"]
-position = Vector3(1.15, 0.6, 0)
-scale = Vector3(2.3, 1.2, 0.12)
+position = Vector3(1.475, 0.6, 0)
+scale = Vector3(2.95, 1.2, 0.25)
 mesh = SubResource("DoorPanelMesh")
 material_override = SubResource("DoorPanelMaterial")
 

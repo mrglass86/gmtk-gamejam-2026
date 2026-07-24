@@ -45,9 +45,9 @@ enum DoorKind {
 
 @export_group("Doorway Blocker")
 @export_range(0.0, 1.0) var blocker_disable_openness: float = 0.35
-@export var bedroom_blocker_size: Vector3 = Vector3(2.3, 1.2, 0.12)
-@export var pantry_blocker_size: Vector3 = Vector3(3.4, 2.0, 0.12)
-@export var fridge_blocker_size: Vector3 = Vector3(2.4, 2.1, 0.12)
+@export var bedroom_blocker_size: Vector3 = Vector3(2.3, 1.2, 0.25)
+@export var pantry_blocker_size: Vector3 = Vector3(3.55, 1.2, 0.25)
+@export var fridge_blocker_size: Vector3 = Vector3(2.4, 2.2, 0.12)
 @export var blocker_center_offset: Vector3 = Vector3.ZERO
 @export_flags_3d_physics var blocker_collision_layer: int = 1
 @export_flags_3d_physics var blocker_collision_mask: int = 1

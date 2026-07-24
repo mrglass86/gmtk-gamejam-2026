@@ -84,6 +84,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a18"):
 		_verify_a18_polish_pack()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a19"):
+		_verify_a19_geometry_audit()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -1943,6 +1946,415 @@ func _verify_a18_polish_pack() -> void:
 	get_tree().quit()
 
 
+func _verify_a19_geometry_audit() -> void:
+	get_tree().paused = false
+	for settle_frame: int in range(12):
+		await get_tree().physics_frame
+
+	_verify_wall_junctions()
+	_verify_primary_floor_coverage()
+	var level: Node3D = $Level as Node3D
+
+	var floor_names: PackedStringArray = [
+		"FailsafeSlab",
+		"KidCarpet",
+		"BathFloor",
+		"LivingFloor",
+		"KitchenFloor",
+		"MiddleFloor",
+		"DiningSouthFloor",
+		"LivingThreshold",
+		"AdultBedroomFloor",
+		"ApproachFloor",
+		"CarpetFloor",
+		"AlcoveFloor",
+		"CarpetAlcoveThreshold",
+		"AlcoveDiningThreshold",
+		"EastHallFloor",
+		"PantryFloor",
+		"PantryThreshold",
+		"HallRug",
+	]
+	var wall_names: PackedStringArray = [
+		"NorthWall",
+		"SouthWall",
+		"WestWall",
+		"EastWall",
+		"KidSouthA",
+		"KidSouthB",
+		"KidBathDivider",
+		"BathLivingDivider",
+		"DogKitchenDivider",
+		"AdultNorthA",
+		"AdultNorthB",
+		"AdultEast",
+		"LVertical",
+		"LHorizontal",
+		"PantryWest",
+	]
+	var simple_prop_names: PackedStringArray = [
+		"Nightstand",
+		"TVConsole",
+		"KitchenCounter",
+		"AdultBed",
+		"HallShelf",
+		"AdultDoorPanel",
+		"KitchenSpeaker",
+	]
+	var composite_prop_names: PackedStringArray = [
+		"CribBlock",
+		"Couch",
+		"DogBed",
+		"FridgeBlock",
+		"DiningTable",
+		"KitchenTable",
+		"FrontDoorSideTable",
+		"BathroomToilet",
+	]
+	var matched_body_count: int = 0
+	for body_name: String in (
+		floor_names
+		+ wall_names
+		+ simple_prop_names
+		+ composite_prop_names
+	):
+		var body: StaticBody3D = level.get_node(body_name) as StaticBody3D
+		_assert_body_collision_matches_visual(body)
+		matched_body_count += 1
+	assert(matched_body_count == 48)
+
+	for floor_name: String in floor_names:
+		var floor_body: StaticBody3D = level.get_node(floor_name) as StaticBody3D
+		var floor_bounds: AABB = _visible_mesh_world_aabb(floor_body)
+		var expected_top: float = (
+			-0.05
+			if floor_name == "FailsafeSlab"
+			else 0.02 if floor_name == "HallRug" else 0.0
+		)
+		assert(
+			is_equal_approx(floor_bounds.end.y, expected_top),
+			"%s top is %.3f, expected %.3f."
+			% [floor_name, floor_bounds.end.y, expected_top]
+		)
+
+	var door_rows: Array[Dictionary] = [
+		{
+			"name": "BedroomDoor",
+			"node": $BedroomDoor,
+			"size": Vector3(2.3, 1.2, 0.25),
+			"hinge": Vector3(-13.9, 0.0, -1.5),
+		},
+		{
+			"name": "BathroomDoor",
+			"node": $Level/BathroomDoor,
+			"size": Vector3(2.95, 1.2, 0.25),
+			"hinge": Vector3(-7.125, 0.0, -1.5),
+		},
+		{
+			"name": "Pantry",
+			"node": $Pantry,
+			"size": Vector3(3.55, 1.2, 0.25),
+			"hinge": Vector3(11.325, 0.0, 2.2),
+		},
+		{
+			"name": "Fridge",
+			"node": $Fridge,
+			"size": Vector3(2.4, 2.2, 0.12),
+			"hinge": Vector3(12.55, 0.0, -4.2),
+		},
+	]
+	for door_row: Dictionary in door_rows:
+		var door: DinnerDoor = door_row["node"] as DinnerDoor
+		door.close_immediately()
+		await get_tree().physics_frame
+		var panel: MeshInstance3D = door.get_node(
+			"DoorVisual/Panel"
+		) as MeshInstance3D
+		var panel_bounds: AABB = (
+			panel.global_transform * panel.get_aabb()
+		)
+		var expected_size: Vector3 = door_row["size"] as Vector3
+		assert(
+			panel_bounds.size.distance_to(expected_size) < 0.01,
+			"%s panel size %s does not fill %s."
+			% [door_row["name"], panel_bounds.size, expected_size]
+		)
+		assert(is_equal_approx(panel_bounds.position.y, 0.0))
+		var blocker: CollisionShape3D = door.get_node(
+			"Blocker/CollisionShape3D"
+		) as CollisionShape3D
+		var blocker_shape: BoxShape3D = blocker.shape as BoxShape3D
+		assert(
+			blocker_shape.size.distance_to(expected_size) < 0.01,
+			"%s blocker %s does not match its panel %s."
+			% [door_row["name"], blocker_shape.size, expected_size]
+		)
+		assert(
+			door.get_hinge_global_position().distance_to(
+				door_row["hinge"] as Vector3
+			) < 0.01
+		)
+
+	var adult_panel: StaticBody3D = $Level/AdultDoorPanel as StaticBody3D
+	var adult_panel_bounds: AABB = _visible_mesh_world_aabb(adult_panel)
+	assert(
+		adult_panel_bounds.size.distance_to(Vector3(2.3, 1.2, 0.25))
+		< 0.01
+	)
+	assert(is_equal_approx(adult_panel_bounds.position.y, 0.0))
+
+	var front_door: Node3D = $Level/FrontDoor as Node3D
+	var front_door_bounds: AABB = _visible_mesh_world_aabb(front_door)
+	assert(
+		front_door_bounds.size.distance_to(Vector3(2.4, 1.2, 0.15))
+		< 0.01
+	)
+	assert(is_equal_approx(front_door_bounds.position.y, 0.0))
+	assert(
+		is_equal_approx(
+			front_door_bounds.end.z,
+			_wall_world_aabb($Level/SouthWall).position.z
+		)
+	)
+
+	var switch_rows: Array[Dictionary] = [
+		{
+			"switch": "DiningSwitch",
+			"wall": "LVertical",
+			"normal": Vector3.RIGHT,
+		},
+		{
+			"switch": "KitchenSwitch",
+			"wall": "DogKitchenDivider",
+			"normal": Vector3.RIGHT,
+		},
+		{
+			"switch": "FoyerSwitch",
+			"wall": "SouthWall",
+			"normal": Vector3.FORWARD,
+		},
+		{
+			"switch": "BathroomSwitch",
+			"wall": "BathLivingDivider",
+			"normal": Vector3.LEFT,
+		},
+		{
+			"switch": "KidHallSwitch",
+			"wall": "KidSouthB",
+			"normal": Vector3.BACK,
+		},
+	]
+	for switch_row: Dictionary in switch_rows:
+		var wall_bounds: AABB = _wall_world_aabb(
+			level.get_node(switch_row["wall"]) as Node3D
+		)
+		var wall_switch: Node3D = level.get_node(
+			switch_row["switch"]
+		) as Node3D
+		var plate: MeshInstance3D = wall_switch.get_child(0) as MeshInstance3D
+		var plate_bounds: AABB = plate.global_transform * plate.get_aabb()
+		var normal: Vector3 = switch_row["normal"] as Vector3
+		var contact_gap: float = 0.0
+		if normal.x > 0.5:
+			contact_gap = plate_bounds.position.x - wall_bounds.end.x
+		elif normal.x < -0.5:
+			contact_gap = wall_bounds.position.x - plate_bounds.end.x
+		elif normal.z > 0.5:
+			contact_gap = plate_bounds.position.z - wall_bounds.end.z
+		else:
+			contact_gap = wall_bounds.position.z - plate_bounds.end.z
+		assert(
+			absf(contact_gap) < 0.01,
+			"%s floats %.3f m from %s."
+			% [
+				switch_row["switch"],
+				contact_gap,
+				switch_row["wall"],
+			]
+		)
+		var toggle: MeshInstance3D = wall_switch.get_node(
+			"Toggle"
+		) as MeshInstance3D
+		assert(toggle.position.normalized().dot(normal) > 0.99)
+
+	var fixture_rows: Array[Dictionary] = [
+		{"fixture": "KidLampVisual", "support": "Nightstand"},
+		{"fixture": "KitchenLampVisual", "support": "KitchenCounter"},
+		{
+			"fixture": "MidLampVisual",
+			"support": "DiningTable",
+			"surface": "Top",
+		},
+		{"fixture": "AlcoveLampVisual", "support": "FrontDoorSideTable"},
+	]
+	for fixture_row: Dictionary in fixture_rows:
+		var fixture: Node3D = level.get_node(
+			fixture_row["fixture"]
+		) as Node3D
+		var base: MeshInstance3D = fixture.get_node("Base") as MeshInstance3D
+		var base_bounds: AABB = base.global_transform * base.get_aabb()
+		var support: Node3D = level.get_node(
+			fixture_row["support"]
+		) as Node3D
+		var support_bounds: AABB
+		if fixture_row.has("surface"):
+			var surface: MeshInstance3D = support.get_node(
+				fixture_row["surface"]
+			) as MeshInstance3D
+			support_bounds = surface.global_transform * surface.get_aabb()
+		else:
+			support_bounds = _visible_mesh_world_aabb(support)
+		assert(
+			absf(base_bounds.position.y - support_bounds.end.y) < 0.01,
+			"%s does not sit on %s."
+			% [fixture_row["fixture"], fixture_row["support"]]
+		)
+	for floor_fixture_name: String in [
+		"LivingLampVisual",
+		"HallDoorLampVisual",
+	]:
+		var floor_base: MeshInstance3D = level.get_node(
+			"%s/Base" % floor_fixture_name
+		) as MeshInstance3D
+		var floor_base_bounds: AABB = (
+			floor_base.global_transform * floor_base.get_aabb()
+		)
+		assert(is_equal_approx(floor_base_bounds.position.y, 0.0))
+	var bathroom_disc: MeshInstance3D = (
+		$Level/BathroomLampVisual/Shade as MeshInstance3D
+	)
+	var bathroom_disc_bounds: AABB = (
+		bathroom_disc.global_transform * bathroom_disc.get_aabb()
+	)
+	assert(is_equal_approx(bathroom_disc_bounds.end.y, 1.2))
+
+	var bowl: MeshInstance3D = $Level/KitchenBowl/Bowl as MeshInstance3D
+	var bowl_bounds: AABB = bowl.global_transform * bowl.get_aabb()
+	assert(is_equal_approx(bowl_bounds.position.y, 0.0))
+	var doormat: Node3D = $Level/DoorMat as Node3D
+	assert(is_equal_approx(_visible_mesh_world_aabb(doormat).position.y, 0.0))
+
+	var hazard_support_tops: Dictionary = {
+		"CreakTeacher": 0.02,
+		"CreakKitchen": 0.0,
+		"CreakAdult": 0.0,
+		"ToyHallRug": 0.02,
+		"ToyDining": 0.0,
+		"ToyCarpet": 0.0,
+	}
+	for hazard_name: String in hazard_support_tops:
+		var hazard: NoiseSurface = level.get_node(hazard_name) as NoiseSurface
+		var hazard_collision: CollisionShape3D = hazard.find_children(
+			"*",
+			"CollisionShape3D",
+			true,
+			false
+		)[0] as CollisionShape3D
+		var hazard_bounds: AABB = _collision_world_aabb(hazard_collision)
+		assert(
+			is_equal_approx(
+				hazard_bounds.position.y,
+				float(hazard_support_tops[hazard_name])
+			)
+		)
+
+	var navigation_region: NavigationRegion3D = (
+		$Level/NavigationRegion3D as NavigationRegion3D
+	)
+	var polygon_count: int = (
+		navigation_region.navigation_mesh.get_polygon_count()
+	)
+	assert(polygon_count > 0)
+	print(
+		(
+			"A19 metrics: %d matched visual/collider bodies, %d floors, "
+			+ "%d walls, %d fitted doors, %d flush switches, "
+			+ "%d nav polygons."
+		)
+		% [
+			matched_body_count,
+			floor_names.size(),
+			wall_names.size(),
+			door_rows.size() + 1,
+			switch_rows.size(),
+			polygon_count,
+		]
+	)
+	print(
+		"A19 geometry verification passed: fitted doorway panels/blockers, "
+		+ "sealed wall/floor seams, grounded props, matched colliders, "
+		+ "flush switches, and supported practical fixtures."
+	)
+	get_tree().quit()
+
+
+func _assert_body_collision_matches_visual(body: StaticBody3D) -> void:
+	var collisions: Array[Node] = body.find_children(
+		"*",
+		"CollisionShape3D",
+		true,
+		false
+	)
+	assert(
+		collisions.size() == 1,
+		"%s needs one fitted collision shape." % body.name
+	)
+	var visual_bounds: AABB = _visible_mesh_world_aabb(body)
+	var collision_bounds: AABB = _collision_world_aabb(
+		collisions[0] as CollisionShape3D
+	)
+	assert(
+		visual_bounds.position.distance_to(collision_bounds.position) < 0.01,
+		"%s collision starts at %s but visual starts at %s."
+		% [body.name, collision_bounds.position, visual_bounds.position]
+	)
+	assert(
+		visual_bounds.size.distance_to(collision_bounds.size) < 0.01,
+		"%s collision is %s but visual bounds are %s."
+		% [body.name, collision_bounds.size, visual_bounds.size]
+	)
+
+
+func _visible_mesh_world_aabb(root: Node3D) -> AABB:
+	var meshes: Array[Node] = root.find_children(
+		"*",
+		"MeshInstance3D",
+		true,
+		false
+	)
+	var found: bool = false
+	var combined: AABB
+	for mesh_node: Node in meshes:
+		if mesh_node.name == &"ShadowOccluder":
+			continue
+		var mesh: MeshInstance3D = mesh_node as MeshInstance3D
+		if mesh.mesh == null:
+			continue
+		var bounds: AABB = mesh.global_transform * mesh.get_aabb()
+		combined = combined.merge(bounds) if found else bounds
+		found = true
+	assert(found, "%s has no visible geometry." % root.name)
+	return combined
+
+
+func _collision_world_aabb(collision: CollisionShape3D) -> AABB:
+	var local_bounds: AABB
+	if collision.shape is BoxShape3D:
+		var box: BoxShape3D = collision.shape as BoxShape3D
+		local_bounds = AABB(-box.size * 0.5, box.size)
+	elif collision.shape is CylinderShape3D:
+		var cylinder: CylinderShape3D = collision.shape as CylinderShape3D
+		var size: Vector3 = Vector3(
+			cylinder.radius * 2.0,
+			cylinder.height,
+			cylinder.radius * 2.0
+		)
+		local_bounds = AABB(-size * 0.5, size)
+	else:
+		assert(false, "A19 does not support %s." % collision.shape)
+	return collision.global_transform * local_bounds
+
+
 func _assert_snack_clear_of_panel(
 	snack_visual: MeshInstance3D,
 	panel: MeshInstance3D
@@ -2038,6 +2450,9 @@ func _capture_layout(capture_path: String) -> void:
 	var capture_a18_wall_proof: bool = OS.get_cmdline_user_args().has(
 		"--capture-a18-wall-proof"
 	)
+	var capture_a19_geometry: bool = OS.get_cmdline_user_args().has(
+		"--capture-a19-geometry"
+	)
 	if (
 		capture_a10_fridge_open
 		or capture_a10_fridge_closed
@@ -2056,7 +2471,12 @@ func _capture_layout(capture_path: String) -> void:
 		($Snack/Visual as SnackVisualPresenter).apply_reveal_clearance()
 	if capture_a18_wall_proof:
 		_configure_a18_wall_blocking_capture()
+	if capture_a19_geometry:
+		_configure_a19_geometry_capture()
 	for frame: int in range(capture_warmup_frames):
+		await get_tree().process_frame
+	if capture_a19_geometry:
+		_apply_a19_capture_state()
 		await get_tree().process_frame
 	if capture_fridge_light:
 		var fridge: DinnerDoor = $Fridge as DinnerDoor
@@ -2073,6 +2493,63 @@ func _capture_layout(capture_path: String) -> void:
 	else:
 		print("A0 layout capture saved: %s" % capture_path)
 	get_tree().quit()
+
+
+func _configure_a19_geometry_capture() -> void:
+	var phase_director: PhaseDirector = $PhaseDirector as PhaseDirector
+	phase_director.set_process(false)
+	phase_director.set_physics_process(false)
+	_apply_a19_capture_state()
+
+	var audit_layer: CanvasLayer = CanvasLayer.new()
+	audit_layer.name = "A19GeometryAuditLayer"
+	audit_layer.layer = 30
+	add_child(audit_layer)
+	var audit_label: Label = Label.new()
+	audit_label.text = (
+		"A19 GEOMETRY AUDIT — CURRENT LAYOUT PRESERVED\n"
+		+ "FITTED DOORS • SEALED SEAMS • GROUNDED PROPS • MATCHED COLLIDERS"
+	)
+	audit_label.position = Vector2(32.0, 76.0)
+	audit_label.add_theme_font_size_override("font_size", 26)
+	audit_label.add_theme_color_override("font_color", Color("#f2f5f9"))
+	audit_label.add_theme_color_override("font_outline_color", Color("#111820"))
+	audit_label.add_theme_constant_override("outline_size", 7)
+	audit_layer.add_child(audit_label)
+
+	var bath_marker: Label3D = Label3D.new()
+	bath_marker.name = "A19BathroomDoorLabel"
+	bath_marker.text = "BATH DOOR 2.95 m — FRAME FIT"
+	bath_marker.position = Vector3(-5.65, 0.35, -1.15)
+	bath_marker.font_size = 44
+	bath_marker.outline_size = 7
+	bath_marker.pixel_size = 0.007
+	bath_marker.modulate = Color("#d889de")
+	bath_marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	bath_marker.no_depth_test = true
+	add_child(bath_marker)
+
+
+func _apply_a19_capture_state() -> void:
+	for fixture_name: String in [
+		"KidLampVisual",
+		"LivingLampVisual",
+		"KitchenLampVisual",
+		"MidLampVisual",
+		"AlcoveLampVisual",
+		"BathroomLampVisual",
+		"HallDoorLampVisual",
+	]:
+		var fixture: Node3D = $Level.get_node(fixture_name) as Node3D
+		fixture.visible = true
+		(fixture.get_node("Light") as OmniLight3D).visible = true
+	for door: DinnerDoor in [
+		$BedroomDoor as DinnerDoor,
+		$Level/BathroomDoor as DinnerDoor,
+		$Pantry as DinnerDoor,
+		$Fridge as DinnerDoor,
+	]:
+		door.close_immediately()
 
 
 func _configure_a18_wall_blocking_capture() -> void:
