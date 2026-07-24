@@ -342,6 +342,11 @@ enum State {
 @export var verify_decay_duration: float = 1.0
 @export var verify_decay_tolerance: float = 0.75
 
+@export_group("B20 Runtime Verification")
+@export var verify_b20_cycle_duration: float = 25.0
+@export var verify_b20_drop_tolerance: float = 0.3
+@export var verify_b20_crib_clearance: float = 1.5
+
 @export_group("B9 Runtime Verification")
 @export var verify_b9_far_bark_distance: float = 14.0
 @export var verify_b9_far_run_distance: float = 10.0
@@ -447,6 +452,7 @@ var _last_checked_position: Vector3
 var _has_checked_position: bool = false
 var _carry_elapsed: float = 0.0
 var _carry_path_started: bool = false
+var _carry_snack_drop_position: Vector3
 var _post_deposit_elapsed: float = 0.0
 var _post_deposit_path_started: bool = false
 var _verify_b8_door_creak_heard: bool = false
@@ -526,6 +532,8 @@ func _ready() -> void:
 		_run_b18_core_live_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--verify-b18"):
 		_run_b18_searchlight_live_verification.call_deferred()
+	if OS.get_cmdline_user_args().has("--verify-b20"):
+		_run_b20_live_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--trace-parent-perception"):
 		debug_perception_trace = true
 	if OS.get_cmdline_user_args().has("--trace-parent-hearing"):
@@ -1190,6 +1198,7 @@ func _update_hunt(delta: float) -> void:
 
 
 func _update_carry(delta: float) -> void:
+	_enforce_carry_empty_handed()
 	_carry_elapsed += delta
 	if _carry_elapsed >= carry_hard_timeout:
 		_finish_carry()
@@ -1896,11 +1905,13 @@ func _begin_carry() -> void:
 	_clear_interest()
 	var catch_position: Vector3 = _player.global_position
 	var had_snack: bool = _player.carrying_snack
-	if had_snack:
-		if _snack != null:
-			_snack.drop_at(catch_position)
-		else:
-			_player.set_carrying_snack(false)
+	_carry_snack_drop_position = catch_position
+	_player.set_carrying_snack(false)
+	if (
+		_snack != null
+		and (had_snack or _snack.carried_by == _player)
+	):
+		_snack.drop_at(catch_position)
 	_player.attach_to_carrier(self, carry_offset)
 	suspicion = 0.0
 	_carry_elapsed = 0.0
@@ -1909,6 +1920,15 @@ func _begin_carry() -> void:
 	if _crib != null:
 		_set_navigation_target(_crib.global_position, true)
 	player_caught.emit(catch_position, had_snack)
+
+
+func _enforce_carry_empty_handed() -> void:
+	if _player == null:
+		return
+	if _player.carrying_snack:
+		_player.set_carrying_snack(false)
+	if _snack != null and _snack.carried_by == _player:
+		_snack.drop_at(_carry_snack_drop_position)
 
 
 func _finish_carry() -> void:
@@ -2744,6 +2764,192 @@ func _run_b8_live_verification() -> void:
 	assert(toy_investigated, "B8 nearby toy event did not investigate immediately.")
 	assert(decay_observed, "B8 suspicion did not decay at 5 points per second.")
 	print("B8 live SceneTree verification passed.")
+
+
+func _run_b20_live_verification() -> void:
+	var flow: DinnerGameFlow = (
+		get_parent().get_node_or_null("GameFlow") as DinnerGameFlow
+	)
+	var snack_visual: Node3D = (
+		_snack.get_node_or_null("Visual") as Node3D
+		if _snack != null
+		else null
+	)
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+
+	Engine.time_scale = maxf(verify_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(
+		verify_physics_ticks_per_second,
+		60
+	)
+	for _frame_index in range(verify_warmup_frames):
+		await get_tree().physics_frame
+
+	var catch_position: Vector3 = (
+		verify_carry_parent_position + verify_catch_offset
+	)
+	var pickup_was_real: bool = false
+	var catch_started: bool = false
+	var initial_drop_was_atomic: bool = false
+	var reacquired_during_carry: bool = false
+	var deposit_completed: bool = false
+	var capture_elapsed: float = 0.0
+
+	if (
+		_player != null
+		and _snack != null
+		and _crib != null
+		and flow != null
+	):
+		if _player.is_attached_to_carrier():
+			_player.detach_from_carrier(catch_position)
+		_player.set_input_locked(false)
+		global_position = verify_carry_parent_position
+		_state = State.ROUTINE
+		suspicion = 0.0
+		_set_navigation_target(global_position, true)
+		_player.global_position = catch_position
+		_snack.reveal_at(catch_position, DinnerSnack.TYPE_CHIPS)
+		pickup_was_real = _snack.pick_up(_player)
+		pickup_was_real = (
+			pickup_was_real
+			and _snack.carried_by == _player
+			and _player.carrying_snack
+		)
+		flow.state = DinnerGameFlow.State.PLAYING
+		GameClock.start()
+
+		_begin_found_or_carry()
+		catch_started = (
+			_state == State.CARRY
+			and _player.is_attached_to_carrier()
+			and _player.input_locked
+		)
+		initial_drop_was_atomic = (
+			not _player.carrying_snack
+			and _snack.carried_by == null
+			and _snack.available_for_pickup
+			and _flat_distance(_snack.global_position, catch_position)
+			<= verify_b20_drop_tolerance
+		)
+
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			capture_elapsed = GameClock.run_length - GameClock.time_remaining
+			if _state == State.CARRY:
+				reacquired_during_carry = (
+					reacquired_during_carry
+					or _player.carrying_snack
+					or _snack.carried_by == _player
+				)
+			if (
+				_state != State.CARRY
+				and not _player.is_attached_to_carrier()
+				and not _player.input_locked
+			):
+				deposit_completed = true
+				break
+			if capture_elapsed >= verify_b20_cycle_duration:
+				break
+
+		# Let the actual Snack, presenter, and GameFlow physics/process ordering
+		# settle after the crib release. This is the window the old B8 check
+		# missed by sampling the drop early.
+		var settle_start: float = GameClock.run_length - GameClock.time_remaining
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			await get_tree().process_frame
+			var settle_elapsed: float = (
+				GameClock.run_length
+				- GameClock.time_remaining
+				- settle_start
+			)
+			if settle_elapsed >= 1.0:
+				break
+
+	var snack_drop_distance: float = (
+		_flat_distance(_snack.global_position, catch_position)
+		if _snack != null
+		else INF
+	)
+	var snack_crib_distance: float = (
+		_flat_distance(_snack.global_position, _crib.global_position)
+		if _snack != null and _crib != null
+		else 0.0
+	)
+	var visual_drop_distance: float = (
+		_flat_distance(snack_visual.global_position, catch_position)
+		if snack_visual != null
+		else INF
+	)
+	var player_empty_handed: bool = (
+		_player != null and not _player.carrying_snack
+	)
+	var snack_resting_at_catch: bool = (
+		_snack != null
+		and _snack.carried_by == null
+		and _snack.available_for_pickup
+		and snack_drop_distance <= verify_b20_drop_tolerance
+		and snack_crib_distance >= verify_b20_crib_clearance
+	)
+	var presenter_detached: bool = (
+		snack_visual != null
+		and snack_visual.visible
+		and visual_drop_distance <= verify_b20_drop_tolerance
+		and (
+			_player == null
+			or _flat_distance(snack_visual.global_position, _player.global_position)
+			>= verify_snack_player_clearance
+		)
+	)
+	var run_still_playing: bool = (
+		flow != null
+		and flow.state == DinnerGameFlow.State.PLAYING
+		and GameClock.running
+	)
+	var verification_passed: bool = (
+		pickup_was_real
+		and catch_started
+		and initial_drop_was_atomic
+		and not reacquired_during_carry
+		and deposit_completed
+		and player_empty_handed
+		and snack_resting_at_catch
+		and presenter_detached
+		and run_still_playing
+	)
+
+	print(
+		(
+			"B20 live metrics: carry/deposit=%.2f s, snack catch/crib="
+			+ "%.2f/%.2f m, presenter catch=%.2f m, reacquired=%s, "
+			+ "flow=%s."
+		)
+		% [
+			capture_elapsed,
+			snack_drop_distance,
+			snack_crib_distance,
+			visual_drop_distance,
+			reacquired_during_carry,
+			DinnerGameFlow.State.keys()[flow.state] if flow != null else "MISSING",
+		]
+	)
+	GameClock.running = false
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+	await _settle_verification_audio()
+	get_tree().quit(0 if verification_passed else 1)
+	assert(pickup_was_real, "B20 did not begin from a real snack pickup.")
+	assert(catch_started, "B20 forced catch did not enter the live carry state.")
+	assert(initial_drop_was_atomic, "B20 catch did not atomically clear and drop the snack.")
+	assert(not reacquired_during_carry, "B20 player re-collected the snack while captured.")
+	assert(deposit_completed, "B20 full carry-to-crib deposit did not complete.")
+	assert(player_empty_handed, "B20 deposited player still carried the snack flag.")
+	assert(snack_resting_at_catch, "B20 snack moved from the catch point into the crib.")
+	assert(presenter_detached, "B20 snack presenter remained attached to the player.")
+	assert(run_still_playing, "B20 snackless crib deposit triggered a win.")
+	print("B20 live SceneTree verification passed.")
 
 
 func _run_b9_live_verification() -> void:

@@ -89,6 +89,8 @@ func pick_up(player: DinnerPlayer) -> bool:
 	if (
 		not available_for_pickup
 		or player == null
+		or player.input_locked
+		or player.is_attached_to_carrier()
 		or _pickup_lockout_remaining > 0.0
 	):
 		return false
