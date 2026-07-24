@@ -118,11 +118,12 @@ a journal.
   polygons. Editor, startup, and all 31 verification flags pass on `4010224`
   (33/33) with no script-error or resource-leak markers; a labeled
   Compatibility capture is committed.
-  `8f92e36` adds A20/B17 presentation consumption: a bright pulsing pantry
-  packet and cone/scoop fridge ice cream, typed pantry/fridge pickup and 2.5 s
-  carry skins, and the cleaned kid “mmm” fridge-pickup pool. Player remains the
-  sole 0.3 loudness / 0.6 s snack-noise authority. Exact committed editor,
-  startup, and all 32 verification flags pass (34/34), nav remains 164.
+  `8f92e36`/`0da7c83` add A20/B17 presentation consumption: a bright pulsing
+  pantry packet and camera-clear cone/scoop fridge ice cream, typed
+  pantry/fridge pickup and 2.5 s carry skins, and the cleaned kid “mmm”
+  fridge-pickup pool. Player remains the sole 0.3 loudness / 0.6 s snack-noise
+  authority. Exact committed editor, startup, and all 32 verification flags
+  pass on `0da7c83` (34/34); nav remains 164.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.

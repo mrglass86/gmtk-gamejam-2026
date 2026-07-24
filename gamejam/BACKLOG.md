@@ -125,7 +125,8 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [x] B17 snack identity — FRIDGE reveals `ice_cream`, PANTRY reveals `chips`;
       the shared Snack exposes the type and preserves it across pickup,
       drop, and re-collection. Accept: live two-door `--verify-b17` round trip
-      plus presenter/audio consumption (`8f92e36`, `--verify-a20`).
+      plus presenter/audio consumption (`8f92e36`, `0da7c83`,
+      `--verify-a20`).
 - [x] B16 idle giggle — while free in PLAYING, Player randomizes each interval
       over 20–45 s, plays one soft giggle, and emits exactly one unmasked 0.5
       event with a 4 m magenta tell. No giggle while carried or on TITLE/WON/LOST.

@@ -15,7 +15,7 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
   pulsing foil packet and uses grab/crinkle audio; fridge renders a pulsing
   cone/scoop and uses kid “mmm” plus soft scoop/tap audio. The two carry skins
   keep Player's authoritative 0.3 loudness / 0.6 s noise mechanic unchanged
-  (`8f92e36`, `--verify-a20`, `--verify-b17`).
+  (`8f92e36`, `0da7c83`, `--verify-a20`, `--verify-b17`).
 - [x] (lane B / B16) `AudioDirector.gd` connects
   `Player.idle_giggled(giggle_position)` to a soft -8 dB playback from the
   existing no-repeat three-take giggle pool. Player remains the sole author of

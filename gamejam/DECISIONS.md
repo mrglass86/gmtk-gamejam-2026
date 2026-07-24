@@ -688,5 +688,5 @@ Record decisions another session or tool would otherwise have to rediscover.
   (visual/audio presentation)
 - **Revisit when:** A third snack type is added or CP5 finds either primitive
   silhouette/audio skin unclear in motion.
-- **Evidence / handoff:** `8f92e36`, `--verify-a20`, `--verify-audio`, and
-  `--verify-b17`.
+- **Evidence / handoff:** `8f92e36`, `0da7c83`, `--verify-a20`,
+  `--verify-audio`, and `--verify-b17`.
