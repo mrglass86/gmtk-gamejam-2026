@@ -124,6 +124,13 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 ## Must — Saturday regression gate
 
+- [x] A23 family-voice casting — the start motivation is exclusive, live
+      `FOUND` and `CARRY` states drive context-aware no-repeat chains through
+      one VO player, and the parent carry-grunt pools split 3/1 by snack
+      context. Accept: `--verify-audio` (`eed6e31`).
+- [ ] A23 organic-reaction trigger — lane B emits the presentation-only
+      `Player.organic_reaction_triggered` signal for real toy/creak steps and
+      meaningful wall bumps; lane A's 25% roll and 2.5 s limiter are ready.
 - [x] B20 caught-snack exploit — capture atomically clears snack ownership,
       input-locked/carried players cannot auto-recollect it, and CARRY
       defensively preserves the catch-point drop. Accept: live

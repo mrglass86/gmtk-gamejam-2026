@@ -790,3 +790,24 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Revisit when:** Export play finds plain sneak inaudible to the player
   rather than merely low-risk, or trap surfaces fail to read.
 - **Evidence / handoff:** B19 work order and live `--verify-b19`, 2026-07-24.
+
+## 2026-07-24 — Family VO chains follow live gameplay states
+
+- **Decision:** Reserve `carry_red_handed_01` for the one-shot game-start
+  motivation line. During `FOUND`, continuously chain the combined chase/win
+  giggle pool; during `CARRY`, chain kid protests selected by catch snack
+  context and periodically interleave the matching parent-grunt pool. Stop
+  those chains on the authoritative state/deposit signals. Use
+  `caught_grunt_03` for catch and reserve 01/02 for chance-based world bumps.
+- **Why:** The live state lifetime naturally makes voice coverage scale with
+  each chase and carry without predicting path duration, while one dedicated
+  VO player preserves clear casting and priority.
+- **Rejected / cut:** Predicting carry time from distance; a fixed single
+  protest; overlapping a second VO player; inferring geometry bumps inside
+  AudioDirector.
+- **Owner:** Noah (director), lane A (casting/scheduler), lane B (world-contact
+  trigger)
+- **Revisit when:** A listening pass finds the 0.14–0.30 s chain gaps or
+  3.0–4.8 s parent-grunt cadence too dense.
+- **Evidence / handoff:** `eed6e31`, `--verify-audio`, A23 handoff, and the
+  open A23 row in `WIRING.md`.

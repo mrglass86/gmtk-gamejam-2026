@@ -138,6 +138,11 @@ a journal.
   in both states. B19 lowers only Player's exported sneak multiplier to 0.2:
   live hardwood/creaky/toy emissions are 0.2/0.6/0.8, run-hardwood remains
   1.2, and only the plain sneak step stays below the 0.25 indicator gate.
+  `eed6e31` adds A23's state-lifetime family-VO casting: the motivation line
+  plays once at game start, combined giggles fill `FOUND`, context-selected
+  kid protests and parent grunts fill `CARRY`, and deposit/state exit stops
+  the chains. The organic reaction pool is ready and awaits lane B's
+  presentation-only Player contact signal in `WIRING.md`.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -164,6 +169,9 @@ a journal.
   SFX; CP5 supplies the final in-motion mix verdict.
 - One director pick remains deliberately unassigned (`kid-kitty-cat`); it is
   not copied into the runtime tree.
+- A23's casting scheduler and direct organic-reaction path pass
+  `--verify-audio`; live toy/creak/wall triggers remain an open lane-B wiring
+  row and must not emit duplicate gameplay noise.
 - The scaffolded input map was hand-serialized — lane A verifies it in A0.
 - Route timing remains unmeasured in play; tune furniture/entrances only if the
   quiet route misses the 1.4–1.6× target.
