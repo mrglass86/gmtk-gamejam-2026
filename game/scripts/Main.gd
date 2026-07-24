@@ -6,6 +6,7 @@ extends Node3D
 @export var capture_warmup_frames: int = 12
 
 var _a2_received_loudness: float = -1.0
+var _a24_switch_noise_count: int = 0
 
 const REQUIRED_ACTIONS: PackedStringArray = [
 	"move_left",
@@ -96,6 +97,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a22"):
 		_verify_a22_hallway_and_fixtures()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a24"):
+		_verify_a24_silent_switches_and_toy_piles()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -167,6 +171,15 @@ func _verify_noise_system() -> void:
 
 func _capture_a2_noise(_pos: Vector3, loudness: float, _source: Node) -> void:
 	_a2_received_loudness = loudness
+
+
+func _capture_a24_switch_noise(
+	_pos: Vector3,
+	_loudness: float,
+	source: Node
+) -> void:
+	if source is DinnerWorldSwitch:
+		_a24_switch_noise_count += 1
 
 
 func _verify_noise_indicators() -> void:
@@ -987,6 +1000,82 @@ func _verify_a22_hallway_and_fixtures() -> void:
 		+ "point-blank sight follows 0.35, overhead fixtures read correctly, "
 		+ "and analytic/rendered positions agree."
 	)
+	get_tree().quit()
+
+
+func _verify_a24_silent_switches_and_toy_piles() -> void:
+	get_tree().paused = false
+	for settle_frame: int in range(12):
+		await get_tree().physics_frame
+
+	var corridor_switch: DinnerWorldSwitch = (
+		$Level/CarpetHallSwitch as DinnerWorldSwitch
+	)
+	var original_switch_state: bool = corridor_switch.is_on
+	_a24_switch_noise_count = 0
+	NoiseSystem.noise_emitted.connect(_capture_a24_switch_noise)
+	corridor_switch.set_state(not original_switch_state, true)
+	await get_tree().process_frame
+	NoiseSystem.noise_emitted.disconnect(_capture_a24_switch_noise)
+	assert(
+		(corridor_switch.get_node("Click") as AudioStreamPlayer3D).playing,
+		"Switch presentation click did not play."
+	)
+	assert(
+		_a24_switch_noise_count == 0,
+		"Switch flip emitted gameplay noise."
+	)
+	corridor_switch.set_state(original_switch_state, false)
+
+	var toy_names: PackedStringArray = [
+		"ToyHallRug",
+		"ToyDining",
+		"ToyCarpet",
+	]
+	for toy_name: String in toy_names:
+		var toy: NoiseSurface = $Level.get_node(toy_name) as NoiseSurface
+		assert(toy.is_in_group(&"surface_toys"))
+		assert(is_equal_approx(toy.loudness_multiplier, 4.0))
+		assert(is_equal_approx(toy.surface_size.x, 2.6))
+		assert(is_equal_approx(toy.surface_size.y, 1.4))
+		assert(toy.surface_height <= 0.03)
+		var collisions: Array[Node] = toy.find_children(
+			"*",
+			"CollisionShape3D",
+			true,
+			false
+		)
+		assert(collisions.size() == 1)
+		var overlay_shape: BoxShape3D = (
+			(collisions[0] as CollisionShape3D).shape as BoxShape3D
+		)
+		assert(overlay_shape != null)
+		assert(is_equal_approx(overlay_shape.size.x, toy.surface_size.x))
+		assert(is_equal_approx(overlay_shape.size.y, toy.surface_height))
+		assert(is_equal_approx(overlay_shape.size.z, toy.surface_size.y))
+		assert(toy.get_node("ToyPill") is MeshInstance3D)
+		assert(toy.get_node("ToyBlock") is MeshInstance3D)
+		var train: Node3D = toy.get_node("ToyTrain") as Node3D
+		assert(
+			train.find_children("*", "MeshInstance3D", true, false).size()
+			== 3
+		)
+		var pill: MeshInstance3D = toy.get_node("ToyPill") as MeshInstance3D
+		var block: MeshInstance3D = toy.get_node("ToyBlock") as MeshInstance3D
+		assert(pill.position.distance_to(train.position) > 0.8)
+		assert(block.position.distance_to(train.position) > 0.6)
+		assert(pill.position.distance_to(block.position) > 0.6)
+
+	print(
+		"A24 metrics: switches gameplay-noise=%d; %d toy piles at 2.6 x 1.4 m."
+		% [_a24_switch_noise_count, toy_names.size()]
+	)
+	print(
+		"A24 verification passed: switch clicks are presentation-only and "
+		+ "each flat toy overlay carries a spread pill/train/block pile."
+	)
+	corridor_switch.stop_click_audio()
+	await _settle_verification_audio()
 	get_tree().quit()
 
 
@@ -1872,7 +1961,6 @@ func _verify_a16_world_pack() -> void:
 		for node: Node in switches:
 			if node.get("switch_id") == switch_id:
 				found = true
-				assert(is_equal_approx(float(node.get("click_loudness")), 0.8))
 				assert(node.get_node("Click") is AudioStreamPlayer3D)
 		assert(found, "Missing A16 switch %s." % switch_id)
 	var kid_hall_switch: DinnerWorldSwitch = (
@@ -2112,9 +2200,6 @@ func _verify_a17_acceptance_fixes() -> void:
 	kid_switch.set_state(saved_switch_state, false)
 	player.global_position = saved_player_position
 	player.input_locked = saved_input_locked
-
-	for switch: Node in get_tree().get_nodes_in_group("world_switch"):
-		assert(is_equal_approx(float(switch.get("click_loudness")), 0.8))
 
 	var bathroom_fixture: Node3D = $Level/BathroomLampVisual as Node3D
 	var bathroom_switch: DinnerWorldSwitch = (
