@@ -129,28 +129,30 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       two-second cone encounter; switch clicks are unheard; one solid
       toy/creak stomp investigates; far-cone lit sight reaches 50 suspicion
       within 1.5 s. Accept: live `--verify-b21` plus B6/B8–B15/B18/B20 and
-      adversarial QA regression (`b9dfecf`).
+      adversarial QA regression (`b9dfecf`; consolidated at `9fd04ff`).
 - [x] Lane-C crib-boundary major — win containment uses the player centre and
       an 0.08 m tolerance; the reported 2.04 m outside case stays PLAYING and
       A6's inside position still wins immediately and at expiry.
 - [x] A23 family-voice casting — the start motivation is exclusive, live
       `FOUND` and `CARRY` states drive context-aware no-repeat chains through
       one VO player, and the parent carry-grunt pools split 3/1 by snack
-      context. Accept: `--verify-audio` (`eed6e31`).
+      context. Accept: `--verify-audio` (`eed6e31`; consolidated at `9fd04ff`).
 - [ ] A23 organic-reaction trigger — lane B emits the presentation-only
       `Player.organic_reaction_triggered` signal for real toy/creak steps and
       meaningful wall bumps; lane A's 25% roll and 2.5 s limiter are ready.
 - [x] A24 silent switches + toy piles — switch flips retain a soft positional
       click but emit zero gameplay noise; all three toy hazards are flat
       2.6 × 1.4 m overlays with separated pill/train/block silhouettes and one
-      collider (`cebba87`, `--verify-a24`; exact 41/41 battery, nav 164).
+      collider (`cebba87`, `--verify-a24`; consolidated 42/42 battery at
+      `9fd04ff`, nav 164).
 - [x] A22 hallway light + fixture restyle — two switch-linked overhead
       corridor practicals produce west/center/east analytic brightness
       0.72/0.58/0.72 on and 0.05/0.30/0.31 off, crossing the unchanged 0.35
       point-blank sight threshold only while lit. Hall, dining, kitchen, and
       foyer sources read as flush ceiling discs; the kid nightstand remains a
       lamp (`281cbab`, `--verify-a22`, labeled before/after captures; exact
-      editor/startup/all 38 flags pass, 40/40; nav 164).
+      consolidated editor/startup/all 40 flags pass, 42/42 at `9fd04ff`; nav
+      164).
 - [x] B20 caught-snack exploit — capture atomically clears snack ownership,
       input-locked/carried players cannot auto-recollect it, and CARRY
       defensively preserves the catch-point drop. Accept: live

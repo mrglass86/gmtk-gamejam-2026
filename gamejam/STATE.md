@@ -20,7 +20,7 @@ a journal.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A22 plus actor B6–B20 and the
+- Godot version: 4.7.1-stable — A0.2 through A24 plus actor B6–B21 and the
   original/CC0 audio pass are in `game/` (Compatibility renderer). The approved
   director layout bakes a connected 164-polygon navmesh; input, lighting, noise,
   indicator, route, ambient-mask, countdown, game-flow, audio, and A9
@@ -162,6 +162,10 @@ a journal.
   green. All three squeaky-toy hazards widen to one flat 2.6 × 1.4 m overlay
   with spread pill/train/block silhouettes. Exact editor, startup, and all 39
   flags pass (41/41 functional gates); nav remains 164.
+  `9fd04ff` is the consolidated main code head: A22, A23 plus the crib fix,
+  A24, and B21 are all merged without rewriting history. Editor, startup, and
+  all 40 verification flags pass (42/42) with zero warnings; lane C's complete
+  adversarial suite passes 23/23, including its exact 2.04 m crib case.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -171,8 +175,9 @@ a journal.
 
 ## Current focus
 
-- Freeze/export/upload. A22 and A24 are implemented; only director in-motion
-  presentation verdicts remain before export.
+- Freeze/export/upload from the consolidated main head. A22, A23, A24, and B21
+  are integrated and verified; only director in-motion presentation verdicts
+  remain before export.
 
 ## Known blockers or risks
 
