@@ -8,6 +8,16 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Open
 
+- [ ] (lane A / A23 for lane B) Add
+  `Player.organic_reaction_triggered(trigger_kind: StringName, world_position: Vector3)`.
+  Emit one presentation-only trigger when a real footstep lands on a toy or
+  creaky-board surface (`trigger_kind` = `&"toy"` / `&"creak"`), and on a
+  meaningful geometry bump (`&"wall_bump"`; suppress resting/slide contact).
+  Do not emit gameplay noise. `AudioDirector` already optional-connects this
+  signal, applies the director's 25% chance roll, and rate-limits the shared
+  kid-reaction pool; accept when repeated contact cannot retrigger inside
+  2.5 s.
+
 ## Done
 
 - [x] (lane A / A21 for lane B B18) `LightSystem.nearest_switch_to(pos)`
