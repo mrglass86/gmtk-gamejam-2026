@@ -162,6 +162,16 @@ const POOLS: Dictionary = {
 		"priority": 4,
 		"pitch_jitter": 0.05,
 	},
+	&"snack_pickup_fridge_voice": {
+		"streams": [
+			preload("res://audio/denoised/voice/win_mmm_01.ogg"),
+		],
+		"channel": &"voice",
+		"speaker": &"kid",
+		"priority": 3,
+		"pitch_jitter": 0.05,
+		"volume_offset_db": -2.0,
+	},
 	&"win_giggle": {
 		"streams": [
 			preload("res://audio/denoised/voice/win_giggle_01.ogg"),
@@ -305,6 +315,20 @@ const POOLS: Dictionary = {
 		"channel": &"fridge_pop",
 		"pitch_jitter": 0.06,
 	},
+	&"snack_pickup_pantry": {
+		"streams": [],
+		"fallback": preload("res://audio/sfx/snack_pickup.ogg"),
+		"channel": &"snack_pickup",
+		"pitch_jitter": 0.06,
+	},
+	&"snack_pickup_fridge_scoop": {
+		"streams": [],
+		"fallback": preload("res://audio/sfx/snack_drop.ogg"),
+		"channel": &"snack_pickup",
+		"pitch_jitter": 0.06,
+		"base_pitch": 1.3,
+		"volume_offset_db": -12.0,
+	},
 	&"wrapper_crinkle": {
 		"streams": [
 			preload("res://audio/denoised/foley/wrapper_crinkle_01.ogg"),
@@ -312,6 +336,14 @@ const POOLS: Dictionary = {
 		],
 		"channel": &"wrapper",
 		"pitch_jitter": 0.08,
+	},
+	&"ice_cream_carry": {
+		"streams": [],
+		"fallback": preload("res://audio/sfx/snack_drop.ogg"),
+		"channel": &"wrapper",
+		"pitch_jitter": 0.08,
+		"base_pitch": 1.55,
+		"volume_offset_db": -8.0,
 	},
 	&"sink_running": {
 		"streams": [

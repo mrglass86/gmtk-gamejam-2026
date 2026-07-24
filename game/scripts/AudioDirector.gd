@@ -20,7 +20,6 @@ const SPEAKER_MUSIC_STREAM: AudioStream = preload(
 	"res://audio/ambience/speaker_music.ogg"
 )
 const CLOCK_TICK_STREAM: AudioStream = preload("res://audio/ambience/clock_tick.ogg")
-const SNACK_PICKUP_STREAM: AudioStream = preload("res://audio/sfx/snack_pickup.ogg")
 const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 
 @export_group("Scene References")
@@ -224,6 +223,18 @@ func verify_configuration() -> void:
 			-8.0
 		)
 	)
+	for snack_pool: StringName in [
+		&"snack_pickup_pantry",
+		&"snack_pickup_fridge_scoop",
+		&"snack_pickup_fridge_voice",
+		&"wrapper_crinkle",
+		&"ice_cream_carry",
+	]:
+		assert(CASTING.POOLS.has(snack_pool))
+	assert(
+		CASTING.POOLS[&"snack_pickup_fridge_voice"].get("speaker", &"")
+		== &"kid"
+	)
 	for pool_id: StringName in CASTING.POOLS:
 		var pool_streams: Array = CASTING.POOLS[pool_id].get("streams", [])
 		for stream: AudioStream in pool_streams:
@@ -352,9 +363,11 @@ func begin_audio_verification() -> void:
 		)
 	)
 	var pickup_count_before: int = _snack_pickup_play_count
+	_snack.set_snack_type(DinnerSnack.TYPE_CHIPS)
 	_on_snack_picked_up(_player)
 	_on_snack_picked_up(_player)
 	assert(_snack_pickup.playing)
+	assert(_pool_contains_stream(&"snack_pickup_pantry", _snack_pickup.stream))
 	assert(_snack_pickup_play_count == pickup_count_before + 1)
 	_on_snack_dropped(_snack.global_position)
 	assert(_snack_drop.playing)
@@ -369,6 +382,7 @@ func begin_audio_verification() -> void:
 	assert(_wrapper_foley.playing)
 	assert(is_equal_approx(_wrapper_foley.volume_db, wrapper_volume_db))
 	assert(is_equal_approx(_player.snack_noise_interval, 0.6))
+	assert(is_equal_approx(_player.snack_noise_loudness, 0.3))
 	_player.set_carrying_snack(false)
 	var drop_voice: AudioStream = _voice.stream
 	assert(not _play_pool(&"chase_giggle"))
@@ -452,7 +466,7 @@ func _wire_streams_and_tuning() -> void:
 	_door_creak.stream = _select_pool_stream(&"door_creak_slow")
 	_door_creak.max_distance = door_creak_max_distance
 
-	_snack_pickup.stream = SNACK_PICKUP_STREAM
+	_snack_pickup.stream = _select_pool_stream(&"snack_pickup_pantry")
 	_snack_pickup.volume_db = snack_pickup_volume_db
 	_snack_pickup.max_distance = 8.0
 	_snack_drop.stream = SNACK_DROP_STREAM
@@ -785,7 +799,14 @@ func _on_snack_picked_up(_carrier: DinnerPlayer) -> void:
 	_snack_pickup_play_count += 1
 	_wrapper_audio_elapsed = 0.0
 	_snack_pickup.global_position = _carrier.global_position
-	_snack_pickup.play()
+	if (
+		_snack != null
+		and _snack.snack_type == DinnerSnack.TYPE_ICE_CREAM
+	):
+		_play_pool(&"snack_pickup_fridge_scoop")
+		_play_pool(&"snack_pickup_fridge_voice")
+	else:
+		_play_pool(&"snack_pickup_pantry")
 
 
 func _on_snack_dropped(drop_position: Vector3) -> void:
@@ -899,7 +920,12 @@ func _play_pool(pool_id: StringName) -> bool:
 	if stream == null:
 		return false
 	var jitter: float = maxf(float(config.get("pitch_jitter", 0.0)), 0.0)
-	var pitch: float = _rng.randf_range(1.0 - jitter, 1.0 + jitter)
+	var base_pitch: float = maxf(float(config.get("base_pitch", 1.0)), 0.01)
+	var pitch: float = base_pitch * _rng.randf_range(
+		1.0 - jitter,
+		1.0 + jitter
+	)
+	var volume_offset_db: float = float(config.get("volume_offset_db", 0.0))
 	var channel: StringName = config.get("channel", &"")
 	match channel:
 		&"voice":
@@ -908,10 +934,7 @@ func _play_pool(pool_id: StringName) -> bool:
 				return false
 			_voice.stream = stream
 			_voice.pitch_scale = pitch
-			_voice.volume_db = (
-				voice_volume_db
-				+ float(config.get("volume_offset_db", 0.0))
-			)
+			_voice.volume_db = voice_volume_db + volume_offset_db
 			_voice_priority = priority
 			_voice.play()
 			if (
@@ -947,11 +970,19 @@ func _play_pool(pool_id: StringName) -> bool:
 			_fridge_pop.stream = stream
 			_fridge_pop.pitch_scale = pitch
 			_fridge_pop.play()
+		&"snack_pickup":
+			_snack_pickup.stream = stream
+			_snack_pickup.pitch_scale = pitch
+			_snack_pickup.volume_db = (
+				snack_pickup_volume_db + volume_offset_db
+			)
+			_snack_pickup.play()
 		&"wrapper":
 			if _wrapper_foley.playing:
 				return false
 			_wrapper_foley.stream = stream
 			_wrapper_foley.pitch_scale = pitch
+			_wrapper_foley.volume_db = wrapper_volume_db + volume_offset_db
 			if _player != null:
 				_wrapper_foley.global_position = _player.global_position
 			_wrapper_foley.play()
@@ -1072,7 +1103,87 @@ func _update_wrapper_audio(delta: float) -> void:
 	if _wrapper_audio_elapsed < safe_interval:
 		return
 	_wrapper_audio_elapsed = fmod(_wrapper_audio_elapsed, safe_interval)
-	_play_pool(&"wrapper_crinkle")
+	var carried_pool: StringName = &"wrapper_crinkle"
+	if (
+		_snack != null
+		and _snack.snack_type == DinnerSnack.TYPE_ICE_CREAM
+	):
+		carried_pool = &"ice_cream_carry"
+	_play_pool(carried_pool)
+
+
+func verify_a20_snack_audio_skin() -> void:
+	var original_type: StringName = _snack.snack_type
+	var original_carrying: bool = _player.carrying_snack
+	var original_game_active: bool = _game_active
+	var noise_count_before: int = _verification_noise_count
+	_verification_noise_count = 0
+	NoiseSystem.noise_emitted.connect(_capture_verification_noise)
+	_on_game_started()
+
+	_snack.set_snack_type(DinnerSnack.TYPE_CHIPS)
+	_snack_pickup_latched = false
+	_voice.stop()
+	_voice_priority = 0
+	_on_snack_picked_up(_player)
+	assert(_pool_contains_stream(&"snack_pickup_pantry", _snack_pickup.stream))
+	assert(
+		not _pool_contains_stream(
+			&"snack_pickup_fridge_scoop",
+			_snack_pickup.stream
+		)
+	)
+	assert(not is_voice_pool_playing(&"snack_pickup_fridge_voice"))
+
+	_snack.set_snack_type(DinnerSnack.TYPE_ICE_CREAM)
+	_snack_pickup_latched = false
+	_snack_pickup.stop()
+	_voice.stop()
+	_voice_priority = 0
+	_on_snack_picked_up(_player)
+	assert(
+		_pool_contains_stream(
+			&"snack_pickup_fridge_scoop",
+			_snack_pickup.stream
+		)
+	)
+	assert(is_voice_pool_playing(&"snack_pickup_fridge_voice"))
+	assert(
+		not _pool_contains_stream(&"wrapper_crinkle", _snack_pickup.stream),
+		"Fridge pickup routed a crinkle."
+	)
+
+	_player.set_carrying_snack(true)
+	_snack.set_snack_type(DinnerSnack.TYPE_CHIPS)
+	_wrapper_foley.stop()
+	_wrapper_audio_elapsed = wrapper_audio_interval
+	_update_wrapper_audio(0.0)
+	assert(_pool_contains_stream(&"wrapper_crinkle", _wrapper_foley.stream))
+	assert(is_equal_approx(_wrapper_foley.volume_db, wrapper_volume_db))
+
+	_snack.set_snack_type(DinnerSnack.TYPE_ICE_CREAM)
+	_wrapper_foley.stop()
+	_wrapper_audio_elapsed = wrapper_audio_interval
+	_update_wrapper_audio(0.0)
+	assert(_pool_contains_stream(&"ice_cream_carry", _wrapper_foley.stream))
+	assert(_wrapper_foley.volume_db < wrapper_volume_db)
+	assert(
+		not _pool_contains_stream(&"wrapper_crinkle", _wrapper_foley.stream),
+		"Ice-cream carry routed a crinkle."
+	)
+	assert(is_equal_approx(_player.snack_noise_loudness, 0.3))
+	assert(is_equal_approx(_player.snack_noise_interval, 0.6))
+	assert(
+		_verification_noise_count == 0,
+		"Audio skin emitted gameplay noise; Player must remain sole authority."
+	)
+
+	NoiseSystem.noise_emitted.disconnect(_capture_verification_noise)
+	_verification_noise_count = noise_count_before
+	_snack.set_snack_type(original_type)
+	_player.set_carrying_snack(original_carrying)
+	_game_active = original_game_active
+	_snack_pickup_latched = false
 
 
 func _on_voice_finished() -> void:

@@ -87,6 +87,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a19"):
 		_verify_a19_geometry_audit()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a20"):
+		_verify_a20_snack_identity()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -619,6 +622,60 @@ func _verify_audio_pass() -> void:
 	get_tree().quit()
 
 
+func _verify_a20_snack_identity() -> void:
+	var snack: DinnerSnack = $Snack as DinnerSnack
+	var snack_visual: SnackVisualPresenter = $Snack/Visual as SnackVisualPresenter
+	var audio_director: DinnerAudioDirector = (
+		$AudioDirector as DinnerAudioDirector
+	)
+
+	snack.set_snack_type(DinnerSnack.TYPE_CHIPS)
+	assert(snack_visual.get_presented_type() == DinnerSnack.TYPE_CHIPS)
+	var packet: BoxMesh = snack_visual.mesh as BoxMesh
+	assert(packet != null)
+	assert(packet.size.x >= 0.5 and packet.size.y >= 0.65)
+	assert(snack_visual.get_node_or_null("FoilBand") is MeshInstance3D)
+	for pantry_material: StandardMaterial3D in (
+		snack_visual.get_pulse_materials()
+	):
+		assert(pantry_material.emission_enabled)
+
+	snack.set_snack_type(DinnerSnack.TYPE_ICE_CREAM)
+	assert(snack_visual.get_presented_type() == DinnerSnack.TYPE_ICE_CREAM)
+	var scoop: SphereMesh = snack_visual.mesh as SphereMesh
+	var cone_part: MeshInstance3D = (
+		snack_visual.get_node_or_null("Cone") as MeshInstance3D
+	)
+	assert(scoop != null and scoop.radius >= 0.299)
+	assert(cone_part != null and cone_part.mesh is CylinderMesh)
+	for fridge_material: StandardMaterial3D in (
+		snack_visual.get_pulse_materials()
+	):
+		assert(fridge_material.emission_enabled)
+
+	snack_visual.set("_pulse_elapsed", 0.0)
+	snack_visual.call("_apply_pulse")
+	var pulse_low: float = snack_visual.scale.x
+	snack_visual.set("_pulse_elapsed", 0.25 / snack_visual.pulse_speed)
+	snack_visual.call("_apply_pulse")
+	assert(snack_visual.scale.x > pulse_low)
+
+	audio_director.verify_configuration()
+	audio_director.verify_a20_snack_audio_skin()
+	assert(is_equal_approx(($Player as DinnerPlayer).snack_noise_loudness, 0.3))
+	assert(is_equal_approx(($Player as DinnerPlayer).snack_noise_interval, 0.6))
+	print(
+		"A20 verification passed: chips packet and ice-cream cone/scoop swap "
+		+ "by Snack identity; pickup/carry skins differ with locked 0.3/0.6 "
+		+ "gameplay noise."
+	)
+	audio_director.end_audio_verification()
+	for settle_frame: int in range(8):
+		await get_tree().process_frame
+	await _settle_verification_audio()
+	get_tree().quit()
+
+
 func _verify_a7_presentation() -> void:
 	assert(
 		int(ProjectSettings.get_setting("display/window/size/viewport_width")) == 1920
@@ -697,11 +754,11 @@ func _verify_a7_presentation() -> void:
 	var snack_visual: SnackVisualPresenter = (
 		$Snack/Visual as SnackVisualPresenter
 	)
-	var snack_mesh: SphereMesh = snack_visual.mesh as SphereMesh
 	fridge.openness = 0.6
 	fridge.call("_apply_visual")
-	snack.reveal_at(fridge.global_position)
+	snack.reveal_at(fridge.global_position, DinnerSnack.TYPE_ICE_CREAM)
 	snack_visual.apply_reveal_clearance()
+	var snack_mesh: SphereMesh = snack_visual.mesh as SphereMesh
 	assert(snack_visual.visible)
 	assert(snack_mesh.radius >= 0.3 and snack_visual.position.y > snack_mesh.radius)
 	_assert_snack_clear_of_panel(snack_visual, $Fridge/DoorVisual/Panel)
@@ -715,7 +772,7 @@ func _verify_a7_presentation() -> void:
 	var pantry: DinnerDoor = $Pantry as DinnerDoor
 	pantry.openness = 0.6
 	pantry.call("_apply_visual")
-	snack.reveal_at(pantry.global_position)
+	snack.reveal_at(pantry.global_position, DinnerSnack.TYPE_CHIPS)
 	snack_visual.apply_reveal_clearance()
 	_assert_snack_clear_of_panel(snack_visual, $Pantry/DoorVisual/Panel)
 
@@ -742,19 +799,19 @@ func _verify_a8_tuning() -> void:
 
 	var snack: DinnerSnack = $Snack as DinnerSnack
 	var snack_visual: SnackVisualPresenter = $Snack/Visual as SnackVisualPresenter
-	var snack_mesh: SphereMesh = snack_visual.mesh as SphereMesh
-	var snack_material: StandardMaterial3D = (
-		snack_visual.material_override as StandardMaterial3D
-	)
-	assert(snack_mesh.radius >= 0.349)
-	assert(snack_material.emission_enabled)
-	assert(snack_material.emission_energy_multiplier > 0.0)
 
 	var pantry: DinnerDoor = $Pantry as DinnerDoor
 	pantry.openness = 0.6
 	pantry.call("_apply_visual")
-	snack.reveal_at(pantry.global_position)
+	snack.reveal_at(pantry.global_position, DinnerSnack.TYPE_CHIPS)
 	snack_visual.apply_reveal_clearance()
+	var snack_mesh: BoxMesh = snack_visual.mesh as BoxMesh
+	var snack_material: StandardMaterial3D = (
+		snack_visual.material_override as StandardMaterial3D
+	)
+	assert(snack_mesh.size.x >= 0.5 and snack_mesh.size.y >= 0.65)
+	assert(snack_material.emission_enabled)
+	assert(snack_material.emission_energy_multiplier > 0.0)
 	snack_visual.set("_pulse_elapsed", 0.0)
 	snack_visual.call("_apply_pulse")
 	var pulse_low: float = snack_visual.scale.x
@@ -2356,12 +2413,10 @@ func _collision_world_aabb(collision: CollisionShape3D) -> AABB:
 
 
 func _assert_snack_clear_of_panel(
-	snack_visual: MeshInstance3D,
+	snack_visual: SnackVisualPresenter,
 	panel: MeshInstance3D
 ) -> void:
-	var snack_world_aabb: AABB = (
-		snack_visual.global_transform * snack_visual.get_aabb()
-	)
+	var snack_world_aabb: AABB = snack_visual.get_visual_world_aabb()
 	var panel_world_aabb: AABB = panel.global_transform * panel.get_aabb()
 	assert(
 		not snack_world_aabb.intersects(panel_world_aabb),
@@ -2467,7 +2522,7 @@ func _capture_layout(capture_path: String) -> void:
 		pantry.openness = 0.6
 		pantry.call("_apply_visual")
 		var snack: DinnerSnack = $Snack as DinnerSnack
-		snack.reveal_at(pantry.global_position)
+		snack.reveal_at(pantry.global_position, DinnerSnack.TYPE_CHIPS)
 		($Snack/Visual as SnackVisualPresenter).apply_reveal_clearance()
 	if capture_a18_wall_proof:
 		_configure_a18_wall_blocking_capture()
