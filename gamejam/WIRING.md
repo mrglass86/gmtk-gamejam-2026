@@ -8,7 +8,12 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Open
 
-No open requests.
+- [ ] (lane B / B16) In `AudioDirector.gd`, connect
+  `Player.idle_giggled(giggle_position)` to a soft playback from the existing
+  no-repeat `chase_giggle` pool (volume as an export). While
+  `Player.is_emitting_idle_giggle()` is true, `_on_noise_emitted` must skip
+  footstep/wrapper inference. Audio must not emit another `NoiseSystem` event;
+  Player's single 0.5 event already creates the magenta indicator.
 
 ## Done
 

@@ -10,8 +10,9 @@ a journal.
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Saturday — original-audio integration, mix walk, and feel
   tuning.
-- Next playable checkpoint: CP5 manual full run — title-card start through both
-  win and expiry-loss outcomes, restart, then freeze/export.
+- Next playable checkpoint: B16 idle-giggle integration, then CP5 manual full
+  run — title-card start through both win and expiry-loss outcomes, restart,
+  then freeze/export.
 
 ## Working build
 
@@ -105,8 +106,8 @@ a journal.
 
 ## Current focus
 
-- Acceptance build is complete. Noah runs CP5's full title-to-win and
-  title-to-loss routes, then freezes and exports if the live verdict is clean.
+- Lane B ships B16's free-play giggle timer/noise gate; lane A connects its
+  soft VO without duplicating the gameplay event. Then Noah runs CP5.
 
 ## Known blockers or risks
 

@@ -121,6 +121,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 ## Must — Saturday regression gate
 
+- [ ] B16 idle giggle — while free in PLAYING, Player randomizes each interval
+      over 20–45 s, plays one soft giggle, and emits exactly one unmasked 0.5
+      event with a 4 m magenta tell. No giggle while carried or on TITLE/WON/LOST.
+      Accept: live `--verify-b16` plus audio-pool/no-duplicate-noise integration.
 - [x] B15 hearing model — sustained sources count at most once per 0.4 s and
       one uninterrupted burst supplies one cue; first 10+ contribution enters
       stationary CURIOUS for ~2 s; second cue inside 8 s or sight enters

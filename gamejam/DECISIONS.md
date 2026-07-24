@@ -597,3 +597,21 @@ Record decisions another session or tool would otherwise have to rediscover.
   cores, or the CC0 step mix masks sub-threshold carpet feedback.
 - **Evidence / handoff:** `2d4e142`, `--verify-a17`, and
   `gamejam/handoffs/2026-07-24-a17-lighting.png`.
+
+## 2026-07-24 — Idle giggles are rare, honest player-authored noise
+
+- **Decision:** During active free play, an unattached and input-enabled player
+  self-giggles at a newly randomized 20–45 s interval. Each giggle emits one
+  fixed, unmasked 0.5 `NoiseSystem` event from the player, producing the
+  standard 4 m magenta ring/icon. Carry and TITLE/WON/LOST states pause the
+  timer. Audio observes `Player.idle_giggled`; it never emits a second gameplay
+  event and excludes the tagged event from footstep/wrapper inference.
+- **Why:** The toddler should create a tiny involuntary risk that remains
+  legible and mechanically honest wherever it occurs.
+- **Rejected / cut:** Masking the tell below its promised 4 m ring; giggling
+  during capture or result screens; implementing a second timer in the audio
+  layer; treating the event as wrapper or footstep noise.
+- **Owner:** Noah (director), lane B (player behavior), lane A (audio playback)
+- **Revisit when:** CP5 finds the giggle too frequent, too loud in the mix, or
+  unfair during a close pass.
+- **Evidence / handoff:** B16 work order and `--verify-b16`, 2026-07-24.

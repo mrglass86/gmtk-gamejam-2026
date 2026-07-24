@@ -5,6 +5,7 @@ class_name DinnerPlayer
 ## LightSystem and NoiseSystem are locked autoload interfaces (brief section 3).
 
 signal snack_carrying_changed(carrying: bool)
+signal idle_giggled(giggle_position: Vector3)
 
 const INTERACTION_TIE_EPSILON: float = 0.001
 
@@ -37,6 +38,25 @@ const INTERACTION_TIE_EPSILON: float = 0.001
 @export var snack_noise_loudness: float = 0.3
 @export var snack_noise_interval: float = 0.6
 
+@export_group("Idle Giggle")
+@export_node_path("DinnerGameFlow") var game_flow_path: NodePath = NodePath(
+	"../GameFlow"
+)
+@export var idle_giggle_min_interval: float = 20.0
+@export var idle_giggle_max_interval: float = 45.0
+@export var idle_giggle_loudness: float = 0.5
+@export var idle_giggle_random_seed: int = 0
+
+@export_group("B16 Runtime Verification")
+@export var verify_b16_time_scale: float = 20.0
+@export var verify_b16_physics_ticks_per_second: int = 1200
+@export var verify_b16_warmup_frames: int = 12
+@export var verify_b16_max_physics_frames: int = 6000
+@export var verify_b16_short_interval: float = 0.5
+@export var verify_b16_suppression_duration: float = 1.0
+@export var verify_b16_clock_tolerance: float = 0.75
+@export var verify_b16_ring_tolerance: float = 0.01
+
 @export_group("Capsule Readout")
 @export_node_path("MeshInstance3D") var capsule_mesh_path: NodePath = NodePath("Capsule")
 @export var shadow_albedo: Color = Color("29323d")
@@ -51,6 +71,11 @@ var input_locked: bool = false
 
 var _footstep_elapsed: float = 0.0
 var _snack_noise_elapsed: float = 0.0
+var _idle_giggle_elapsed: float = 0.0
+var _idle_giggle_interval: float = 0.0
+var _idle_giggle_emitting: bool = false
+var _idle_giggle_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _game_flow: DinnerGameFlow
 var _current_surface_multiplier: float = 1.0
 var _capsule_mesh: MeshInstance3D
 var _capsule_material: StandardMaterial3D
@@ -60,9 +85,19 @@ var _capsule_base_rotation: Vector3
 var _step_cycle_has_landed: bool = false
 var _carrier: Node3D
 var _carry_offset: Vector3
+var _verify_b16_noise_count: int = 0
+var _verify_b16_signal_count: int = 0
+var _verify_b16_last_loudness: float = 0.0
+var _verify_b16_last_position: Vector3
 
 
 func _ready() -> void:
+	_game_flow = get_node_or_null(game_flow_path) as DinnerGameFlow
+	if idle_giggle_random_seed == 0:
+		_idle_giggle_rng.randomize()
+	else:
+		_idle_giggle_rng.seed = idle_giggle_random_seed
+	_schedule_next_idle_giggle()
 	_capsule_mesh = get_node_or_null(capsule_mesh_path) as MeshInstance3D
 	if _capsule_mesh != null:
 		_capsule_base_position = _capsule_mesh.position
@@ -70,9 +105,12 @@ func _ready() -> void:
 		_capsule_base_rotation = _capsule_mesh.rotation
 	_setup_capsule_material()
 	_update_capsule_readout()
+	if OS.get_cmdline_user_args().has("--verify-b16"):
+		_run_b16_live_verification.call_deferred()
 
 
 func _physics_process(delta: float) -> void:
+	_update_idle_giggle(delta)
 	if _carrier != null:
 		velocity = Vector3.ZERO
 		global_position = _carrier.to_global(_carry_offset)
@@ -295,6 +333,59 @@ func _emit_snack_noise(delta: float) -> void:
 	_emit_masked_noise(snack_noise_loudness)
 
 
+func _update_idle_giggle(delta: float) -> void:
+	if not _can_idle_giggle():
+		return
+	_idle_giggle_elapsed += delta
+	if _idle_giggle_elapsed < _idle_giggle_interval:
+		return
+	_emit_idle_giggle()
+	_schedule_next_idle_giggle()
+
+
+func _can_idle_giggle() -> bool:
+	return (
+		_carrier == null
+		and not input_locked
+		and GameClock.running
+		and (
+			_game_flow == null
+			or _game_flow.state == DinnerGameFlow.State.PLAYING
+		)
+	)
+
+
+func _schedule_next_idle_giggle() -> void:
+	_idle_giggle_elapsed = 0.0
+	var minimum_interval: float = maxf(
+		minf(idle_giggle_min_interval, idle_giggle_max_interval),
+		0.0
+	)
+	var maximum_interval: float = maxf(
+		maxf(idle_giggle_min_interval, idle_giggle_max_interval),
+		minimum_interval
+	)
+	_idle_giggle_interval = _idle_giggle_rng.randf_range(
+		minimum_interval,
+		maximum_interval
+	)
+
+
+func _emit_idle_giggle() -> void:
+	if not _can_idle_giggle():
+		return
+	_idle_giggle_emitting = true
+	idle_giggled.emit(global_position)
+	# B16 is a fixed tell: its analytical ring remains an honest ~4 m even
+	# inside an ambient mask.
+	NoiseSystem.emit_noise(global_position, idle_giggle_loudness, self)
+	_idle_giggle_emitting = false
+
+
+func is_emitting_idle_giggle() -> bool:
+	return _idle_giggle_emitting
+
+
 func _emit_masked_noise(raw_loudness: float) -> void:
 	var mask: float = clampf(NoiseSystem.get_mask_at(global_position), 0.0, 1.0)
 	var loudness: float = raw_loudness * (1.0 - mask)
@@ -352,3 +443,270 @@ func _update_capsule_readout() -> void:
 	_capsule_material.emission_energy_multiplier = lerpf(
 		shadow_emission_energy, lit_emission_energy, brightness
 	)
+
+
+func _run_b16_live_verification() -> void:
+	var parent_actor: DinnerParent = (
+		get_parent().get_node_or_null("Parent") as DinnerParent
+	)
+	var pet_actor: DinnerPet = get_parent().get_node_or_null("Pet") as DinnerPet
+	var indicator_manager: Node3D = (
+		get_parent().get_node_or_null("NoiseIndicatorManager") as Node3D
+	)
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var original_min_interval: float = idle_giggle_min_interval
+	var original_max_interval: float = idle_giggle_max_interval
+	var original_game_state: DinnerGameFlow.State = (
+		_game_flow.state
+		if _game_flow != null
+		else DinnerGameFlow.State.PLAYING
+	)
+	var original_clock_running: bool = GameClock.running
+	var original_clock_remaining: float = GameClock.time_remaining
+	var original_clock_phase: int = GameClock.phase
+	var original_input_locked: bool = input_locked
+	var original_carrying_snack: bool = carrying_snack
+	var original_position: Vector3 = global_position
+	var parent_was_processing: bool = (
+		parent_actor != null and parent_actor.is_physics_processing()
+	)
+	var pet_was_processing: bool = (
+		pet_actor != null and pet_actor.is_physics_processing()
+	)
+	var scheduled_default_interval: float = _idle_giggle_interval
+	var temporary_carrier: Node3D = Node3D.new()
+	temporary_carrier.name = "B16VerifyCarrier"
+	get_parent().add_child(temporary_carrier)
+	temporary_carrier.global_position = global_position
+
+	Engine.time_scale = maxf(verify_b16_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(
+		verify_b16_physics_ticks_per_second,
+		60
+	)
+	if parent_actor != null:
+		parent_actor.set_physics_process(false)
+	if pet_actor != null:
+		pet_actor.set_physics_process(false)
+	set_carrying_snack(false)
+	if is_attached_to_carrier():
+		detach_from_carrier(original_position)
+	set_input_locked(false)
+	if _game_flow != null:
+		_game_flow.state = DinnerGameFlow.State.PLAYING
+	_verify_b16_noise_count = 0
+	_verify_b16_signal_count = 0
+	_verify_b16_last_loudness = 0.0
+	_verify_b16_last_position = Vector3.ZERO
+	if not NoiseSystem.noise_emitted.is_connected(_capture_b16_noise):
+		NoiseSystem.noise_emitted.connect(_capture_b16_noise)
+	if not idle_giggled.is_connected(_capture_b16_signal):
+		idle_giggled.connect(_capture_b16_signal)
+	for _frame_index in range(verify_b16_warmup_frames):
+		await get_tree().physics_frame
+
+	var baseline_indicator_count: int = (
+		indicator_manager.get_child_count()
+		if indicator_manager != null
+		else 0
+	)
+	GameClock.start()
+	_idle_giggle_elapsed = 0.0
+	var first_giggle_elapsed: float = 0.0
+	for _frame_index in range(verify_b16_max_physics_frames):
+		await get_tree().physics_frame
+		first_giggle_elapsed = _get_b16_clock_elapsed()
+		if _verify_b16_signal_count >= 1 and _verify_b16_noise_count >= 1:
+			break
+
+	var free_roam_emitted: bool = (
+		_verify_b16_signal_count == 1
+		and _verify_b16_noise_count == 1
+		and is_equal_approx(
+			_verify_b16_last_loudness,
+			idle_giggle_loudness
+		)
+		and _verify_b16_last_position.is_equal_approx(global_position)
+	)
+	var default_interval_live: bool = (
+		scheduled_default_interval >= minf(
+			original_min_interval,
+			original_max_interval
+		)
+		and scheduled_default_interval <= maxf(
+			original_min_interval,
+			original_max_interval
+		)
+		and absf(first_giggle_elapsed - scheduled_default_interval)
+		<= verify_b16_clock_tolerance
+	)
+	var ring_radius: float = -1.0
+	var ring_magenta: bool = false
+	if (
+		indicator_manager != null
+		and indicator_manager.get_child_count() > baseline_indicator_count
+	):
+		var indicator: NoiseIndicator = indicator_manager.get_child(
+			indicator_manager.get_child_count() - 1
+		) as NoiseIndicator
+		if indicator != null:
+			ring_radius = indicator.max_radius
+			var icon: Sprite3D = indicator.get("_icon") as Sprite3D
+			if icon != null:
+				var expected_magenta: Color = Color("#FF2D95")
+				ring_magenta = (
+					is_equal_approx(icon.modulate.r, expected_magenta.r)
+					and is_equal_approx(icon.modulate.g, expected_magenta.g)
+					and is_equal_approx(icon.modulate.b, expected_magenta.b)
+				)
+	var ring_honest: bool = (
+		absf(ring_radius - idle_giggle_loudness * 8.0)
+		<= verify_b16_ring_tolerance
+		and ring_magenta
+	)
+
+	idle_giggle_min_interval = verify_b16_short_interval
+	idle_giggle_max_interval = verify_b16_short_interval
+	var count_before_carried: int = _verify_b16_signal_count
+	attach_to_carrier(temporary_carrier, Vector3.ZERO)
+	set_input_locked(false)
+	_schedule_next_idle_giggle()
+	GameClock.start()
+	await _wait_b16_clock_duration(verify_b16_suppression_duration)
+	var carried_suppressed: bool = (
+		_verify_b16_signal_count == count_before_carried
+		and _verify_b16_noise_count == count_before_carried
+	)
+
+	detach_from_carrier(original_position)
+	set_input_locked(false)
+	var count_before_won: int = _verify_b16_signal_count
+	if _game_flow != null:
+		_game_flow.state = DinnerGameFlow.State.WON
+	_schedule_next_idle_giggle()
+	GameClock.start()
+	await _wait_b16_clock_duration(verify_b16_suppression_duration)
+	var won_suppressed: bool = (
+		_verify_b16_signal_count == count_before_won
+		and _verify_b16_noise_count == count_before_won
+	)
+
+	var count_before_lost: int = _verify_b16_signal_count
+	if _game_flow != null:
+		_game_flow.state = DinnerGameFlow.State.LOST
+	_schedule_next_idle_giggle()
+	GameClock.start()
+	await _wait_b16_clock_duration(verify_b16_suppression_duration)
+	var lost_suppressed: bool = (
+		_verify_b16_signal_count == count_before_lost
+		and _verify_b16_noise_count == count_before_lost
+	)
+
+	var count_before_resume: int = _verify_b16_signal_count
+	if _game_flow != null:
+		_game_flow.state = DinnerGameFlow.State.PLAYING
+	set_input_locked(false)
+	_schedule_next_idle_giggle()
+	GameClock.start()
+	await _wait_b16_clock_duration(
+		verify_b16_short_interval + 0.2
+	)
+	var resumed_in_play: bool = (
+		_verify_b16_signal_count == count_before_resume + 1
+		and _verify_b16_noise_count == count_before_resume + 1
+	)
+
+	var verification_passed: bool = (
+		free_roam_emitted
+		and default_interval_live
+		and ring_honest
+		and carried_suppressed
+		and won_suppressed
+		and lost_suppressed
+		and resumed_in_play
+	)
+
+	if NoiseSystem.noise_emitted.is_connected(_capture_b16_noise):
+		NoiseSystem.noise_emitted.disconnect(_capture_b16_noise)
+	if idle_giggled.is_connected(_capture_b16_signal):
+		idle_giggled.disconnect(_capture_b16_signal)
+	idle_giggle_min_interval = original_min_interval
+	idle_giggle_max_interval = original_max_interval
+	if is_attached_to_carrier():
+		detach_from_carrier(original_position)
+	global_position = original_position
+	set_carrying_snack(original_carrying_snack)
+	set_input_locked(original_input_locked)
+	if _game_flow != null:
+		_game_flow.state = original_game_state
+	GameClock.running = original_clock_running
+	GameClock.time_remaining = original_clock_remaining
+	GameClock.phase = original_clock_phase
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+	if parent_actor != null:
+		parent_actor.set_physics_process(parent_was_processing)
+	if pet_actor != null:
+		pet_actor.set_physics_process(pet_was_processing)
+	temporary_carrier.queue_free()
+
+	print(
+		(
+			"B16 live metrics: scheduled=%.2f s, emitted=%.2f s, "
+			+ "loudness=%.2f, ring=%.2f m, magenta=%s; "
+			+ "carried/won/lost suppressed=%s/%s/%s, resumed=%s."
+		)
+		% [
+			scheduled_default_interval,
+			first_giggle_elapsed,
+			_verify_b16_last_loudness,
+			ring_radius,
+			ring_magenta,
+			carried_suppressed,
+			won_suppressed,
+			lost_suppressed,
+			resumed_in_play,
+		]
+	)
+	get_tree().quit(0 if verification_passed else 1)
+	assert(
+		free_roam_emitted and default_interval_live,
+		"B16 free-roam giggle missed its live randomized interval."
+	)
+	assert(ring_honest, "B16 giggle did not render an honest 4 m magenta tell.")
+	assert(carried_suppressed, "B16 giggled while the player was carried.")
+	assert(
+		won_suppressed and lost_suppressed,
+		"B16 giggled during a result screen."
+	)
+	assert(resumed_in_play, "B16 giggle did not resume during free play.")
+	print("B16 live SceneTree verification passed.")
+
+
+func _wait_b16_clock_duration(duration: float) -> void:
+	var start_elapsed: float = _get_b16_clock_elapsed()
+	for _frame_index in range(verify_b16_max_physics_frames):
+		await get_tree().physics_frame
+		if _get_b16_clock_elapsed() - start_elapsed >= duration:
+			return
+
+
+func _get_b16_clock_elapsed() -> float:
+	return GameClock.run_length - GameClock.time_remaining
+
+
+func _capture_b16_noise(
+	pos: Vector3,
+	loudness: float,
+	source: Node
+) -> void:
+	if source != self or not _idle_giggle_emitting:
+		return
+	_verify_b16_noise_count += 1
+	_verify_b16_last_loudness = loudness
+	_verify_b16_last_position = pos
+
+
+func _capture_b16_signal(_giggle_position: Vector3) -> void:
+	_verify_b16_signal_count += 1
