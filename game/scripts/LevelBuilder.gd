@@ -165,30 +165,50 @@ func _build_lights() -> void:
 	_add_omni(
 		"KitchenLampVisual",
 		"kitchen",
-		Vector3(9.8, 1.28, -5.05),
+		Vector3(10.7, 1.16, -2.3),
 		1.0,
-		0.90,
+		0.0,
 		-1.0,
-		Vector3(10.7, 4.5, -2.3)
+		Vector3(10.7, 4.5, -2.3),
+		Vector3(10.7, 0.0, -2.3),
+		true,
+		&"ceiling_disc"
 	)
 	_add_omni(
 		"MidLampVisual",
 		"hall",
-		Vector3(0.95, 1.42, 0.9),
-		0.9,
-		0.86,
+		Vector3(0.95, 1.16, 0.9),
+		0.95,
+		0.0,
 		-1.0,
 		Vector3(0.95, 4.5, 0.9),
-		Vector3(-0.5, 0.0, 0.5)
+		Vector3(0.95, 0.0, 0.9),
+		true,
+		&"ceiling_disc"
+	)
+	_add_omni(
+		"DiningEntryLampVisual",
+		"hall",
+		Vector3(-0.5, 1.16, 0.5),
+		0.85,
+		0.0,
+		-1.0,
+		Vector3(-0.5, 4.5, 0.5),
+		Vector3(-0.5, 0.0, 0.5),
+		true,
+		&"ceiling_disc"
 	)
 	_add_omni(
 		"AlcoveLampVisual",
 		"hall",
-		Vector3(9.7, 1.25, 5.85),
-		0.85,
-		0.68,
+		Vector3(8.3, 1.16, 4.7),
+		1.05,
+		0.0,
 		-1.0,
-		Vector3(8.3, 4.5, 4.7)
+		Vector3(8.3, 4.5, 4.7),
+		Vector3(8.3, 0.0, 4.7),
+		true,
+		&"ceiling_disc"
 	)
 	_add_omni(
 		"BathroomLampVisual",
@@ -205,13 +225,38 @@ func _build_lights() -> void:
 	_add_omni(
 		"HallDoorLampVisual",
 		"hall",
-		Vector3(-10.8, 2.0, 0.0),
-		0.76,
+		Vector3(-9.8, 1.16, 0.0),
+		0.85,
 		0.0,
 		5.6,
 		Vector3(-9.8, 4.5, 0.0),
-		Vector3(-10.8, 0.0, 0.0),
-		false
+		Vector3(-9.8, 0.0, 0.0),
+		false,
+		&"ceiling_disc"
+	)
+	_add_omni(
+		"CarpetHallLampWest",
+		"hall",
+		Vector3(-2.2, 1.16, 4.9),
+		0.9,
+		0.0,
+		-1.0,
+		Vector3(-2.2, 4.5, 4.9),
+		Vector3(-2.2, 0.0, 4.9),
+		true,
+		&"ceiling_disc"
+	)
+	_add_omni(
+		"CarpetHallLampEast",
+		"hall",
+		Vector3(2.7, 1.16, 4.9),
+		0.9,
+		0.0,
+		-1.0,
+		Vector3(2.7, 4.5, 4.9),
+		Vector3(2.7, 0.0, 4.9),
+		true,
+		&"ceiling_disc"
 	)
 	_add_area_glow(
 		"TVGlow",
@@ -233,7 +278,8 @@ func _build_switches() -> void:
 		Vector3(-4.065, 1.0, 0.85),
 		"MidLampVisual",
 		true,
-		Vector3.RIGHT
+		Vector3.RIGHT,
+		PackedStringArray(["DiningEntryLampVisual"])
 	)
 	_add_world_switch(
 		"KitchenSwitch",
@@ -266,6 +312,15 @@ func _build_switches() -> void:
 		"HallDoorLampVisual",
 		false,
 		Vector3.BACK
+	)
+	_add_world_switch(
+		"CarpetHallSwitch",
+		&"carpet_hall",
+		Vector3(-3.65, 1.0, 3.635),
+		"CarpetHallLampWest",
+		true,
+		Vector3.BACK,
+		PackedStringArray(["CarpetHallLampEast"])
 	)
 
 
@@ -771,7 +826,8 @@ func _add_world_switch(
 	position_value: Vector3,
 	target_fixture_name: String,
 	starts_on: bool,
-	surface_normal: Vector3
+	surface_normal: Vector3,
+	additional_target_fixture_names: PackedStringArray = PackedStringArray()
 ) -> void:
 	var wall_switch: Node3D = WORLD_SWITCH_SCRIPT.new() as Node3D
 	wall_switch.name = node_name
@@ -782,6 +838,14 @@ func _add_world_switch(
 		"target_fixture_path",
 		NodePath("../%s" % target_fixture_name)
 	)
+	wall_switch.set(
+		"additional_target_light_ids",
+		additional_target_fixture_names
+	)
+	var additional_paths: Array[NodePath] = []
+	for additional_name: String in additional_target_fixture_names:
+		additional_paths.append(NodePath("../%s" % additional_name))
+	wall_switch.set("additional_target_fixture_paths", additional_paths)
 	wall_switch.set("starts_on", starts_on)
 	var mounted_on_x: bool = absf(surface_normal.x) > 0.5
 	var plate_size: Vector3 = (

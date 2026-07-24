@@ -93,6 +93,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a21"):
 		_verify_a21_light_and_switch_support()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a22"):
+		_verify_a22_hallway_and_fixtures()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -785,7 +788,7 @@ func _verify_a21_light_and_switch_support() -> void:
 		)
 		assert(is_zero_approx(float(nearest["distance"])))
 		switch_count += 1
-	assert(switch_count == 5)
+	assert(switch_count == 6)
 
 	var navigation_region: NavigationRegion3D = (
 		$Level/NavigationRegion3D as NavigationRegion3D
@@ -804,6 +807,185 @@ func _verify_a21_light_and_switch_support() -> void:
 		"A21 verification passed: solid inter-room walls block above-source "
 		+ "light, doorway openings retain spill, and LightSystem resolves the "
 		+ "nearest switch plus controlled light id."
+	)
+	get_tree().quit()
+
+
+func _verify_a22_hallway_and_fixtures() -> void:
+	get_tree().paused = false
+	for settle_frame: int in range(12):
+		await get_tree().physics_frame
+
+	var level: Node3D = $Level as Node3D
+	var phase_director: PhaseDirector = $PhaseDirector as PhaseDirector
+	phase_director.apply_phase(0)
+	var corridor_switch: DinnerWorldSwitch = (
+		$Level/CarpetHallSwitch as DinnerWorldSwitch
+	)
+	assert(corridor_switch.switch_id == &"carpet_hall")
+	assert(corridor_switch.target_light_id == "CarpetHallLampWest")
+	assert(
+		corridor_switch.additional_target_light_ids
+		== PackedStringArray(["CarpetHallLampEast"])
+	)
+	var nearest: Dictionary = LightSystem.nearest_switch_to(
+		corridor_switch.global_position
+	)
+	assert(nearest["switch"] == corridor_switch)
+	assert(nearest["light_id"] == &"CarpetHallLampWest")
+	assert(is_zero_approx(float(nearest["distance"])))
+
+	var overhead_fixture_names: PackedStringArray = [
+		"KitchenLampVisual",
+		"MidLampVisual",
+		"DiningEntryLampVisual",
+		"AlcoveLampVisual",
+		"BathroomLampVisual",
+		"HallDoorLampVisual",
+		"CarpetHallLampWest",
+		"CarpetHallLampEast",
+	]
+	for fixture_name: String in overhead_fixture_names:
+		var fixture: Node3D = level.get_node(fixture_name) as Node3D
+		var shade: MeshInstance3D = fixture.get_node("Shade") as MeshInstance3D
+		var source: OmniLight3D = fixture.get_node("Light") as OmniLight3D
+		assert(shade.mesh is CylinderMesh)
+		assert(
+			fixture.find_children(
+				"*",
+				"MeshInstance3D",
+				true,
+				false
+			).size() == 1
+		)
+		var shade_bounds: AABB = shade.global_transform * shade.get_aabb()
+		assert(is_equal_approx(shade_bounds.end.y, 1.2))
+		assert(
+			Vector2(
+				fixture.global_position.x,
+				fixture.global_position.z
+			).distance_to(
+				Vector2(
+					source.global_position.x,
+					source.global_position.z
+				)
+			) < 0.01
+		)
+		assert(is_equal_approx(source.omni_attenuation, 1.45))
+		assert(source.shadow_enabled)
+		assert(is_equal_approx(source.shadow_blur, 2.0))
+		assert(is_equal_approx(source.shadow_opacity, 0.8))
+
+	var kid_fixture: Node3D = $Level/KidLampVisual as Node3D
+	assert(kid_fixture.has_node("Base"))
+	assert(kid_fixture.has_node("Pole"))
+	assert(($Level/KidLampVisual/Shade as MeshInstance3D).mesh is BoxMesh)
+	assert(
+		($Level/AlcoveLampVisual/Light as OmniLight3D).light_energy
+		> ($Level/KidLampVisual/Light as OmniLight3D).light_energy
+	)
+
+	var probes: PackedVector3Array = PackedVector3Array([
+		Vector3(-3.8, 0.0, 4.9),
+		Vector3(0.25, 0.0, 4.9),
+		Vector3(4.3, 0.0, 4.9),
+	])
+	corridor_switch.set_state(true, false)
+	var lit_values: PackedFloat32Array = PackedFloat32Array()
+	for probe: Vector3 in probes:
+		var brightness: float = LightSystem.get_brightness_at(probe)
+		lit_values.append(brightness)
+		assert(
+			brightness > 0.35,
+			"Corridor probe is not exposed: %s -> %.3f"
+			% [probe, brightness]
+		)
+	assert(($Level/CarpetHallLampWest as Node3D).visible)
+	assert(($Level/CarpetHallLampEast as Node3D).visible)
+
+	var player: DinnerPlayer = $Player as DinnerPlayer
+	var parent: DinnerParent = $Parent as DinnerParent
+	var saved_player_position: Vector3 = player.global_position
+	var saved_parent_position: Vector3 = parent.global_position
+	var saved_parent_rotation: Vector3 = parent.rotation
+	var player_was_processing: bool = player.is_physics_processing()
+	var parent_was_processing: bool = parent.is_physics_processing()
+	player.set_physics_process(false)
+	parent.set_physics_process(false)
+	player.global_position = Vector3(0.25, 0.6, 4.9)
+	parent.global_position = Vector3(0.25, 0.7, 5.9)
+	parent.rotation = Vector3.ZERO
+	parent.set("_cone_yaw_degrees", 0.0)
+	await get_tree().physics_frame
+	assert(
+		parent.call("_can_see_player"),
+		"Point-blank parent cannot see the player in the lit corridor."
+	)
+
+	player.call("_update_capsule_readout")
+	var capsule_brightness: float = LightSystem.get_brightness_at(
+		player.global_position
+	)
+	var brightness_readout: CanvasLayer = $BrightnessReadout as CanvasLayer
+	brightness_readout.call("_process", 0.11)
+	assert(
+		($BrightnessReadout/Label as Label).text
+		== "Brightness: %.2f" % capsule_brightness
+	)
+
+	corridor_switch.set_state(false, false)
+	var dark_values: PackedFloat32Array = PackedFloat32Array()
+	for probe: Vector3 in probes:
+		var brightness: float = LightSystem.get_brightness_at(probe)
+		dark_values.append(brightness)
+		assert(
+			brightness <= 0.35,
+			"Corridor switch did not restore shadow choice: %s -> %.3f"
+			% [probe, brightness]
+		)
+	assert(not ($Level/CarpetHallLampWest as Node3D).visible)
+	assert(not ($Level/CarpetHallLampEast as Node3D).visible)
+	assert(
+		not parent.call("_can_see_player"),
+		"Point-blank parent still sees the player after corridor lights go dark."
+	)
+
+	corridor_switch.set_state(true, false)
+	player.global_position = saved_player_position
+	parent.global_position = saved_parent_position
+	parent.rotation = saved_parent_rotation
+	player.set_physics_process(player_was_processing)
+	parent.set_physics_process(parent_was_processing)
+
+	var navigation_region: NavigationRegion3D = (
+		$Level/NavigationRegion3D as NavigationRegion3D
+	)
+	var polygon_count: int = (
+		navigation_region.navigation_mesh.get_polygon_count()
+	)
+	assert(polygon_count == 164)
+	print(
+		(
+			"A22 metrics: corridor lit W/C/E %.2f/%.2f/%.2f, "
+			+ "dark %.2f/%.2f/%.2f, fixtures=%d overhead, "
+			+ "switches=%d, nav=%d."
+		)
+		% [
+			lit_values[0],
+			lit_values[1],
+			lit_values[2],
+			dark_values[0],
+			dark_values[1],
+			dark_values[2],
+			overhead_fixture_names.size(),
+			get_tree().get_nodes_in_group("world_switch").size(),
+			polygon_count,
+		]
+	)
+	print(
+		"A22 verification passed: quiet corridor is a switched light risk, "
+		+ "point-blank sight follows 0.35, overhead fixtures read correctly, "
+		+ "and analytic/rendered positions agree."
 	)
 	get_tree().quit()
 
@@ -1005,7 +1187,18 @@ func _verify_a9_practical_lighting() -> void:
 		"LivingLampVisual",
 		"KitchenLampVisual",
 		"MidLampVisual",
+		"DiningEntryLampVisual",
 		"AlcoveLampVisual",
+		"CarpetHallLampWest",
+		"CarpetHallLampEast",
+	]
+	var overhead_fixture_names: PackedStringArray = [
+		"KitchenLampVisual",
+		"MidLampVisual",
+		"DiningEntryLampVisual",
+		"AlcoveLampVisual",
+		"CarpetHallLampWest",
+		"CarpetHallLampEast",
 	]
 	for fixture_name: String in fixture_names:
 		var fixture: Node3D = level.get_node(fixture_name) as Node3D
@@ -1017,7 +1210,10 @@ func _verify_a9_practical_lighting() -> void:
 			true,
 			false
 		)
-		assert(fixture_parts.size() == 3)
+		assert(
+			fixture_parts.size()
+			== (1 if overhead_fixture_names.has(fixture_name) else 3)
+		)
 		var shade: MeshInstance3D = fixture.get_node("Shade") as MeshInstance3D
 		var shade_material: StandardMaterial3D = (
 			shade.material_override as StandardMaterial3D
@@ -1029,8 +1225,6 @@ func _verify_a9_practical_lighting() -> void:
 			0.0,
 			fixture.global_position.z
 		)
-		if fixture_name == "MidLampVisual":
-			analytic_anchor = Vector3(-0.5, 0.0, 0.5)
 		assert(
 			is_equal_approx(
 				LightSystem.get_brightness_at(analytic_anchor),
@@ -1058,7 +1252,7 @@ func _verify_a9_practical_lighting() -> void:
 		== "Brightness: %.2f" % lit_brightness
 	)
 
-	player.global_position = Vector3(-5.75, 0.6, -0.8)
+	player.global_position = Vector3(-4.0, 0.6, -0.8)
 	player.call("_update_capsule_readout")
 	var pocket_brightness: float = LightSystem.get_brightness_at(
 		player.global_position
@@ -1072,7 +1266,7 @@ func _verify_a9_practical_lighting() -> void:
 	)
 
 	print(
-		"A9 verification passed: five cool emissive practicals, 7.8 m visual pools, "
+		"A9 verification passed: cool emissive practicals, 7.8 m visual pools, "
 		+ "A16 0.05 ambient floor, and live capsule/HUD brightness tracking."
 	)
 	get_tree().quit()
@@ -1309,8 +1503,8 @@ func _verify_a11_dress_pack() -> void:
 		if light is OmniLight3D:
 			shadowed_omni_count += 1
 			assert(is_equal_approx(light.shadow_blur, 2.0))
-	assert(shadowed_count == 8)
-	assert(shadowed_omni_count == 8)
+	assert(shadowed_count == 11)
+	assert(shadowed_omni_count == 11)
 
 	var level: Node3D = $Level as Node3D
 	var fixture_names: PackedStringArray = [
@@ -1318,7 +1512,12 @@ func _verify_a11_dress_pack() -> void:
 		"LivingLampVisual",
 		"KitchenLampVisual",
 		"MidLampVisual",
+		"DiningEntryLampVisual",
 		"AlcoveLampVisual",
+		"BathroomLampVisual",
+		"HallDoorLampVisual",
+		"CarpetHallLampWest",
+		"CarpetHallLampEast",
 	]
 	for fixture_name: String in fixture_names:
 		var fixture: Node3D = level.get_node(fixture_name) as Node3D
@@ -1327,12 +1526,18 @@ func _verify_a11_dress_pack() -> void:
 		assert(is_equal_approx(source.global_position.y, 4.5))
 		assert(shade.global_position.y < 2.0)
 		assert(source.global_position.distance_to(shade.global_position) > 2.5)
-		if fixture_name != "MidLampVisual":
+		var horizontal_offset: float = Vector2(
+			source.global_position.x,
+			source.global_position.z
+		).distance_to(
+			Vector2(fixture.position.x, fixture.position.z)
+		)
+		if fixture_name in ["KidLampVisual", "LivingLampVisual"]:
 			assert(
-				Vector2(source.global_position.x, source.global_position.z)
-				.distance_to(Vector2(fixture.position.x, fixture.position.z))
-				> 0.4
+				horizontal_offset > 0.4
 			)
+		else:
+			assert(horizontal_offset < 0.01)
 
 	var front_table: StaticBody3D = (
 		$Level/FrontDoorSideTable as StaticBody3D
@@ -1353,7 +1558,7 @@ func _verify_a11_dress_pack() -> void:
 	var front_fixture: Node3D = $Level/AlcoveLampVisual as Node3D
 	assert(
 		Vector2(front_fixture.position.x, front_fixture.position.z)
-		.distance_to(Vector2(front_table.position.x, front_table.position.z))
+		.distance_to(Vector2(8.3, 4.7))
 		< 0.01
 	)
 
@@ -1510,6 +1715,7 @@ func _verify_a12_lighting_contrast() -> void:
 		"LivingLampVisual",
 		"KitchenLampVisual",
 		"MidLampVisual",
+		"DiningEntryLampVisual",
 		"AlcoveLampVisual",
 	]
 	for fixture_name: String in fixture_names:
@@ -1546,10 +1752,10 @@ func _verify_a12_lighting_contrast() -> void:
 		).distance_to(dining_center) < 0.01
 	)
 
-	# The rendered source moved to the table, but the locked analytic source
-	# remains at its pre-A12 floor anchor and keeps its linear falloff.
-	var analytic_mid_anchor: Vector3 = Vector3(-0.5, 0.0, 0.5)
-	var analytic_dining_probe: Vector3 = Vector3(0.95, 0.0, 0.9)
+	# A22 aligns the analytic source with the overhead fixture while preserving
+	# the locked linear falloff and 0.35 detection boundary.
+	var analytic_mid_anchor: Vector3 = Vector3(0.95, 0.0, 0.9)
+	var analytic_dining_probe: Vector3 = Vector3(2.4, 0.0, 1.3)
 	var configured_range: float = float(level.get("analytic_light_range"))
 	var expected_dining_brightness: float = 1.0 - (
 		analytic_mid_anchor.distance_to(analytic_dining_probe)
@@ -1652,13 +1858,14 @@ func _verify_a16_world_pack() -> void:
 	assert(polygon_count > 0)
 
 	var switches: Array[Node] = get_tree().get_nodes_in_group("world_switch")
-	assert(switches.size() == 5)
+	assert(switches.size() == 6)
 	var expected_switch_ids: Array[StringName] = [
 		&"dining",
 		&"kitchen",
 		&"foyer",
 		&"bathroom",
 		&"kid_hall",
+		&"carpet_hall",
 	]
 	for switch_id: StringName in expected_switch_ids:
 		var found: bool = false
@@ -1688,9 +1895,12 @@ func _verify_a16_world_pack() -> void:
 		"LivingLampVisual",
 		"KitchenLampVisual",
 		"MidLampVisual",
+		"DiningEntryLampVisual",
 		"AlcoveLampVisual",
 		"BathroomLampVisual",
 		"HallDoorLampVisual",
+		"CarpetHallLampWest",
+		"CarpetHallLampEast",
 	]:
 		var light: OmniLight3D = (
 			level.get_node("%s/Light" % fixture_name) as OmniLight3D
@@ -1806,6 +2016,7 @@ func _verify_a17_acceptance_fixes() -> void:
 		"LivingLampVisual",
 		"KitchenLampVisual",
 		"MidLampVisual",
+		"DiningEntryLampVisual",
 		"AlcoveLampVisual",
 	]:
 		var light: OmniLight3D = (
@@ -2044,8 +2255,8 @@ func _verify_a18_polish_pack() -> void:
 
 	# Lighting v3 is renderer-only. The gameplay light remains the locked
 	# five-point-eight-metre linear source used by the capsule/AI thresholds.
-	var analytic_mid_anchor: Vector3 = Vector3(-0.5, 0.0, 0.5)
-	var analytic_probe: Vector3 = Vector3(0.95, 0.0, 0.9)
+	var analytic_mid_anchor: Vector3 = Vector3(0.95, 0.0, 0.9)
+	var analytic_probe: Vector3 = Vector3(2.4, 0.0, 1.3)
 	var expected_probe: float = 1.0 - (
 		analytic_mid_anchor.distance_to(analytic_probe) / 5.8
 	)
@@ -2332,6 +2543,11 @@ func _verify_a19_geometry_audit() -> void:
 			"wall": "KidSouthB",
 			"normal": Vector3.BACK,
 		},
+		{
+			"switch": "CarpetHallSwitch",
+			"wall": "LHorizontal",
+			"normal": Vector3.BACK,
+		},
 	]
 	for switch_row: Dictionary in switch_rows:
 		var wall_bounds: AABB = _wall_world_aabb(
@@ -2368,13 +2584,6 @@ func _verify_a19_geometry_audit() -> void:
 
 	var fixture_rows: Array[Dictionary] = [
 		{"fixture": "KidLampVisual", "support": "Nightstand"},
-		{"fixture": "KitchenLampVisual", "support": "KitchenCounter"},
-		{
-			"fixture": "MidLampVisual",
-			"support": "DiningTable",
-			"surface": "Top",
-		},
-		{"fixture": "AlcoveLampVisual", "support": "FrontDoorSideTable"},
 	]
 	for fixture_row: Dictionary in fixture_rows:
 		var fixture: Node3D = level.get_node(
@@ -2400,7 +2609,6 @@ func _verify_a19_geometry_audit() -> void:
 		)
 	for floor_fixture_name: String in [
 		"LivingLampVisual",
-		"HallDoorLampVisual",
 	]:
 		var floor_base: MeshInstance3D = level.get_node(
 			"%s/Base" % floor_fixture_name
@@ -2409,13 +2617,24 @@ func _verify_a19_geometry_audit() -> void:
 			floor_base.global_transform * floor_base.get_aabb()
 		)
 		assert(is_equal_approx(floor_base_bounds.position.y, 0.0))
-	var bathroom_disc: MeshInstance3D = (
-		$Level/BathroomLampVisual/Shade as MeshInstance3D
-	)
-	var bathroom_disc_bounds: AABB = (
-		bathroom_disc.global_transform * bathroom_disc.get_aabb()
-	)
-	assert(is_equal_approx(bathroom_disc_bounds.end.y, 1.2))
+	for ceiling_fixture_name: String in [
+		"KitchenLampVisual",
+		"MidLampVisual",
+		"DiningEntryLampVisual",
+		"AlcoveLampVisual",
+		"BathroomLampVisual",
+		"HallDoorLampVisual",
+		"CarpetHallLampWest",
+		"CarpetHallLampEast",
+	]:
+		var ceiling_disc: MeshInstance3D = level.get_node(
+			"%s/Shade" % ceiling_fixture_name
+		) as MeshInstance3D
+		var ceiling_disc_bounds: AABB = (
+			ceiling_disc.global_transform * ceiling_disc.get_aabb()
+		)
+		assert(ceiling_disc.mesh is CylinderMesh)
+		assert(is_equal_approx(ceiling_disc_bounds.end.y, 1.2))
 
 	var bowl: MeshInstance3D = $Level/KitchenBowl/Bowl as MeshInstance3D
 	var bowl_bounds: AABB = bowl.global_transform * bowl.get_aabb()
@@ -2646,6 +2865,12 @@ func _capture_layout(capture_path: String) -> void:
 	var capture_a21_after: bool = OS.get_cmdline_user_args().has(
 		"--capture-a21-after"
 	)
+	var capture_a22_before: bool = OS.get_cmdline_user_args().has(
+		"--capture-a22-before"
+	)
+	var capture_a22_after: bool = OS.get_cmdline_user_args().has(
+		"--capture-a22-after"
+	)
 	if (
 		capture_a10_fridge_open
 		or capture_a10_fridge_closed
@@ -2668,6 +2893,8 @@ func _capture_layout(capture_path: String) -> void:
 		_configure_a19_geometry_capture()
 	if capture_a21_before or capture_a21_after:
 		_configure_a21_wall_blocking_capture(capture_a21_before)
+	if capture_a22_before or capture_a22_after:
+		_configure_a22_hallway_capture(capture_a22_before)
 	for frame: int in range(capture_warmup_frames):
 		await get_tree().process_frame
 	if capture_a19_geometry:
@@ -2690,6 +2917,85 @@ func _capture_layout(capture_path: String) -> void:
 	get_tree().quit()
 
 
+func _configure_a22_hallway_capture(is_before: bool) -> void:
+	var phase_director: PhaseDirector = $PhaseDirector as PhaseDirector
+	phase_director.set_process(false)
+	phase_director.set_physics_process(false)
+	phase_director.apply_phase(0)
+
+	for label: Node in find_children("*", "Label3D", true, false):
+		(label as Label3D).visible = false
+
+	var corridor_switch: DinnerWorldSwitch = (
+		$Level.get_node_or_null("CarpetHallSwitch") as DinnerWorldSwitch
+	)
+	if corridor_switch != null:
+		corridor_switch.set_state(not is_before, false)
+
+	var camera_target: Vector3 = Vector3(0.25, 0.0, 4.75)
+	var camera_rig: Node3D = $CameraRig as Node3D
+	camera_rig.global_position = camera_target + Vector3(0.0, 18.0, 5.0)
+	camera_rig.look_at(camera_target, Vector3.UP)
+	($CameraRig/OrthoCamera as Camera3D).size = 12.5
+
+	var west_probe: Vector3 = Vector3(-3.8, 0.0, 4.9)
+	var center_probe: Vector3 = Vector3(0.25, 0.0, 4.9)
+	var east_probe: Vector3 = Vector3(4.3, 0.0, 4.9)
+	var proof_layer: CanvasLayer = CanvasLayer.new()
+	proof_layer.name = "A22HallwayProof"
+	proof_layer.layer = 30
+	add_child(proof_layer)
+	var proof_label: Label = Label.new()
+	var state_label: String = (
+		"A22 BEFORE — QUIET CARPET CORRIDOR\n"
+		+ "LIGHT-RISK ROUTE MISSING"
+		if is_before
+		else (
+			"A22 AFTER — SWITCHED OVERHEAD CORRIDOR LIGHTS\n"
+			+ "QUIET FLOOR / REAL LIGHT GAMBLE"
+		)
+	)
+	proof_label.text = (
+		state_label
+		+ " • ANALYTIC W/C/E %.2f / %.2f / %.2f"
+	) % [
+		LightSystem.get_brightness_at(west_probe),
+		LightSystem.get_brightness_at(center_probe),
+		LightSystem.get_brightness_at(east_probe),
+	]
+	proof_label.position = Vector2(32.0, 76.0)
+	proof_label.add_theme_font_size_override("font_size", 27)
+	proof_label.add_theme_color_override("font_color", Color("#f2f5f9"))
+	proof_label.add_theme_color_override("font_outline_color", Color("#111820"))
+	proof_label.add_theme_constant_override("outline_size", 7)
+	proof_layer.add_child(proof_label)
+
+	for marker_row: Dictionary in [
+		{
+			"text": "WEST PROBE",
+			"position": west_probe + Vector3.UP * 0.3,
+		},
+		{
+			"text": "CENTER PROBE",
+			"position": center_probe + Vector3.UP * 0.3,
+		},
+		{
+			"text": "EAST PROBE",
+			"position": east_probe + Vector3.UP * 0.3,
+		},
+	]:
+		var marker: Label3D = Label3D.new()
+		marker.text = marker_row["text"]
+		marker.position = marker_row["position"]
+		marker.font_size = 30
+		marker.outline_size = 7
+		marker.pixel_size = 0.0035
+		marker.modulate = Color("#d889de")
+		marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		marker.no_depth_test = true
+		add_child(marker)
+
+
 func _configure_a21_wall_blocking_capture(is_before: bool) -> void:
 	var phase_director: PhaseDirector = $PhaseDirector as PhaseDirector
 	phase_director.set_process(false)
@@ -2700,8 +3006,11 @@ func _configure_a21_wall_blocking_capture(is_before: bool) -> void:
 		"LivingLampVisual",
 		"KitchenLampVisual",
 		"MidLampVisual",
+		"DiningEntryLampVisual",
 		"AlcoveLampVisual",
 		"BathroomLampVisual",
+		"CarpetHallLampWest",
+		"CarpetHallLampEast",
 	]:
 		var fixture: Node3D = $Level.get_node(fixture_name) as Node3D
 		fixture.visible = false
@@ -2804,9 +3113,12 @@ func _apply_a19_capture_state() -> void:
 		"LivingLampVisual",
 		"KitchenLampVisual",
 		"MidLampVisual",
+		"DiningEntryLampVisual",
 		"AlcoveLampVisual",
 		"BathroomLampVisual",
 		"HallDoorLampVisual",
+		"CarpetHallLampWest",
+		"CarpetHallLampEast",
 	]:
 		var fixture: Node3D = $Level.get_node(fixture_name) as Node3D
 		fixture.visible = true
@@ -2830,8 +3142,11 @@ func _configure_a18_wall_blocking_capture() -> void:
 		"LivingLampVisual",
 		"KitchenLampVisual",
 		"MidLampVisual",
+		"DiningEntryLampVisual",
 		"AlcoveLampVisual",
 		"BathroomLampVisual",
+		"CarpetHallLampWest",
+		"CarpetHallLampEast",
 	]:
 		var fixture: Node3D = $Level.get_node(fixture_name) as Node3D
 		fixture.visible = false
