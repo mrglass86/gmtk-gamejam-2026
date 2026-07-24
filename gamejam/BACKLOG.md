@@ -122,6 +122,15 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 ## Must — Saturday regression gate
 
+- [x] B18 investigation core — received contribution >=30 bypasses CURIOUS;
+      quieter cues retain B15's two-cue model; non-parent wall-switch and
+      off-schedule analytic-light changes investigate immediately without
+      phase-transition false positives. Accept: live `--verify-b18-core` plus
+      B8/B9/B14/B15 regression.
+- [ ] B18 searchlight routing — only after the core commit. In dark
+      INVESTIGATE/HUNT, use lane A's `nearest_switch_to`, turn the switch on,
+      then resume the original search without oscillation. Cut if the missing
+      interface or nav behavior is not freeze-safe.
 - [x] B17 snack identity — FRIDGE reveals `ice_cream`, PANTRY reveals `chips`;
       the shared Snack exposes the type and preserves it across pickup,
       drop, and re-collection. Accept: live two-door `--verify-b17` round trip

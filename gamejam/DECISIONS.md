@@ -130,6 +130,27 @@ Record decisions another session or tool would otherwise have to rediscover.
   costs a block.
 - **Evidence / handoff:** `gamejam/PLAN.md` sections 1, 1.1, 6; lane briefs
 
+## 2026-07-24 — SHIP-IT verdict reached; lighting-gradient ruled a renderer limit
+
+- **Decision:** The director's full-play verdict is positive and definitive:
+  the game wins and loses, the chase is "fun and exciting," switches "feel
+  good," and he "literally laughed out loud" fleeing with the snack. This is
+  feature-complete and ship-worthy. The one open note — lighting feels
+  "gradient" not naturally bounced — is ruled a KNOWN CONSTRAINT of the
+  Compatibility (web-safe) renderer, which has no global illumination; lamps
+  are direct point sources by necessity. Fake-bounce polish (fill lights,
+  per-room ambient tint) is a POST-FREEZE, cuttable item, never a blocker.
+  Path to freeze: land B18/A21, re-validate, tag + export + itch draft, then
+  post-freeze polish only. `jam-safety-1` protects the current good build.
+- **Why:** After ~40 packages over two days, the director confirmed the core
+  loop is fun in live play. Continued iteration past a positive verdict on
+  freeze day is the classic way a finished game misses its deadline.
+- **Rejected / cut:** Chasing true bounced light on the web renderer (not
+  available); treating the lighting note as a freeze blocker.
+- **Owner:** Noah (verdict), Claude (freeze enforcement)
+- **Revisit when:** Post-freeze polish window; Saturday.
+- **Evidence / handoff:** This session; `jam-safety-1` tag.
+
 ## 2026-07-24 — Light-agency feature accepted; regression gate; freeze-day trip-wire
 
 - **Decision:** Run-six directorial batch. (1) REGRESSIONS FIRST (B13):
@@ -690,3 +711,25 @@ Record decisions another session or tool would otherwise have to rediscover.
   silhouette/audio skin unclear in motion.
 - **Evidence / handoff:** `8f92e36`, `0da7c83`, `--verify-a20`,
   `--verify-audio`, and `--verify-b17`.
+
+## 2026-07-24 — Big cues and unauthorized light changes investigate immediately
+
+- **Decision:** Keep the B15 two-cue model for received contributions from 10
+  through 29.9. Any single post-falloff contribution of at least 30 bypasses
+  CURIOUS and starts INVESTIGATE immediately, unless the existing 75-suspicion
+  HUNT escalation has priority. Any actual wall-switch toggle not authored by
+  the parent also investigates immediately, even when its click is inaudible.
+  General analytic-light changes are evaluated after same-frame phase
+  application settles; off-schedule switch-light changes investigate, while
+  scheduled phase transitions and parent restores do not.
+- **Why:** Toy traps, close creaky running, and nearby barks are the game’s
+  strongest authored alarms and need an immediate consequence. Light changes
+  are visible household anomalies, not merely positional click sounds.
+- **Rejected / cut:** Sending every 10+ cue straight to a walkover; making
+  brightness awareness depend on the switch click’s hearing radius; reacting
+  to transient intermediate states inside one phase-application call.
+- **Owner:** Noah (director), lane B (parent intelligence)
+- **Revisit when:** CP5 finds the 30 threshold too binary, or an authored light
+  transition is incorrectly classified as player-caused.
+- **Evidence / handoff:** B18 items 1–2 work order and
+  `--verify-b18-core`, 2026-07-24.

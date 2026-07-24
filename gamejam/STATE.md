@@ -124,6 +124,11 @@ a journal.
   fridge-pickup pool. Player remains the sole 0.3 loudness / 0.6 s snack-noise
   authority. Exact committed editor, startup, and all 32 verification flags
   pass on `0da7c83` (34/34); nav remains 164.
+  B18 core adds a 30-point received-contribution bypass from CURIOUS to
+  INVESTIGATE plus immediate non-parent light-toggle awareness. Same-frame
+  phase lighting settles before anomaly comparison, so scheduled transitions
+  remain clean. Working-tree startup and live B8/B9/B14/B15/B18-core gates
+  pass; exact committed-tree evidence follows the core commit.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -163,6 +168,9 @@ a journal.
   whether HUNT feels threatening rather than predetermined.
 - B14 actor and AudioDirector gates are green; the remaining risk is the
   director's live timing/mix verdict.
+- B18 searchlight routing is deliberately isolated after the green core. The
+  requested lane-A `nearest_switch_to` contract is absent from the current
+  tree; do not improvise navigation ownership during freeze day.
 - A18's renderer gate and labeled captures are green; 6.5 practical energy at
   1.45 attenuation/7.8 m range is renderer-only and still needs the director's
   in-motion contrast verdict.
