@@ -105,6 +105,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [x] B11 dog travel facing — the A11 snout is authored along local -Z and
       Pet's smooth root yaw makes the snout lead during patrol, investigate,
       and bowl travel (`6544f54`, `6df8cff`, `--verify-a11`, B6/B9 live gates).
+- [x] A12 lighting contrast — room Omnis use 1.8 visual attenuation with 2.2
+      base energy, ambient is 0.04, and the dining fixture is centered while
+      analytic light anchors, capsule feedback, and the 0.35 sight boundary
+      remain unchanged (`b812cbd`, `--verify-a12`).
 - [ ] Snack round trip wired end to end — lanes A+B. Pickup/drop feedback and
       reveal clearance are verified; accept the complete interaction in S9.
 - [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.
