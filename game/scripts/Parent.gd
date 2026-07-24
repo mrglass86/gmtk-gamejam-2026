@@ -1939,6 +1939,7 @@ func _run_b6_verification() -> void:
 			point_blank_max_suspicion,
 		]
 	)
+	await _settle_verification_audio()
 	get_tree().quit(0 if verification_passed else 1)
 	assert(reached_parent_duration, "B6 clock did not tick through the 120 s routine check.")
 	assert(parent_moved, "B6 parent stayed immobile during the live routine check.")
@@ -2104,7 +2105,7 @@ func _run_b7_verification() -> void:
 			bark_max_suspicion,
 		]
 	)
-	await _settle_verification_switch_audio()
+	await _settle_verification_audio()
 	get_tree().quit(0 if verification_passed else 1)
 	assert(catch_started, "B7 catch did not attach and lock the player.")
 	assert(carry_cycle_completed, "B7 parent did not complete the capture epilogue.")
@@ -2368,6 +2369,7 @@ func _run_b8_live_verification() -> void:
 			decayed_suspicion,
 		]
 	)
+	await _settle_verification_audio()
 	get_tree().quit(0 if verification_passed else 1)
 	assert(catch_started, "B8 catch did not begin from a snack-carrying player.")
 	assert(snack_dropped_at_catch, "B8 catch did not clear and drop the snack.")
@@ -2741,6 +2743,7 @@ func _run_b9_live_verification() -> void:
 			bowl_visit_elapsed,
 		]
 	)
+	await _settle_verification_audio()
 	get_tree().quit(0 if verification_passed else 1)
 	assert(far_bark_investigated, "B9 14 m dog bark did not investigate.")
 	assert(far_run_ignored, "B9 10 m run-hardwood event reached the parent.")
@@ -3057,6 +3060,7 @@ func _run_b10_live_verification() -> void:
 			glance_returned,
 		]
 	)
+	await _settle_verification_audio()
 	get_tree().quit(0 if verification_passed else 1)
 	assert(sprint_completed, "B10 sprint bot did not complete its round trip.")
 	assert(hunt_triggered, "B10 sprint bot never triggered HUNT.")
@@ -3373,6 +3377,7 @@ func _run_b13_live_verification() -> void:
 			catch_elapsed_after_close,
 		]
 	)
+	await _settle_verification_audio()
 	get_tree().quit(0 if verification_passed else 1)
 	assert(
 		walk_by_gate_passed,
@@ -3660,7 +3665,7 @@ func _run_b14_live_verification() -> void:
 			_verify_b14_visual_noise_count,
 		]
 	)
-	await _settle_verification_switch_audio()
+	await _settle_verification_audio()
 	get_tree().quit(0 if verification_passed else 1)
 	assert(click_started_investigate, "B14 switch click did not investigate.")
 	assert(click_restored, "B14 parent did not restore the expected light state.")
@@ -3676,11 +3681,20 @@ func _run_b14_live_verification() -> void:
 	print("B14 live SceneTree verification passed.")
 
 
-func _settle_verification_switch_audio() -> void:
-	for node in get_tree().get_nodes_in_group("world_switch"):
-		var world_switch: DinnerWorldSwitch = node as DinnerWorldSwitch
-		if world_switch != null:
-			world_switch.stop_click_audio(true)
+func _settle_verification_audio() -> void:
+	var audio_players: Array[Node] = []
+	audio_players.append_array(
+		get_tree().root.find_children("*", "AudioStreamPlayer", true, false)
+	)
+	audio_players.append_array(
+		get_tree().root.find_children("*", "AudioStreamPlayer2D", true, false)
+	)
+	audio_players.append_array(
+		get_tree().root.find_children("*", "AudioStreamPlayer3D", true, false)
+	)
+	for node in audio_players:
+		node.call("stop")
+		node.set("stream", null)
 	await get_tree().process_frame
 	await get_tree().create_timer(0.5).timeout
 

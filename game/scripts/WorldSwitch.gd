@@ -75,12 +75,10 @@ func is_player_in_range() -> bool:
 	)
 
 
-func stop_click_audio(release_player: bool = false) -> void:
+func stop_click_audio() -> void:
 	if is_instance_valid(_click_player):
 		_click_player.stop()
 		_click_player.stream = null
-		if release_player:
-			_click_player.queue_free()
 
 
 func sync_state_from_target() -> void:
