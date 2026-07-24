@@ -6,6 +6,7 @@ class_name DinnerDoor
 ## the fridge creates no analytical spill while it is paused.
 
 signal fully_closed()
+signal openness_rate_changed(rate: float)
 
 enum DoorKind {
 	BEDROOM,
@@ -29,6 +30,12 @@ enum DoorKind {
 @export_group("Creak")
 @export var creak_loudness_per_open_rate: float = 4.0
 @export var creak_emit_interval: float = 0.12
+@export var creak_slow_rate: float = 0.2
+@export var creak_fast_rate: float = 1.0
+@export var creak_slow_pitch_scale: float = 0.85
+@export var creak_fast_pitch_scale: float = 1.15
+@export var creak_quiet_volume_db: float = -18.0
+@export var creak_rush_volume_db: float = -7.0
 
 @export_group("Fridge Spill")
 @export var fridge_light_id: String = "fridge"
@@ -49,6 +56,7 @@ enum DoorKind {
 @export var open_rotation_degrees: Vector3 = Vector3(0.0, -90.0, 0.0)
 
 var openness: float = 0.0
+var openness_rate: float = 0.0
 
 var _player: DinnerPlayer
 var _snack: DinnerSnack
@@ -104,9 +112,10 @@ func _physics_process(delta: float) -> void:
 		if open_duration > 0.0:
 			openness = minf(openness + delta / open_duration, 1.0)
 
-	var openness_rate: float = 0.0
+	openness_rate = 0.0
 	if delta > 0.0:
 		openness_rate = absf(openness - previous_openness) / delta
+	openness_rate_changed.emit(openness_rate)
 	_apply_visual()
 	_update_blocker_collision()
 	_apply_risk(openness_rate, delta)
@@ -126,6 +135,7 @@ func close_immediately() -> void:
 	_closing_requested = false
 	_programmatic_open_target = -1.0
 	openness = 0.0
+	openness_rate = 0.0
 	_apply_visual()
 	_update_blocker_collision()
 	if door_kind == DoorKind.FRIDGE:
@@ -148,6 +158,30 @@ func is_closing() -> bool:
 
 func is_opening_to_target() -> bool:
 	return _programmatic_open_target >= 0.0
+
+
+func get_creak_rate_weight() -> float:
+	return clampf(
+		inverse_lerp(creak_slow_rate, creak_fast_rate, openness_rate),
+		0.0,
+		1.0
+	)
+
+
+func get_creak_pitch_scale() -> float:
+	return lerpf(
+		creak_slow_pitch_scale,
+		creak_fast_pitch_scale,
+		get_creak_rate_weight()
+	)
+
+
+func get_creak_volume_db() -> float:
+	return lerpf(
+		creak_quiet_volume_db,
+		creak_rush_volume_db,
+		get_creak_rate_weight()
+	)
 
 
 func _can_open() -> bool:

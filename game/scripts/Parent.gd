@@ -6,6 +6,10 @@ class_name DinnerParent
 signal state_changed(state_name: StringName)
 signal player_caught(catch_position: Vector3, had_snack: bool)
 signal player_deposited()
+signal light_anomaly_started(switch_id: StringName)
+signal light_anomaly_restored(switch_id: StringName, expected_on: bool)
+signal epilogue_room_check_started()
+signal epilogue_kid_protest()
 
 enum State {
 	ROUTINE,
@@ -20,6 +24,9 @@ enum State {
 	POST_DEPOSIT_PEEK,
 	POST_DEPOSIT_RECLOSE,
 	POST_DEPOSIT_KITCHEN,
+	POST_DEPOSIT_ROOM_ENTER,
+	POST_DEPOSIT_ROOM_DWELL,
+	POST_DEPOSIT_ROOM_EXIT,
 }
 
 @export_group("Scene References")
@@ -30,6 +37,13 @@ enum State {
 @export_node_path("Node3D") var snack_path: NodePath = NodePath("../Snack")
 @export_node_path("DinnerDoor") var bedroom_door_path: NodePath = NodePath("../BedroomDoor")
 @export_node_path("DinnerDoor") var bathroom_door_path: NodePath = NodePath("../Level/BathroomDoor")
+@export_node_path("Node3D") var level_path: NodePath = NodePath("../Level")
+@export_node_path("DinnerWorldSwitch") var kid_hall_switch_path: NodePath = NodePath(
+	"../Level/KidHallSwitch"
+)
+@export_node_path("AudioStreamPlayer") var parent_voice_player_path: NodePath = NodePath(
+	"../AudioDirector/Voice"
+)
 
 @export_group("Routine")
 ## Zero follows GameClock.run_length. Set positive only to override/cap the routine timeline.
@@ -238,6 +252,28 @@ enum State {
 @export var post_deposit_crib_safe_radius: float = 1.75
 @export var post_deposit_kitchen_position: Vector3 = Vector3(9.5, 0.7, -3.8)
 @export var post_deposit_kitchen_speed: float = 2.2
+@export var post_deposit_room_entry_openness: float = 0.7
+@export var post_deposit_room_check_position: Vector3 = Vector3(-12.0, 0.7, -3.0)
+@export var post_deposit_room_dwell_duration: float = 4.0
+@export var post_deposit_protest_delay: float = 1.2
+
+@export_group("Light Expectations")
+@export var light_anomaly_scan_interval: float = 0.2
+@export var light_restore_delay: float = 2.0
+@export var light_switch_arrival_distance: float = 0.8
+@export var light_anomaly_cone_padding: float = 0.35
+@export var tv_couch_position: Vector3 = Vector3(-0.2, 0.7, -4.6)
+@export var tv_couch_settle_distance: float = 1.0
+@export var tv_ambient_id: String = "tv"
+@export var tv_glow_node_name: String = "TVGlow"
+@export var tv_notes_node_name: String = "TVNotes"
+
+@export_group("Parent Voice Indicator")
+@export var voice_indicator_color: Color = Color("#ff2d95")
+@export var voice_indicator_height: float = 1.35
+@export var voice_indicator_duration: float = 0.9
+@export var voice_indicator_scale: float = 0.2
+@export var voice_indicator_pulse_speed: float = 8.0
 
 @export_group("Readability")
 @export var cone_base_color: Color = Color(0.68, 0.56, 0.92, 1.0)
@@ -339,6 +375,10 @@ enum State {
 @export var verify_b13_light_energy: float = 1.0
 @export var verify_b13_max_physics_frames: int = 12000
 
+@export_group("B14 Runtime Verification")
+@export var verify_b14_timeout: float = 20.0
+@export var verify_b14_voice_duration: float = 0.3
+
 var suspicion: float = 0.0
 
 var _state: State = State.ROUTINE
@@ -349,6 +389,9 @@ var _crib: Node3D
 var _snack: DinnerSnack
 var _bedroom_door: DinnerDoor
 var _bathroom_door: DinnerDoor
+var _level: Node3D
+var _kid_hall_switch: DinnerWorldSwitch
+var _parent_voice_player: AudioStreamPlayer
 var _cone_material: StandardMaterial3D
 var _cone_ray_distances: Array[float] = []
 var _glance_rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -387,6 +430,19 @@ var _debug_trace_initialized: bool = false
 var _debug_trace_state: StringName
 var _debug_trace_sees: bool = false
 var _debug_trace_hears: bool = false
+var _light_anomaly_scan_elapsed: float = 0.0
+var _light_anomaly_switch: DinnerWorldSwitch
+var _light_anomaly_expected_on: bool = false
+var _light_restore_elapsed: float = 0.0
+var _parent_operating_switch: bool = false
+var _kid_hall_punishment_active: bool = false
+var _tv_suppressed_for_listening: bool = false
+var _post_deposit_protest_emitted: bool = false
+var _voice_indicator: MeshInstance3D
+var _voice_indicator_elapsed: float = 0.0
+var _voice_indicator_active: bool = false
+var _voice_was_playing: bool = false
+var _verify_b14_visual_noise_count: int = 0
 
 
 func _ready() -> void:
@@ -397,8 +453,16 @@ func _ready() -> void:
 	_snack = get_node_or_null(snack_path) as DinnerSnack
 	_bedroom_door = get_node_or_null(bedroom_door_path) as DinnerDoor
 	_bathroom_door = get_node_or_null(bathroom_door_path) as DinnerDoor
+	_level = get_node_or_null(level_path) as Node3D
+	_kid_hall_switch = (
+		get_node_or_null(kid_hall_switch_path) as DinnerWorldSwitch
+	)
+	_parent_voice_player = (
+		get_node_or_null(parent_voice_player_path) as AudioStreamPlayer
+	)
 	_glance_rng.seed = glance_random_seed
 	_setup_cone()
+	_setup_voice_indicator()
 	if not NoiseSystem.noise_emitted.is_connected(_on_noise_emitted):
 		NoiseSystem.noise_emitted.connect(_on_noise_emitted)
 	_finish_navigation_setup.call_deferred()
@@ -414,6 +478,8 @@ func _ready() -> void:
 		_run_b10_live_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--verify-b13"):
 		_run_b13_live_verification.call_deferred()
+	if OS.get_cmdline_user_args().has("--verify-b14"):
+		_run_b14_live_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--trace-parent-perception"):
 		debug_perception_trace = true
 
@@ -421,6 +487,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_repeat_cooldown_remaining = maxf(_repeat_cooldown_remaining - delta, 0.0)
 	_moved_along_path_this_frame = false
+	_enforce_tv_listening_state()
 	_update_perception(delta)
 
 	match _state:
@@ -448,9 +515,16 @@ func _physics_process(delta: float) -> void:
 			_update_post_deposit_reclose()
 		State.POST_DEPOSIT_KITCHEN:
 			_update_post_deposit_kitchen(delta)
+		State.POST_DEPOSIT_ROOM_ENTER:
+			_update_post_deposit_room_enter(delta)
+		State.POST_DEPOSIT_ROOM_DWELL:
+			_update_post_deposit_room_dwell(delta)
+		State.POST_DEPOSIT_ROOM_EXIT:
+			_update_post_deposit_room_exit(delta)
 
 	_update_sweep(delta)
 	_update_readability()
+	_update_voice_indicator(delta)
 	_heard_since_last_tick = false
 
 
@@ -504,6 +578,8 @@ func _set_state(next_state: State) -> void:
 	if next_state != State.ROUTINE:
 		_cancel_glance()
 	_state = next_state
+	if next_state == State.INVESTIGATE or next_state == State.HUNT:
+		_suppress_tv_for_listening()
 	state_changed.emit(get_state_name())
 
 
@@ -524,6 +600,10 @@ func _finish_navigation_setup() -> void:
 
 
 func _update_routine(delta: float) -> void:
+	_scan_for_visible_light_anomaly(delta)
+	if _state != State.ROUTINE:
+		return
+	_try_restore_tv_at_couch()
 	var routine_time: float = _get_routine_time()
 	_update_routine_door_staging(routine_time)
 	var target: Vector3 = get_base_target(routine_time)
@@ -662,9 +742,170 @@ func _get_routine_door(door_key: StringName) -> DinnerDoor:
 	return null
 
 
+func _scan_for_visible_light_anomaly(delta: float) -> void:
+	if _light_anomaly_switch != null or _state != State.ROUTINE:
+		return
+	_light_anomaly_scan_elapsed += delta
+	if _light_anomaly_scan_elapsed < light_anomaly_scan_interval:
+		return
+	_light_anomaly_scan_elapsed = 0.0
+	for node: Node in get_tree().get_nodes_in_group("world_switch"):
+		var wall_switch: DinnerWorldSwitch = node as DinnerWorldSwitch
+		if wall_switch == null:
+			continue
+		var expected_on: bool = _is_switch_expected_on(wall_switch.switch_id)
+		if wall_switch.is_on == expected_on:
+			continue
+		var observation_position: Vector3 = (
+			_get_switch_observation_position(wall_switch)
+		)
+		if not _is_point_in_active_cone(observation_position):
+			continue
+		_begin_light_anomaly_investigation(wall_switch)
+		return
+
+
+func _is_switch_expected_on(switch_id: StringName) -> bool:
+	match switch_id:
+		&"dining":
+			return GameClock.phase < 4
+		&"kitchen":
+			return GameClock.phase < 3
+		&"foyer":
+			return GameClock.phase < 4
+		&"bathroom":
+			return true
+		&"kid_hall":
+			return _kid_hall_punishment_active
+		_:
+			return false
+
+
+func _get_switch_observation_position(
+	wall_switch: DinnerWorldSwitch
+) -> Vector3:
+	if not wall_switch.target_fixture_path.is_empty():
+		var fixture: Node3D = (
+			wall_switch.get_node_or_null(wall_switch.target_fixture_path) as Node3D
+		)
+		if fixture != null:
+			return fixture.global_position
+	return wall_switch.global_position
+
+
+func _is_point_in_active_cone(point: Vector3) -> bool:
+	var to_point: Vector3 = point - global_position
+	to_point.y = 0.0
+	var point_distance: float = to_point.length()
+	if (
+		point_distance <= 0.0
+		or point_distance > vision_range + light_anomaly_cone_padding
+	):
+		return false
+	var forward: Vector3 = -global_transform.basis.z
+	forward.y = 0.0
+	forward = forward.normalized().rotated(
+		Vector3.UP,
+		deg_to_rad(_cone_yaw_degrees)
+	)
+	if (
+		rad_to_deg(forward.angle_to(to_point.normalized()))
+		> _get_current_cone_angle() * 0.5
+	):
+		return false
+	var wall_distance: float = _get_static_hit_distance(to_point.normalized())
+	return wall_distance + light_anomaly_cone_padding >= point_distance
+
+
+func _begin_light_anomaly_investigation(
+	wall_switch: DinnerWorldSwitch
+) -> void:
+	if (
+		wall_switch == null
+		or _state == State.CARRY
+		or _state == State.FOUND
+		or _state == State.HUNT
+	):
+		return
+	_light_anomaly_switch = wall_switch
+	_light_anomaly_expected_on = _is_switch_expected_on(wall_switch.switch_id)
+	_light_restore_elapsed = 0.0
+	_begin_or_update_investigate(wall_switch.global_position, true)
+	light_anomaly_started.emit(wall_switch.switch_id)
+
+
+func _restore_light_anomaly() -> void:
+	if _light_anomaly_switch == null:
+		return
+	var restored_switch: DinnerWorldSwitch = _light_anomaly_switch
+	var expected_on: bool = _light_anomaly_expected_on
+	_parent_operating_switch = true
+	restored_switch.set_state(expected_on, true)
+	_parent_operating_switch = false
+	light_anomaly_restored.emit(restored_switch.switch_id, expected_on)
+	_clear_light_anomaly()
+
+
+func _clear_light_anomaly() -> void:
+	_light_anomaly_switch = null
+	_light_anomaly_expected_on = false
+	_light_restore_elapsed = 0.0
+
+
+func _suppress_tv_for_listening() -> void:
+	if GameClock.phase >= 2:
+		_set_tv_enabled(false)
+		return
+	_tv_suppressed_for_listening = true
+	_set_tv_enabled(false)
+
+
+func _enforce_tv_listening_state() -> void:
+	if GameClock.phase >= 2:
+		_tv_suppressed_for_listening = false
+		_set_tv_enabled(false)
+	elif _tv_suppressed_for_listening:
+		_set_tv_enabled(false)
+
+
+func _try_restore_tv_at_couch() -> void:
+	if (
+		not _tv_suppressed_for_listening
+		or GameClock.phase >= 2
+		or _flat_distance(global_position, tv_couch_position)
+		> tv_couch_settle_distance
+	):
+		return
+	if _navigation_agent != null and not _navigation_agent.is_navigation_finished():
+		return
+	_tv_suppressed_for_listening = false
+	_set_tv_enabled(true)
+
+
+func _set_tv_enabled(on: bool) -> void:
+	var effective_on: bool = on and GameClock.phase < 2
+	NoiseSystem.set_ambient_source_enabled(tv_ambient_id, effective_on)
+	if _level != null:
+		for node_name: String in [tv_glow_node_name, tv_notes_node_name]:
+			var tv_visual: Node3D = _level.get_node_or_null(node_name) as Node3D
+			if tv_visual != null:
+				tv_visual.visible = effective_on
+	var tv_bed: AudioStreamPlayer3D = (
+		get_node_or_null("../AudioDirector/TVBed") as AudioStreamPlayer3D
+	)
+	if tv_bed == null:
+		return
+	if effective_on:
+		if GameClock.running and not tv_bed.playing:
+			tv_bed.play()
+	elif tv_bed.playing:
+		tv_bed.stop()
+
+
 func _update_investigate(delta: float) -> void:
 	_investigate_elapsed += delta
 	if _investigate_elapsed >= investigate_hard_timeout:
+		_clear_light_anomaly()
 		_finish_investigate()
 		return
 	if _investigate_elapsed < investigate_alert_pause:
@@ -675,6 +916,27 @@ func _update_investigate(delta: float) -> void:
 	_set_navigation_target(_last_known_position)
 	if _move_along_path(investigate_speed, delta):
 		_investigate_look_elapsed = 0.0
+		_light_restore_elapsed = 0.0
+		return
+
+	if _light_anomaly_switch != null:
+		if (
+			_flat_distance(
+				global_position,
+				_light_anomaly_switch.global_position
+			) > light_switch_arrival_distance
+			and not _navigation_agent.is_navigation_finished()
+		):
+			return
+		_face_direction(
+			_light_anomaly_switch.global_position - global_position,
+			delta
+		)
+		_light_restore_elapsed += delta
+		if _light_restore_elapsed >= light_restore_delay:
+			_restore_light_anomaly()
+			_finish_investigate()
+		return
 		return
 
 	_investigate_look_elapsed += delta
@@ -776,7 +1038,10 @@ func _update_post_deposit_peek(delta: float) -> void:
 	_post_deposit_elapsed += delta
 	_face_bedroom_door(delta)
 	if _post_deposit_elapsed >= post_deposit_peek_duration:
-		_set_state(State.POST_DEPOSIT_RECLOSE)
+		if _is_player_in_crib_area():
+			_set_state(State.POST_DEPOSIT_RECLOSE)
+		else:
+			_begin_post_deposit_room_check()
 
 
 func _update_post_deposit_reclose() -> void:
@@ -796,6 +1061,77 @@ func _update_post_deposit_kitchen(delta: float) -> void:
 		return
 	if _has_reached_post_deposit_target(post_deposit_kitchen_position):
 		_resume_routine_after_deposit()
+
+
+func _begin_post_deposit_room_check() -> void:
+	if (
+		_state == State.POST_DEPOSIT_ROOM_ENTER
+		or _state == State.POST_DEPOSIT_ROOM_DWELL
+		or _state == State.POST_DEPOSIT_ROOM_EXIT
+	):
+		return
+	_clear_light_anomaly()
+	_post_deposit_elapsed = 0.0
+	_post_deposit_path_started = false
+	_post_deposit_protest_emitted = false
+	if _bedroom_door != null:
+		_bedroom_door.open_to(post_deposit_room_entry_openness)
+	_set_navigation_target(post_deposit_room_check_position, true)
+	_set_state(State.POST_DEPOSIT_ROOM_ENTER)
+
+
+func _update_post_deposit_room_enter(delta: float) -> void:
+	if (
+		_bedroom_door != null
+		and _bedroom_door.openness
+		< _bedroom_door.blocker_disable_openness
+	):
+		_face_bedroom_door(delta)
+		return
+	_set_navigation_target(post_deposit_room_check_position)
+	_move_along_path(post_deposit_exit_speed, delta)
+	if not _navigation_agent.is_navigation_finished():
+		_post_deposit_path_started = true
+	if not _post_deposit_path_started:
+		return
+	if not _has_reached_post_deposit_target(post_deposit_room_check_position):
+		return
+	_post_deposit_elapsed = 0.0
+	_post_deposit_protest_emitted = false
+	_set_state(State.POST_DEPOSIT_ROOM_DWELL)
+	show_parent_voice_indicator()
+	epilogue_room_check_started.emit()
+
+
+func _update_post_deposit_room_dwell(delta: float) -> void:
+	_post_deposit_elapsed += delta
+	if _crib != null:
+		_face_direction(_crib.global_position - global_position, delta)
+	if (
+		not _post_deposit_protest_emitted
+		and _post_deposit_elapsed >= post_deposit_protest_delay
+	):
+		_post_deposit_protest_emitted = true
+		epilogue_kid_protest.emit()
+	if _post_deposit_elapsed < post_deposit_room_dwell_duration:
+		return
+	_post_deposit_path_started = false
+	_set_navigation_target(post_deposit_exit_position, true)
+	_set_state(State.POST_DEPOSIT_ROOM_EXIT)
+
+
+func _update_post_deposit_room_exit(delta: float) -> void:
+	_set_navigation_target(post_deposit_exit_position)
+	_move_along_path(post_deposit_exit_speed, delta)
+	if not _navigation_agent.is_navigation_finished():
+		_post_deposit_path_started = true
+	if not _post_deposit_path_started:
+		return
+	if not _has_reached_post_deposit_target(post_deposit_exit_position):
+		return
+	if _bedroom_door != null:
+		_bedroom_door.close_immediately()
+	_resume_routine_after_deposit()
 
 
 func _has_reached_post_deposit_target(target: Vector3) -> bool:
@@ -930,6 +1266,11 @@ func _update_perception(delta: float) -> void:
 		or not _is_player_in_crib_area()
 	) and _can_see_player()
 	if sees_player:
+		if _state == State.POST_DEPOSIT_PEEK:
+			_begin_post_deposit_room_check()
+			_trace_perception(delta, true)
+			return
+		_clear_light_anomaly()
 		_last_known_position = _player.global_position
 		suspicion += seen_suspicion_per_second * _get_seen_rate_multiplier() * delta
 		if suspicion >= suspicion_max:
@@ -1039,6 +1380,8 @@ func _has_clear_line_of_sight() -> bool:
 func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 	if source == self or _state == State.CARRY:
 		return
+	if _parent_operating_switch and source is DinnerWorldSwitch:
+		return
 	if source == _bedroom_door and _is_post_deposit_state():
 		return
 	if (
@@ -1075,11 +1418,17 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 		_hunt_no_noise_elapsed = 0.0
 		_set_navigation_target(pos, true)
 		return
+	if source is DinnerWorldSwitch:
+		_begin_light_anomaly_investigation(source as DinnerWorldSwitch)
+		return
 	if suspicion >= hunt_threshold:
+		_clear_light_anomaly()
 		_begin_hunt(pos)
 	elif event_contribution >= event_alert_threshold:
+		_clear_light_anomaly()
 		_begin_or_update_investigate(pos, true)
 	elif suspicion >= investigate_threshold:
+		_clear_light_anomaly()
 		_begin_or_update_investigate(pos)
 
 
@@ -1092,6 +1441,9 @@ func _is_post_deposit_state() -> bool:
 		or _state == State.POST_DEPOSIT_PEEK
 		or _state == State.POST_DEPOSIT_RECLOSE
 		or _state == State.POST_DEPOSIT_KITCHEN
+		or _state == State.POST_DEPOSIT_ROOM_ENTER
+		or _state == State.POST_DEPOSIT_ROOM_DWELL
+		or _state == State.POST_DEPOSIT_ROOM_EXIT
 	)
 
 
@@ -1106,14 +1458,14 @@ func _begin_or_update_investigate(
 		_set_navigation_target(target, true)
 		return
 	_cancel_glance()
-	_state = State.INVESTIGATE
 	_investigate_elapsed = 0.0
 	_investigate_look_elapsed = 0.0
+	_set_state(State.INVESTIGATE)
 	_set_navigation_target(target, true)
-	state_changed.emit(get_state_name())
 
 
 func _begin_hunt(target: Vector3) -> void:
+	_clear_light_anomaly()
 	_hunt_target_position = target
 	_last_known_position = target
 	_hunt_no_noise_elapsed = 0.0
@@ -1134,9 +1486,9 @@ func _finish_investigate() -> void:
 	_last_checked_position = _last_known_position
 	_has_checked_position = true
 	_repeat_cooldown_remaining = repeat_cooldown_duration
-	_state = State.ROUTINE
+	_clear_light_anomaly()
+	_set_state(State.ROUTINE)
 	_set_navigation_target(get_base_target(_get_routine_time()), true)
-	state_changed.emit(get_state_name())
 
 
 func _is_repeat_target_suppressed(target: Vector3) -> bool:
@@ -1160,22 +1512,21 @@ func _begin_found() -> void:
 	if _player == null or _state == State.CARRY:
 		return
 	_cancel_glance()
+	_clear_light_anomaly()
 	suspicion = suspicion_max
 	_last_known_position = _player.global_position
 	_found_no_sight_elapsed = 0.0
-	_state = State.FOUND
+	_set_state(State.FOUND)
 	_set_navigation_target(_player.global_position, true)
-	state_changed.emit(get_state_name())
 
 
 func _escape_found() -> void:
 	_cancel_glance()
 	suspicion = clampf(found_escape_suspicion, 0.0, suspicion_max)
-	_state = State.INVESTIGATE
 	_investigate_elapsed = 0.0
 	_investigate_look_elapsed = 0.0
+	_set_state(State.INVESTIGATE)
 	_set_navigation_target(_last_known_position, true)
-	state_changed.emit(get_state_name())
 
 
 func _begin_carry() -> void:
@@ -1208,6 +1559,7 @@ func _finish_carry() -> void:
 		_player.detach_from_carrier(player_drop_position)
 	_post_deposit_elapsed = 0.0
 	_post_deposit_path_started = false
+	_activate_punishment_light()
 	_set_state(State.POST_DEPOSIT_EXIT)
 	_set_navigation_target(post_deposit_exit_position, true)
 	player_deposited.emit()
@@ -1216,6 +1568,15 @@ func _finish_carry() -> void:
 func _resume_routine_after_deposit() -> void:
 	_set_state(State.ROUTINE)
 	_set_navigation_target(get_base_target(_get_routine_time()), true)
+
+
+func _activate_punishment_light() -> void:
+	_kid_hall_punishment_active = true
+	if _kid_hall_switch == null:
+		return
+	_parent_operating_switch = true
+	_kid_hall_switch.set_state(true, true)
+	_parent_operating_switch = false
 
 
 func _get_routine_time() -> float:
@@ -1299,6 +1660,82 @@ func _setup_cone() -> void:
 	)
 	_vision_cone.position.y = cone_floor_offset
 	_build_cone_mesh(_get_current_cone_angle())
+
+
+func _setup_voice_indicator() -> void:
+	_voice_indicator = MeshInstance3D.new()
+	_voice_indicator.name = "ParentVoiceIndicator"
+	_voice_indicator.position = Vector3.UP * voice_indicator_height
+	_voice_indicator.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_voice_indicator.visible = false
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	material.no_depth_test = true
+	material.albedo_color = voice_indicator_color
+	material.emission_enabled = true
+	material.emission = voice_indicator_color
+	var icon_mesh: ImmediateMesh = ImmediateMesh.new()
+	icon_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
+	for vertex: Vector3 in [
+		Vector3(-0.45, -0.25, 0.0),
+		Vector3(0.45, -0.25, 0.0),
+		Vector3(0.45, 0.25, 0.0),
+		Vector3(-0.45, -0.25, 0.0),
+		Vector3(0.45, 0.25, 0.0),
+		Vector3(-0.45, 0.25, 0.0),
+		Vector3(-0.12, -0.24, 0.0),
+		Vector3(0.02, -0.48, 0.0),
+		Vector3(0.16, -0.24, 0.0),
+	]:
+		icon_mesh.surface_add_vertex(vertex)
+	icon_mesh.surface_end()
+	_voice_indicator.mesh = icon_mesh
+	_voice_indicator.scale = Vector3.ONE * voice_indicator_scale
+	add_child(_voice_indicator)
+
+
+func show_parent_voice_indicator(duration: float = -1.0) -> void:
+	if _voice_indicator == null:
+		return
+	_voice_indicator_elapsed = (
+		duration if duration >= 0.0 else voice_indicator_duration
+	)
+	_voice_indicator_active = true
+	_voice_indicator.visible = true
+
+
+func _update_voice_indicator(delta: float) -> void:
+	var voice_playing: bool = (
+		_parent_voice_player != null and _parent_voice_player.playing
+	)
+	if (
+		voice_playing
+		and not _voice_was_playing
+		and (
+			_state == State.ROUTINE
+			or _state == State.INVESTIGATE
+			or _state == State.HUNT
+			or _state == State.FOUND
+		)
+	):
+		show_parent_voice_indicator()
+	_voice_was_playing = voice_playing
+	if not _voice_indicator_active or _voice_indicator == null:
+		return
+	_voice_indicator_elapsed -= delta
+	var pulse: float = 1.0 + 0.1 * sin(
+		Time.get_ticks_msec() * 0.001 * voice_indicator_pulse_speed
+	)
+	_voice_indicator.scale = (
+		Vector3.ONE * maxf(voice_indicator_scale * pulse, 0.001)
+	)
+	if _voice_indicator_elapsed > 0.0:
+		return
+	_voice_indicator_active = false
+	_voice_indicator.visible = false
 
 
 func _color_with_alpha(color: Color, alpha: float) -> Color:
@@ -2955,6 +3392,288 @@ func _run_b13_live_verification() -> void:
 	print("B13 live SceneTree verification passed.")
 
 
+func _run_b14_live_verification() -> void:
+	var pet: DinnerPet = get_parent().get_node_or_null("Pet") as DinnerPet
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var player_was_processing: bool = (
+		_player != null and _player.is_physics_processing()
+	)
+	var player_was_input_locked: bool = (
+		_player != null and _player.input_locked
+	)
+	var player_start_position: Vector3 = (
+		_player.global_position if _player != null else Vector3.ZERO
+	)
+	var pet_was_processing: bool = (
+		pet != null and pet.is_physics_processing()
+	)
+	var original_facing_turn_speed: float = facing_turn_speed
+
+	Engine.time_scale = maxf(verify_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(verify_physics_ticks_per_second, 60)
+	if _player != null:
+		if _player.is_attached_to_carrier():
+			_player.detach_from_carrier(player_start_position)
+		_player.set_input_locked(true)
+		_player.set_physics_process(false)
+		_player.global_position = verify_observer_parking_position
+	if pet != null:
+		pet.set_physics_process(false)
+	for _frame_index in range(verify_warmup_frames):
+		await get_tree().physics_frame
+
+	var dining_switch: DinnerWorldSwitch
+	for node: Node in get_tree().get_nodes_in_group("world_switch"):
+		var candidate: DinnerWorldSwitch = node as DinnerWorldSwitch
+		if candidate != null and candidate.switch_id == &"dining":
+			dining_switch = candidate
+			break
+	var click_started_investigate: bool = false
+	var tv_stopped_for_listening: bool = false
+	var click_restored: bool = false
+	var returned_to_couch: bool = false
+	var tv_restored_at_couch: bool = false
+	var visual_anomaly_detected: bool = false
+	var phase_two_tv_stayed_off: bool = false
+	var tv_bed: AudioStreamPlayer3D = (
+		get_node_or_null("../AudioDirector/TVBed") as AudioStreamPlayer3D
+	)
+	var tv_glow: Node3D = (
+		_level.get_node_or_null(tv_glow_node_name) as Node3D
+		if _level != null
+		else null
+	)
+
+	if dining_switch != null:
+		GameClock.start()
+		dining_switch.set_state(true, false)
+		global_position = dining_switch.global_position + Vector3(1.0, -0.3, 0.0)
+		_state = State.ROUTINE
+		suspicion = 0.0
+		_clear_light_anomaly()
+		_tv_suppressed_for_listening = false
+		_set_navigation_target(global_position, true)
+		_set_tv_enabled(true)
+		if tv_bed != null and not tv_bed.playing:
+			tv_bed.play()
+		dining_switch.set_state(false, true)
+		click_started_investigate = (
+			_state == State.INVESTIGATE
+			and _light_anomaly_switch == dining_switch
+		)
+		tv_stopped_for_listening = (
+			_tv_suppressed_for_listening
+			and (tv_bed == null or not tv_bed.playing)
+			and (tv_glow == null or not tv_glow.visible)
+			and NoiseSystem.get_mask_at(Vector3(-2.75, 0.0, -4.1))
+			<= 0.001
+		)
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			click_restored = dining_switch.is_on
+			returned_to_couch = (
+				_flat_distance(global_position, tv_couch_position)
+				<= tv_couch_settle_distance
+			)
+			tv_restored_at_couch = (
+				returned_to_couch
+				and not _tv_suppressed_for_listening
+				and (tv_bed == null or tv_bed.playing)
+				and (tv_glow == null or tv_glow.visible)
+				and NoiseSystem.get_mask_at(Vector3(-2.75, 0.0, -4.1))
+				> 0.001
+			)
+			if click_restored and tv_restored_at_couch:
+				break
+			if (
+				GameClock.run_length - GameClock.time_remaining
+				>= verify_b14_timeout
+			):
+				break
+
+		dining_switch.set_state(false, false)
+		var observation_position: Vector3 = (
+			_get_switch_observation_position(dining_switch)
+		)
+		var observation_direction: Vector3 = (
+			observation_position - tv_couch_position
+		)
+		observation_direction.y = 0.0
+		global_position = tv_couch_position
+		rotation.y = atan2(
+			-observation_direction.normalized().x,
+			-observation_direction.normalized().z
+		)
+		facing_turn_speed = 0.0
+		_state = State.ROUTINE
+		_light_anomaly_scan_elapsed = light_anomaly_scan_interval
+		_set_navigation_target(global_position, true)
+		await get_tree().physics_frame
+		visual_anomaly_detected = (
+			_state == State.INVESTIGATE
+			and _light_anomaly_switch == dining_switch
+		)
+		if _light_anomaly_switch != null:
+			_restore_light_anomaly()
+		_finish_investigate()
+		facing_turn_speed = original_facing_turn_speed
+
+		GameClock.start()
+		GameClock.scrub(121.0)
+		_set_state(State.INVESTIGATE)
+		await get_tree().physics_frame
+		global_position = tv_couch_position
+		_set_navigation_target(global_position, true)
+		_set_state(State.ROUTINE)
+		for _frame_index in range(4):
+			await get_tree().physics_frame
+		phase_two_tv_stayed_off = (
+			GameClock.phase >= 2
+			and (tv_bed == null or not tv_bed.playing)
+			and (tv_glow == null or not tv_glow.visible)
+			and NoiseSystem.get_mask_at(Vector3(-2.75, 0.0, -4.1))
+			<= 0.001
+		)
+
+	var punishment_light_on: bool = false
+	if _kid_hall_switch != null:
+		GameClock.start()
+		_kid_hall_switch.set_state(false, false)
+		_kid_hall_punishment_active = false
+		_activate_punishment_light()
+		punishment_light_on = (
+			_kid_hall_punishment_active and _kid_hall_switch.is_on
+		)
+
+	var room_entered: bool = false
+	var room_dwell_observed: bool = false
+	var room_protest_observed: bool = false
+	var room_exit_observed: bool = false
+	var room_check_completed: bool = false
+	var room_dwell_elapsed: float = 0.0
+	if _player != null and _bedroom_door != null:
+		_player.global_position = verify_observer_parking_position
+		global_position = _get_post_deposit_hall_target()
+		_bedroom_door.openness = post_deposit_reopen_openness
+		_post_deposit_elapsed = post_deposit_peek_duration
+		_post_deposit_path_started = false
+		_set_state(State.POST_DEPOSIT_PEEK)
+		GameClock.start()
+		var room_check_start: float = 0.0
+		for _frame_index in range(verify_max_physics_frames):
+			await get_tree().physics_frame
+			var elapsed: float = GameClock.run_length - GameClock.time_remaining
+			if _state == State.POST_DEPOSIT_ROOM_ENTER:
+				room_entered = true
+			elif _state == State.POST_DEPOSIT_ROOM_DWELL:
+				if not room_dwell_observed:
+					room_check_start = elapsed
+				room_dwell_observed = true
+				room_dwell_elapsed = maxf(
+					room_dwell_elapsed,
+					elapsed - room_check_start
+				)
+				room_protest_observed = (
+					room_protest_observed or _post_deposit_protest_emitted
+				)
+			elif _state == State.POST_DEPOSIT_ROOM_EXIT:
+				room_exit_observed = true
+			elif room_entered and _state == State.ROUTINE:
+				room_check_completed = true
+				break
+			if elapsed >= verify_b14_timeout:
+				break
+
+	_verify_b14_visual_noise_count = 0
+	if not NoiseSystem.noise_emitted.is_connected(_capture_b14_visual_noise):
+		NoiseSystem.noise_emitted.connect(_capture_b14_visual_noise)
+	show_parent_voice_indicator(verify_b14_voice_duration)
+	var voice_indicator_observed: bool = false
+	for _frame_index in range(verify_warmup_frames):
+		await get_tree().physics_frame
+		voice_indicator_observed = (
+			voice_indicator_observed
+			or (
+				_voice_indicator != null
+				and _voice_indicator.visible
+			)
+		)
+	if NoiseSystem.noise_emitted.is_connected(_capture_b14_visual_noise):
+		NoiseSystem.noise_emitted.disconnect(_capture_b14_visual_noise)
+	var voice_indicator_silent: bool = _verify_b14_visual_noise_count == 0
+
+	GameClock.running = false
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+	facing_turn_speed = original_facing_turn_speed
+	if _player != null:
+		_player.global_position = player_start_position
+		_player.set_input_locked(player_was_input_locked)
+		_player.set_physics_process(player_was_processing)
+	if pet != null:
+		pet.set_physics_process(pet_was_processing)
+
+	var epilogue_gate_passed: bool = (
+		punishment_light_on
+		and room_entered
+		and room_dwell_observed
+		and room_protest_observed
+		and room_dwell_elapsed >= post_deposit_room_dwell_duration - 0.1
+		and room_exit_observed
+		and room_check_completed
+	)
+	var verification_passed: bool = (
+		click_started_investigate
+		and tv_stopped_for_listening
+		and click_restored
+		and tv_restored_at_couch
+		and visual_anomaly_detected
+		and phase_two_tv_stayed_off
+		and epilogue_gate_passed
+		and voice_indicator_observed
+		and voice_indicator_silent
+	)
+	print(
+		(
+			"B14 live metrics: click investigate=%s, restored=%s, "
+			+ "TV off/on=%s/%s, visual anomaly=%s, phase2 off=%s; "
+			+ "punishment=%s, room enter/dwell/protest/exit=%s/%s/%s/%s "
+			+ "(%.2f s), resumed=%s; VO icon=%s, noise events=%d."
+		)
+		% [
+			click_started_investigate,
+			click_restored,
+			tv_stopped_for_listening,
+			tv_restored_at_couch,
+			visual_anomaly_detected,
+			phase_two_tv_stayed_off,
+			punishment_light_on,
+			room_entered,
+			room_dwell_observed,
+			room_protest_observed,
+			room_exit_observed,
+			room_dwell_elapsed,
+			room_check_completed,
+			voice_indicator_observed,
+			_verify_b14_visual_noise_count,
+		]
+	)
+	get_tree().quit(0 if verification_passed else 1)
+	assert(click_started_investigate, "B14 switch click did not investigate.")
+	assert(click_restored, "B14 parent did not restore the expected light state.")
+	assert(tv_stopped_for_listening, "B14 parent did not silence the TV to listen.")
+	assert(tv_restored_at_couch, "B14 TV did not return at the couch.")
+	assert(visual_anomaly_detected, "B14 cone did not notice an early-dark zone.")
+	assert(phase_two_tv_stayed_off, "B14 phase 2 TV shutdown was not permanent.")
+	assert(epilogue_gate_passed, "B14 escaped-child room check did not complete.")
+	assert(
+		voice_indicator_observed and voice_indicator_silent,
+		"B14 parent VO icon was missing or emitted gameplay noise."
+	)
+	print("B14 live SceneTree verification passed.")
+
+
 func _get_live_cone_hit_distances(cone_angle_degrees: float) -> Array[float]:
 	var hit_distances: Array[float] = []
 	if _vision_cone == null:
@@ -2989,6 +3708,14 @@ func _capture_b8_noise(_pos: Vector3, loudness: float, source: Node) -> void:
 func _capture_b9_noise(_pos: Vector3, loudness: float, source: Node) -> void:
 	if source is DinnerPet and is_equal_approx(loudness, source.bowl_clatter_loudness):
 		_verify_b9_bowl_clatter_heard = true
+
+
+func _capture_b14_visual_noise(
+	_pos: Vector3,
+	_loudness: float,
+	_source: Node
+) -> void:
+	_verify_b14_visual_noise_count += 1
 
 
 func _flat_distance(first: Vector3, second: Vector3) -> float:
