@@ -145,6 +145,12 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       mix; one-shot pickup; 2.5 s wrapper audio over unchanged 0.6 s noise; and
       soft idle-giggle playback (`338de63`, `--verify-a18`, `--verify-audio`;
       editor/startup/all 30 flags pass, 32/32 on `e8f75d5`).
+- [x] A19 geometry audit — every named floor, wall, door, prop, switch,
+      fixture, and hazard checked for frame fit, contact, clipping, collision,
+      and proportion. Door panels/blockers now fill frames; composite collider
+      bounds match visuals; props/fixtures/switches are grounded and flush.
+      Focused world/door/nav/actor gates pass at 164 nav polygons (`bb881ac`,
+      `--verify-a19`; detailed checklist in the 12:52 lane-A handoff).
 - [x] B15 curiosity VO wiring — the first qualifying cue plays the director's
       parent investigate/“hm?” pool and magenta parent indicator with zero
       gameplay-noise emissions (`b14efb3`, `--verify-audio`, 29/29 battery).

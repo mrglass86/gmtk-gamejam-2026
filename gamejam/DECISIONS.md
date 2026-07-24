@@ -650,3 +650,24 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Evidence / handoff:** `338de63`, `--verify-a18`,
   `gamejam/handoffs/2026-07-24-a18-lighting.png`, and
   `gamejam/handoffs/2026-07-24-a18-wall-blocking.png`.
+
+## 2026-07-24 — Composite level props use fitted single colliders
+
+- **Decision:** Preserve the approved A0.2 layout, but derive one box collider
+  from the complete visual bounds of each composite nav prop. Use a fitted
+  cylinder for the round dog bed. Door blockers match their closed panel
+  dimensions exactly; decorative fixtures, wall switches, bowl, mat, and
+  front-door overlay remain collisionless where the supporting wall/floor
+  already supplies collision.
+- **Why:** Hand-entered padded footprints left colliders shorter, wider, or
+  differently centered than the visible crib, couch, tables/chairs, toilet,
+  fridge body, and side table. Exact bounds remove invisible snags and holes
+  while retaining one nav shape per group.
+- **Rejected / cut:** Redesigning room or furniture footprints; adding a
+  collider per primitive part; using visible door panels as rotating physics
+  bodies.
+- **Owner:** Noah (visual verdict), lane A (geometry/collision implementation)
+- **Revisit when:** CP5 exposes an invisible snag, a route regression, or a
+  gameplay prop needs a deliberately larger interaction footprint.
+- **Evidence / handoff:** `bb881ac`, `--verify-a19`, and
+  `gamejam/handoffs/2026-07-24-a19-geometry-audit.png`.

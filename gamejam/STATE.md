@@ -10,13 +10,13 @@ a journal.
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Saturday — original-audio integration, mix walk, and feel
   tuning.
-- Next playable checkpoint: B17 snack presentation/audio integration, then CP5
-  manual full run — title-card start through both win and expiry-loss outcomes,
-  restart, then freeze/export.
+- Next playable checkpoint: A19 geometry review, B17 snack presentation/audio
+  integration, then CP5 manual full run — title-card start through both win
+  and expiry-loss outcomes, restart, then freeze/export.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A18 plus actor B6–B17 and the
+- Godot version: 4.7.1-stable — A0.2 through A19 plus actor B6–B17 and the
   original/CC0 audio pass are in `game/` (Compatibility renderer). The approved
   director layout bakes a connected 155-polygon navmesh; input, lighting, noise,
   indicator, route, ambient-mask, countdown, game-flow, audio, and A9
@@ -111,6 +111,13 @@ a journal.
   Editor import, clean startup, and all 30 verification flags pass on
   `e8f75d5` (32/32); nav remains 155 polygons. Fresh full-house and
   doorway-spill proof captures are committed.
+  `bb881ac` adds A19's full geometry-fit pass: the bathroom/pantry/fridge and
+  other door panels fill their authored frames; composite props use one exact
+  visual-bounds collider; floating/sunk prop and fixture contacts are grounded;
+  five switches mount flush on the correct wall axis; and all existing
+  wall/floor seams remain sealed. The accurate footprints rebake to 164 nav
+  polygons. Focused A0.2/A4.1/A5.1/A7/A8/A10/A11/A16–A19 and B6–B10/B13–B15/
+  B17 gates pass; a labeled Compatibility capture is committed.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -120,8 +127,8 @@ a journal.
 
 ## Current focus
 
-- Lane A consumes B17's stable snack identity in presentation/audio. Then Noah
-  runs CP5.
+- Noah reviews the A19 geometry capture. Lane A then consumes B17's stable
+  snack identity in presentation/audio before CP5.
 
 ## Known blockers or risks
 
@@ -150,6 +157,9 @@ a journal.
 - A18's renderer gate and labeled captures are green; 6.5 practical energy at
   1.45 attenuation/7.8 m range is renderer-only and still needs the director's
   in-motion contrast verdict.
+- A19's 164-polygon nav and actor-route gates are green. Its collider fit is
+  intentionally tighter than A18; the director still judges the closed
+  bathroom/pantry silhouettes at gameplay scale.
 - Godot MCP for lane A: 30-minute hard abort rule (brief 9.2).
 - This Claude instance has no shell — validation runs through the web build in
   the browser pane plus Noah's terminal.
