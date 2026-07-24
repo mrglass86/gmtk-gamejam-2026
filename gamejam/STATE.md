@@ -100,6 +100,9 @@ a journal.
   `34b3e9f` adds B16's randomized free-play giggle scheduler and exact 0.5
   gameplay event. Committed startup, A4/A4.1/A6/audio/B7/B15, and the live B16
   timing/carry/result-screen gate pass.
+  `a3d0e01` adds B17's Door-to-Snack `ice_cream`/`chips` identity contract and
+  persistent public Snack type. Committed startup plus A6/A7/A8/audio/B7/B8/
+  B16/B17 pass.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
