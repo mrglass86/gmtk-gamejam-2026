@@ -124,6 +124,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 ## Must — Saturday regression gate
 
+- [x] A24 silent switches + toy piles — switch flips retain a soft positional
+      click but emit zero gameplay noise; all three toy hazards are flat
+      2.6 × 1.4 m overlays with separated pill/train/block silhouettes and one
+      collider (`cebba87`, `--verify-a24`; nav 164).
 - [x] A22 hallway light + fixture restyle — two switch-linked overhead
       corridor practicals produce west/center/east analytic brightness
       0.72/0.58/0.72 on and 0.05/0.30/0.31 off, crossing the unchanged 0.35
@@ -173,8 +177,9 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       INVESTIGATE; HUNT remains 75. Accept: live 12 m bedroom-door and two-bark
       sequences, with source-labelled metrics (`5e84967`, `--verify-b15`).
 - [x] A17 acceptance fixes — lit practical energy, 8+8 CC0 player footsteps,
-      hinge-origin door audio, nearest-only anchored interaction HUD, 0.8
-      switch noise, and dark-start bathroom ceiling fixture/toilet
+      hinge-origin door audio, nearest-only anchored interaction HUD, and
+      dark-start bathroom ceiling fixture/toilet. A24 supersedes the former
+      0.8 switch-noise value with zero gameplay noise
       (`2d4e142`, `--verify-a17`, 155 nav polygons, 29/29 full battery).
 - [x] A18 polish — 69 conservative family denoise A/B copies with 19 rejected
       to CC0 fallback; wall-blocked room-scale practicals; near-silent sneak

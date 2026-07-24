@@ -144,6 +144,10 @@ a journal.
   and 0.05/0.30/0.31 off, so point-blank parent sight crosses the unchanged
   0.35 threshold only while the route is lit. Exact editor, startup, and all
   38 verification flags pass (40/40); nav remains 164 polygons.
+  `cebba87` adds A24: wall switches keep their soft positional click but emit
+  zero gameplay noise, while the existing visual light-anomaly path remains
+  green. All three squeaky-toy hazards widen to one flat 2.6 × 1.4 m overlay
+  with spread pill/train/block silhouettes; nav remains 164.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -153,8 +157,8 @@ a journal.
 
 ## Current focus
 
-- Freeze/export/upload. A22 is implemented; only its director in-motion
-  lighting verdict remains before export.
+- Freeze/export/upload. A22 and A24 are implemented; only director in-motion
+  presentation verdicts remain before export.
 
 ## Known blockers or risks
 
