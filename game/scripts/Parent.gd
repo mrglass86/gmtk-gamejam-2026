@@ -208,7 +208,8 @@ enum State {
 
 @export_group("Found Chase")
 @export var found_speed: float = 3.8
-@export var grab_distance: float = 1.1
+@export var grab_distance: float = 1.5
+@export var found_lunge_distance: float = 2.5
 @export var found_lose_sight_duration: float = 5.0
 @export var found_escape_suspicion: float = 60.0
 
@@ -234,6 +235,7 @@ enum State {
 @export var post_deposit_hall_walk_speed: float = 1.5
 @export var post_deposit_reopen_openness: float = 0.35
 @export var post_deposit_peek_duration: float = 1.5
+@export var post_deposit_crib_safe_radius: float = 1.75
 @export var post_deposit_kitchen_position: Vector3 = Vector3(9.5, 0.7, -3.8)
 @export var post_deposit_kitchen_speed: float = 2.2
 
@@ -246,6 +248,10 @@ enum State {
 @export_range(0.0, 1.0, 0.01) var cone_suspicious_alpha: float = 0.34
 @export_range(0.0, 1.0, 0.01) var cone_hunt_alpha: float = 0.4
 @export_range(0.0, 1.0, 0.01) var cone_found_alpha: float = 0.45
+
+@export_group("Debug Trace")
+@export var debug_perception_trace: bool = false
+@export var debug_perception_trace_interval: float = 0.25
 
 @export_group("B6 Runtime Verification")
 @export var verify_time_scale: float = 20.0
@@ -315,6 +321,24 @@ enum State {
 @export var verify_b10_glance_player_distance: float = 3.5
 @export var verify_b10_glance_detection_min: float = 5.0
 
+@export_group("B13 Runtime Verification")
+@export var verify_b13_walk_parent_position: Vector3 = Vector3(-12.75, 0.7, -0.8)
+@export var verify_b13_walk_ahead_distance: float = 2.0
+@export var verify_b13_walk_lateral_distance: float = 0.6
+@export var verify_b13_walk_duration: float = 1.2
+@export var verify_b13_noise_loudness: float = 3.0
+@export var verify_b13_juke_parent_position: Vector3 = Vector3(-0.2, 0.7, -4.6)
+@export var verify_b13_juke_start_distance: float = 2.4
+@export var verify_b13_juke_speed: float = 3.6
+@export var verify_b13_juke_half_span: float = 0.7
+@export var verify_b13_catch_duration: float = 6.0
+@export var verify_b13_chase_time_scale: float = 1.0
+@export var verify_b13_chase_physics_ticks_per_second: int = 60
+@export var verify_b13_chase_warmup_frames: int = 4
+@export var verify_b13_light_radius: float = 5.0
+@export var verify_b13_light_energy: float = 1.0
+@export var verify_b13_max_physics_frames: int = 12000
+
 var suspicion: float = 0.0
 
 var _state: State = State.ROUTINE
@@ -358,6 +382,11 @@ var _glance_duration_elapsed: float = 0.0
 var _glance_active: bool = false
 var _glance_direction: Vector3
 var _glance_count: int = 0
+var _debug_trace_elapsed: float = 0.0
+var _debug_trace_initialized: bool = false
+var _debug_trace_state: StringName
+var _debug_trace_sees: bool = false
+var _debug_trace_hears: bool = false
 
 
 func _ready() -> void:
@@ -383,6 +412,10 @@ func _ready() -> void:
 		_run_b9_live_verification.call_deferred()
 	if OS.get_cmdline_user_args().has("--verify-b10"):
 		_run_b10_live_verification.call_deferred()
+	if OS.get_cmdline_user_args().has("--verify-b13"):
+		_run_b13_live_verification.call_deferred()
+	if OS.get_cmdline_user_args().has("--trace-parent-perception"):
+		debug_perception_trace = true
 
 
 func _physics_process(delta: float) -> void:
@@ -795,11 +828,11 @@ func _update_found(delta: float) -> void:
 	if _player == null:
 		_escape_found()
 		return
-	if global_position.distance_to(_player.global_position) <= grab_distance:
-		_begin_carry()
+	if _try_begin_carry_if_close():
 		return
 
-	if _has_clear_line_of_sight():
+	var has_line_of_sight: bool = _has_clear_line_of_sight()
+	if has_line_of_sight:
 		_last_known_position = _player.global_position
 		_found_no_sight_elapsed = 0.0
 	else:
@@ -809,9 +842,43 @@ func _update_found(delta: float) -> void:
 			return
 
 	_set_navigation_target(_player.global_position)
-	if _can_query_navigation():
+	if (
+		has_line_of_sight
+		and _flat_distance(global_position, _player.global_position)
+		<= found_lunge_distance
+	):
+		_move_directly_toward_player(delta)
+	elif _can_query_navigation():
 		if not _move_along_path(found_speed, delta):
 			_face_direction(_player.global_position - global_position, delta)
+	if _try_begin_carry_if_close():
+		return
+
+
+func _try_begin_carry_if_close() -> bool:
+	if _player == null:
+		return false
+	if _flat_distance(global_position, _player.global_position) > grab_distance:
+		return false
+	_begin_carry()
+	return _state == State.CARRY
+
+
+func _move_directly_toward_player(delta: float) -> void:
+	if _player == null:
+		return
+	var movement: Vector3 = _player.global_position - global_position
+	movement.y = 0.0
+	if movement.length_squared() <= 0.0:
+		return
+	var movement_distance: float = minf(
+		maxf(found_speed, 0.0) * delta,
+		movement.length()
+	)
+	var movement_direction: Vector3 = movement.normalized()
+	global_position += movement_direction * movement_distance
+	_face_direction(movement_direction, delta)
+	_moved_along_path_this_frame = movement_distance > 0.0
 
 
 func _move_along_path(speed: float, delta: float) -> bool:
@@ -847,25 +914,79 @@ func _can_query_navigation() -> bool:
 
 
 func _update_perception(delta: float) -> void:
-	if (
-		_state == State.FOUND
-		or _state == State.CARRY
-		or _is_post_deposit_state()
-		or _player == null
-	):
+	if _player == null:
+		_trace_perception(delta, false)
+		return
+	if _state == State.FOUND or _state == State.CARRY:
+		_trace_perception(
+			delta,
+			_state == State.FOUND and _can_see_player()
+		)
 		return
 
-	var sees_player: bool = _can_see_player()
+	var was_post_deposit: bool = _is_post_deposit_state()
+	var sees_player: bool = (
+		not was_post_deposit
+		or not _is_player_in_crib_area()
+	) and _can_see_player()
 	if sees_player:
 		_last_known_position = _player.global_position
 		suspicion += seen_suspicion_per_second * _get_seen_rate_multiplier() * delta
 		if suspicion >= suspicion_max:
 			_begin_found_or_carry()
+		elif was_post_deposit:
+			_begin_or_update_investigate(_last_known_position, true)
 		elif suspicion >= investigate_threshold and _state != State.HUNT:
 			_begin_or_update_investigate(_last_known_position)
 	elif not _heard_since_last_tick:
 		suspicion -= suspicion_decay_per_second * delta
 	suspicion = clampf(suspicion, 0.0, suspicion_max)
+	_trace_perception(delta, sees_player)
+
+
+func _is_player_in_crib_area() -> bool:
+	if _player == null or _crib == null:
+		return false
+	return (
+		_flat_distance(_player.global_position, _crib.global_position)
+		<= post_deposit_crib_safe_radius
+	)
+
+
+func _trace_perception(delta: float, sees_player: bool) -> void:
+	if not debug_perception_trace:
+		return
+	_debug_trace_elapsed += delta
+	var state_name: StringName = get_state_name()
+	var state_changed_since_trace: bool = (
+		not _debug_trace_initialized
+		or state_name != _debug_trace_state
+	)
+	var senses_changed_since_trace: bool = (
+		not _debug_trace_initialized
+		or sees_player != _debug_trace_sees
+		or _heard_since_last_tick != _debug_trace_hears
+	)
+	if (
+		not state_changed_since_trace
+		and not senses_changed_since_trace
+		and _debug_trace_elapsed < maxf(debug_perception_trace_interval, 0.0)
+	):
+		return
+	print(
+		"Parent perception: state=%s suspicion=%.1f sees=%s hears=%s"
+		% [
+			state_name,
+			suspicion,
+			sees_player,
+			_heard_since_last_tick,
+		]
+	)
+	_debug_trace_elapsed = 0.0
+	_debug_trace_initialized = true
+	_debug_trace_state = state_name
+	_debug_trace_sees = sees_player
+	_debug_trace_hears = _heard_since_last_tick
 
 
 func _get_seen_rate_multiplier() -> float:
@@ -916,7 +1037,9 @@ func _has_clear_line_of_sight() -> bool:
 
 
 func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
-	if source == self or _state == State.CARRY or _is_post_deposit_state():
+	if source == self or _state == State.CARRY:
+		return
+	if source == _bedroom_door and _is_post_deposit_state():
 		return
 	if (
 		source == _bathroom_door
@@ -2523,6 +2646,313 @@ func _run_b10_live_verification() -> void:
 	)
 	assert(glance_returned, "B10 parent did not return to the dwell facing.")
 	print("B10 live SceneTree verification passed.")
+
+
+func _run_b13_live_verification() -> void:
+	var pet: DinnerPet = get_parent().get_node_or_null("Pet") as DinnerPet
+	var original_time_scale: float = Engine.time_scale
+	var original_physics_ticks: int = Engine.physics_ticks_per_second
+	var original_navigation_ready: bool = _navigation_ready
+	var original_debug_trace: bool = debug_perception_trace
+	var player_was_processing: bool = _player != null and _player.is_physics_processing()
+	var player_was_input_locked: bool = _player != null and _player.input_locked
+	var player_start_position: Vector3 = (
+		_player.global_position if _player != null else Vector3.ZERO
+	)
+	var pet_was_processing: bool = pet != null and pet.is_physics_processing()
+	var verification_light_id: String = "b13_verify_walk_by"
+
+	Engine.time_scale = maxf(verify_time_scale, 1.0)
+	Engine.physics_ticks_per_second = maxi(verify_physics_ticks_per_second, 60)
+	debug_perception_trace = true
+	_debug_trace_initialized = false
+	if pet != null:
+		pet.set_physics_process(false)
+	if _player != null:
+		if _player.is_attached_to_carrier():
+			_player.detach_from_carrier(player_start_position)
+		_player.set_input_locked(true)
+		_player.set_physics_process(false)
+	for zone: String in LightSystem.VALID_ZONES:
+		LightSystem.set_zone_enabled(zone, true)
+
+	for _frame_index in range(verify_warmup_frames):
+		await get_tree().physics_frame
+
+	var walk_by_started_in_epilogue: bool = false
+	var walk_by_lit: bool = false
+	var walk_by_seen: bool = false
+	var walk_by_aborted_epilogue: bool = false
+	var walk_by_abort_state: StringName = &""
+	var walk_by_suspicion: float = 0.0
+	if _player != null:
+		suspicion = 0.0
+		global_position = verify_b13_walk_parent_position
+		var walk_forward: Vector3 = post_deposit_hall_direction
+		walk_forward.y = 0.0
+		walk_forward = (
+			walk_forward.normalized()
+			if walk_forward.length_squared() > 0.0
+			else Vector3.RIGHT
+		)
+		var walk_right: Vector3 = Vector3(
+			-walk_forward.z,
+			0.0,
+			walk_forward.x
+		)
+		rotation.y = atan2(-walk_forward.x, -walk_forward.z)
+		_cone_yaw_degrees = 0.0
+		_post_deposit_path_started = true
+		_set_state(State.POST_DEPOSIT_HALL_WALK)
+		_set_navigation_target(_get_post_deposit_hall_target(), true)
+		var walk_center: Vector3 = (
+			global_position
+			+ walk_forward * verify_b13_walk_ahead_distance
+		)
+		walk_center.y = player_start_position.y
+		LightSystem.register_dynamic_light(verification_light_id, walk_center)
+		LightSystem.set_dynamic_light(
+			verification_light_id,
+			verify_b13_light_radius,
+			verify_b13_light_energy
+		)
+		_player.global_position = (
+			walk_center
+			- walk_right * verify_b13_walk_lateral_distance
+		)
+		walk_by_started_in_epilogue = _is_post_deposit_state()
+		GameClock.start()
+		for _frame_index in range(verify_b13_max_physics_frames):
+			var walk_elapsed_before_tick: float = (
+				GameClock.run_length - GameClock.time_remaining
+			)
+			var walk_weight: float = clampf(
+				walk_elapsed_before_tick / maxf(verify_b13_walk_duration, 0.001),
+				0.0,
+				1.0
+			)
+			_player.global_position = (
+				walk_center
+				+ walk_right
+				* lerpf(
+					-verify_b13_walk_lateral_distance,
+					verify_b13_walk_lateral_distance,
+					walk_weight
+				)
+			)
+			await get_tree().physics_frame
+			walk_by_lit = (
+				walk_by_lit
+				or LightSystem.get_brightness_at(_player.global_position)
+				> brightness_threshold
+			)
+			walk_by_suspicion = maxf(walk_by_suspicion, suspicion)
+			walk_by_seen = walk_by_seen or suspicion > 0.0
+			if not _is_post_deposit_state():
+				walk_by_aborted_epilogue = true
+				walk_by_abort_state = get_state_name()
+				break
+			if (
+				GameClock.run_length - GameClock.time_remaining
+				>= verify_b13_walk_duration
+			):
+				break
+
+	var loud_hearing_registered: bool = false
+	var loud_hearing_aborted_epilogue: bool = false
+	var loud_hearing_abort_state: StringName = &""
+	if _player != null:
+		_player.global_position = verify_observer_parking_position
+		suspicion = 0.0
+		_post_deposit_elapsed = 0.0
+		_set_state(State.POST_DEPOSIT_PEEK)
+		GameClock.start()
+		NoiseSystem.emit_noise(
+			global_position,
+			verify_b13_noise_loudness,
+			_player
+		)
+		loud_hearing_registered = _heard_since_last_tick
+		loud_hearing_aborted_epilogue = not _is_post_deposit_state()
+		loud_hearing_abort_state = get_state_name()
+		await get_tree().physics_frame
+
+	var entered_lunge_range: bool = false
+	var lunge_motion_observed: bool = false
+	var juke_caught: bool = false
+	var catch_elapsed_after_close: float = INF
+	var juke_min_distance: float = INF
+	var juke_direction_changes: int = 0
+	var lunge_start_position: Vector3 = Vector3.ZERO
+	if _player != null:
+		Engine.time_scale = maxf(verify_b13_chase_time_scale, 0.001)
+		Engine.physics_ticks_per_second = maxi(
+			verify_b13_chase_physics_ticks_per_second,
+			60
+		)
+		for _warmup_frame in range(verify_b13_chase_warmup_frames):
+			await get_tree().physics_frame
+		suspicion = suspicion_max
+		global_position = verify_b13_juke_parent_position
+		var chase_forward: Vector3 = verify_point_blank_facing
+		chase_forward.y = 0.0
+		chase_forward = (
+			chase_forward.normalized()
+			if chase_forward.length_squared() > 0.0
+			else Vector3.LEFT
+		)
+		rotation.y = atan2(-chase_forward.x, -chase_forward.z)
+		_player.detach_from_carrier(
+			global_position + chase_forward * verify_b13_juke_start_distance
+		)
+		_player.set_input_locked(true)
+		_player.set_physics_process(false)
+		_found_no_sight_elapsed = 0.0
+		_state = State.FOUND
+		_navigation_ready = false
+		lunge_start_position = global_position
+		var juke_center_z: float = _player.global_position.z
+		var juke_direction: float = 1.0
+		var previous_chase_elapsed: float = 0.0
+		GameClock.start()
+		for _frame_index in range(verify_b13_max_physics_frames):
+			await get_tree().physics_frame
+			var chase_elapsed: float = (
+				GameClock.run_length - GameClock.time_remaining
+			)
+			var chase_delta: float = maxf(
+				chase_elapsed - previous_chase_elapsed,
+				0.0
+			)
+			previous_chase_elapsed = chase_elapsed
+			var current_distance: float = _flat_distance(
+				global_position,
+				_player.global_position
+			)
+			juke_min_distance = minf(juke_min_distance, current_distance)
+			if current_distance <= found_lunge_distance:
+				entered_lunge_range = true
+			lunge_motion_observed = (
+				lunge_motion_observed
+				or global_position.distance_to(lunge_start_position) > 0.1
+			)
+			if _state == State.CARRY and _player.is_attached_to_carrier():
+				juke_caught = true
+				catch_elapsed_after_close = chase_elapsed
+				break
+			var next_player_position: Vector3 = _player.global_position
+			next_player_position.z += (
+				juke_direction
+				* maxf(verify_b13_juke_speed, 0.0)
+				* chase_delta
+			)
+			if (
+				next_player_position.z
+				>= juke_center_z + verify_b13_juke_half_span
+			):
+				next_player_position.z = (
+					juke_center_z + verify_b13_juke_half_span
+				)
+				juke_direction = -1.0
+				juke_direction_changes += 1
+			elif (
+				next_player_position.z
+				<= juke_center_z - verify_b13_juke_half_span
+			):
+				next_player_position.z = (
+					juke_center_z - verify_b13_juke_half_span
+				)
+				juke_direction = 1.0
+				juke_direction_changes += 1
+			_player.global_position = next_player_position
+			if chase_elapsed >= verify_b13_catch_duration:
+				break
+
+	var walk_by_gate_passed: bool = (
+		walk_by_started_in_epilogue
+		and walk_by_lit
+		and walk_by_seen
+		and walk_by_aborted_epilogue
+		and (
+			walk_by_abort_state == &"INVESTIGATE"
+			or walk_by_abort_state == &"FOUND"
+			or walk_by_abort_state == &"CARRY"
+		)
+	)
+	var loud_hearing_gate_passed: bool = (
+		loud_hearing_registered
+		and loud_hearing_aborted_epilogue
+		and (
+			loud_hearing_abort_state == &"INVESTIGATE"
+			or loud_hearing_abort_state == &"HUNT"
+			or loud_hearing_abort_state == &"FOUND"
+		)
+	)
+	var juke_gate_passed: bool = (
+		entered_lunge_range
+		and lunge_motion_observed
+		and juke_direction_changes > 0
+		and juke_caught
+		and catch_elapsed_after_close <= verify_b13_catch_duration
+	)
+	var verification_passed: bool = (
+		walk_by_gate_passed
+		and loud_hearing_gate_passed
+		and juke_gate_passed
+	)
+
+	GameClock.running = false
+	LightSystem.set_dynamic_light(verification_light_id, 0.0, 0.0)
+	_navigation_ready = original_navigation_ready
+	debug_perception_trace = original_debug_trace
+	Engine.time_scale = original_time_scale
+	Engine.physics_ticks_per_second = original_physics_ticks
+	if _player != null:
+		if _player.is_attached_to_carrier():
+			_player.detach_from_carrier(player_start_position)
+		else:
+			_player.global_position = player_start_position
+		_player.set_input_locked(player_was_input_locked)
+		_player.set_physics_process(player_was_processing)
+	if pet != null:
+		pet.set_physics_process(pet_was_processing)
+
+	print(
+		(
+			"B13 live metrics: epilogue sight=%s, suspicion=%.1f, abort=%s; "
+			+ "loud hearing=%s, abort=%s; juke closest=%.2f m, "
+			+ "turns=%d, direct motion=%s, caught=%.2f s."
+		)
+		% [
+			walk_by_seen,
+			walk_by_suspicion,
+			walk_by_abort_state,
+			loud_hearing_registered,
+			loud_hearing_abort_state,
+			juke_min_distance,
+			juke_direction_changes,
+			lunge_motion_observed,
+			catch_elapsed_after_close,
+		]
+	)
+	get_tree().quit(0 if verification_passed else 1)
+	assert(
+		walk_by_gate_passed,
+		"B13 lit walk-by did not abort the post-deposit epilogue."
+	)
+	assert(
+		loud_hearing_gate_passed,
+		"B13 loud noise did not abort the post-deposit epilogue."
+	)
+	assert(entered_lunge_range, "B13 juking bot never entered the 2.5 m lunge range.")
+	assert(juke_direction_changes > 0, "B13 chase bot never completed a juke.")
+	assert(lunge_motion_observed, "B13 FOUND did not move with navigation disabled.")
+	assert(juke_caught, "B13 juking bot was not caught.")
+	assert(
+		catch_elapsed_after_close <= verify_b13_catch_duration,
+		"B13 juking bot was not caught inside 6 s."
+	)
+	print("B13 live SceneTree verification passed.")
 
 
 func _get_live_cone_hit_distances(cone_angle_degrees: float) -> Array[float]:
