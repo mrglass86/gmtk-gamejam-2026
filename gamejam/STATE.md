@@ -8,14 +8,14 @@ a journal.
 - Jam: GMTK26 — theme: Countdown
 - Direction: Shoulda Eaten Dinner (toddler stealth; the countdown is the
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
-- Current phase: Saturday — original-audio integration, mix walk, and feel
-  tuning.
-- Next playable checkpoint: CP5 manual full run — title-card start through both
-  win and expiry-loss outcomes, restart, then freeze/export.
+- Current phase: Freeze day — feature-complete after the director's positive
+  full-play verdict.
+- Next playable checkpoint: tag the green acceptance head, export Web, validate
+  the package, and upload the prepared itch page.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A20 plus actor B6–B17 and the
+- Godot version: 4.7.1-stable — A0.2 through A21 plus actor B6–B18 and the
   original/CC0 audio pass are in `game/` (Compatibility renderer). The approved
   director layout bakes a connected 164-polygon navmesh; input, lighting, noise,
   indicator, route, ambient-mask, countdown, game-flow, audio, and A9
@@ -127,8 +127,11 @@ a journal.
   B18 core adds a 30-point received-contribution bypass from CURIOUS to
   INVESTIGATE plus immediate non-parent light-toggle awareness. Same-frame
   phase lighting settles before anomaly comparison, so scheduled transitions
-  remain clean. Working-tree startup and live B8/B9/B14/B15/B18-core gates
-  pass; exact committed-tree evidence follows the core commit.
+  remain clean. `94c3879` adds A21's 15 audited floor-to-5.2 m wall blockers,
+  four upper doorway lintels, stable nearest-switch/light lookup, and labeled
+  before/after Compatibility captures. `11886b8` guards B18's deferred light
+  comparison across the A6 scene reload. Exact combined editor, startup, and
+  all 34 flags pass on `11886b8` (36/36), nav remains 164.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -138,8 +141,8 @@ a journal.
 
 ## Current focus
 
-- Noah runs CP5 manually through both goal variants, both outcomes, and restart;
-  then the team freezes and exports.
+- Freeze/export/upload. B18 searchlight routing and fake-bounce lighting are
+  optional post-freeze work only.
 
 ## Known blockers or risks
 
@@ -168,9 +171,9 @@ a journal.
   whether HUNT feels threatening rather than predetermined.
 - B14 actor and AudioDirector gates are green; the remaining risk is the
   director's live timing/mix verdict.
-- B18 searchlight routing is deliberately isolated after the green core. The
-  requested lane-A `nearest_switch_to` contract is absent from the current
-  tree; do not improvise navigation ownership during freeze day.
+- B18 searchlight routing remains deliberately isolated after the green core.
+  A21 now exposes the requested `nearest_switch_to` contract; do not add the
+  behavior unless the freeze/export path is already safe.
 - A18's renderer gate and labeled captures are green; 6.5 practical energy at
   1.45 attenuation/7.8 m range is renderer-only and still needs the director's
   in-motion contrast verdict.

@@ -10,6 +10,10 @@ Format: `- [ ] (who asked) what is needed, which scene, why`
 
 ## Done
 
+- [x] (lane A / A21 for lane B B18) `LightSystem.nearest_switch_to(pos)`
+  returns `{"switch": Node3D, "light_id": StringName, "distance": float}` from
+  the five `world_switch` nodes. `--verify-a21` proves each exact mapping
+  (`94c3879`).
 - [x] (lane B / B17) `SnackVisualPresenter.gd` and `AudioDirector.gd` consume
   the stable `DinnerSnack.snack_type` contract directly: pantry renders a
   pulsing foil packet and uses grab/crinkle audio; fridge renders a pulsing

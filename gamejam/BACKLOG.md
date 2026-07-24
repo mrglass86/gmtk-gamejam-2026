@@ -116,12 +116,20 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [x] Snack identity round trip wired end to end — lanes A+B. Fridge/pantry
       type persistence, distinct pulsing visuals, typed pickup/carry audio, and
       the unchanged 0.3/0.6 noise mechanic pass `--verify-a20`/`--verify-b17`.
-- [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.
-- [ ] Route timing measured from Noah's runs, tuned to 1.4–1.6x — lane A adjusts. Accept: S10.
+- [x] CP5 gate — the director completed the full playable loop and issued the
+      definitive SHIP-IT verdict on 2026-07-24.
+- [ ] Route timing retune — cut unless a freeze-safe export smoke exposes a
+      blocker; the accepted full run supersedes speculative feel tuning.
 - [ ] 19:00 freeze: Noah pastes the tag ritual, lane A exports, Claude validates, Noah uploads the itch draft (walkthrough supplied).
 
 ## Must — Saturday regression gate
 
+- [x] A21 light + switch support — all 15 wall segments have shadow-only
+      blockers from floor to 5.2 m, four bounded doorways have 2.4–5.2 m
+      lintels, and the kid/hall proof shows spill only through the doorway.
+      `LightSystem.nearest_switch_to(pos)` returns the nearest switch, light id,
+      and distance for B18 (`94c3879`, `--verify-a21`; combined 36/36 battery
+      on `11886b8`, nav 164).
 - [x] B18 investigation core — received contribution >=30 bypasses CURIOUS;
       quieter cues retain B15's two-cue model; non-parent wall-switch and
       off-schedule analytic-light changes investigate immediately without
@@ -129,8 +137,8 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       B8/B9/B14/B15 regression.
 - [ ] B18 searchlight routing — only after the core commit. In dark
       INVESTIGATE/HUNT, use lane A's `nearest_switch_to`, turn the switch on,
-      then resume the original search without oscillation. Cut if the missing
-      interface or nav behavior is not freeze-safe.
+      then resume the original search without oscillation. The interface is
+      now present; cut the behavior if its integration is not freeze-safe.
 - [x] B17 snack identity — FRIDGE reveals `ice_cream`, PANTRY reveals `chips`;
       the shared Snack exposes the type and preserves it across pickup,
       drop, and re-collection. Accept: live two-door `--verify-b17` round trip

@@ -733,3 +733,24 @@ Record decisions another session or tool would otherwise have to rediscover.
   transition is incorrectly classified as player-caused.
 - **Evidence / handoff:** B18 items 1–2 work order and
   `--verify-b18-core`, 2026-07-24.
+
+## 2026-07-24 — Shadow walls include upper doorway frames
+
+- **Decision:** Every authored wall segment keeps a shadow-only blocker from
+  floor to at least 0.7 m above the highest practical source. Each bounded
+  inter-room doorway also gets a shadow-only lintel from 2.4 m to the same
+  height, so light can spill through the lower opening but cannot treat it as
+  a floor-to-ceiling hole. `LightSystem.nearest_switch_to(pos)` returns a
+  dictionary with the closest switch node, its `light_id`, and distance.
+- **Why:** The 4.5 m hall source projected a broad wedge through the unbounded
+  kid-room doorway even though adjacent wall segments had 5.2 m blockers.
+  Parent searchlight staging also needs one stable source of switch/light
+  identity.
+- **Rejected / cut:** Raising visible cutaway walls; lowering practicals;
+  sealing doorways completely; duplicating LevelBuilder's switch table in
+  Parent.
+- **Owner:** Noah (bug ruling), lane A (renderer geometry and helper)
+- **Revisit when:** A doorway spill becomes too narrow in motion or another
+  bounded opening is added.
+- **Evidence / handoff:** `94c3879`, `--verify-a21`, and the labeled A21
+  before/after captures.
