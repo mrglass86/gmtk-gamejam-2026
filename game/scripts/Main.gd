@@ -605,6 +605,7 @@ func _verify_audio_pass() -> void:
 	audio_director.end_audio_verification()
 	for settle_frame: int in range(8):
 		await get_tree().process_frame
+	await _settle_verification_audio()
 	get_tree().quit()
 
 
@@ -714,6 +715,7 @@ func _verify_a7_presentation() -> void:
 		"A7 verification passed: display stretch, visible fridge spill, TV flicker, "
 		+ "rate-driven creak, snack audio, and clear revealed snack mesh."
 	)
+	await _settle_verification_audio()
 	get_tree().quit()
 
 
@@ -786,6 +788,7 @@ func _verify_a8_tuning() -> void:
 		"A8 verification passed: tight nonzero masks, smaller TV rings, emissive "
 		+ "pulsing carried snack, louder pickup, pantry clearance, and pickup pop."
 	)
+	await _settle_verification_audio()
 	get_tree().quit()
 
 
@@ -1762,3 +1765,21 @@ func _configure_a16_fridge_capture(is_open: bool) -> void:
 	hinge_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	hinge_label.no_depth_test = true
 	add_child(hinge_label)
+
+
+func _settle_verification_audio() -> void:
+	var audio_players: Array[Node] = []
+	audio_players.append_array(
+		get_tree().root.find_children("*", "AudioStreamPlayer", true, false)
+	)
+	audio_players.append_array(
+		get_tree().root.find_children("*", "AudioStreamPlayer2D", true, false)
+	)
+	audio_players.append_array(
+		get_tree().root.find_children("*", "AudioStreamPlayer3D", true, false)
+	)
+	for node in audio_players:
+		node.call("stop")
+		node.set("stream", null)
+	await get_tree().process_frame
+	await get_tree().create_timer(0.5).timeout
