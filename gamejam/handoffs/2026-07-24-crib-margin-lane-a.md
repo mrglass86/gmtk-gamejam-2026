@@ -13,6 +13,7 @@
 - A6: inside player holding the snack wins immediately and at expiry.
 - Lane-C `crib-margin`: 2.04 m from crib centre remains PLAYING; scenario
   then moves through the open end and wins; scenario passes.
+- Full lane-C adversarial suite: 23/23 scenarios pass.
 
 ## Decision
 
