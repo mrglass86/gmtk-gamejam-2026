@@ -10,9 +10,9 @@ a journal.
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Saturday — original-audio integration, mix walk, and feel
   tuning.
-- Next playable checkpoint: director audio/CP5 run — hear the context-sensitive
-  catch/carry/deposit sequence, original routine voice and foley, countdown
-  tells, and full win/lose loop together.
+- Next playable checkpoint: B13 director acceptance — reproduce an escaped
+  walk-by during the capture epilogue and a close juking chase. B14 stays
+  blocked until both pass in live play.
 
 ## Working build
 
@@ -68,7 +68,9 @@ a journal.
   and foley takes through data-defined no-repeat pools, 5–8% pitch jitter,
   context-sensitive carry protests, ordered sequences, a priority-controlled
   VO channel, and CC0 fallbacks. Focused audio plus A6/A7/B7/B8 regressions
-  pass.
+  pass. `5a09b2f` adds B13: live post-deposit perception, crib-safe expected
+  occupancy, self-door creak filtering, 1.5 m grabs, and a 2.5 m LOS lunge.
+  Clean committed-tree startup plus B6–B13 and A15 audio gates pass.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -78,9 +80,9 @@ a journal.
 
 ## Current focus
 
-- Noah runs the authoritative audio/CP5 route: red-handed and empty-handed
-  catches, carry/deposit VO, routine lines, bathroom and kitchen foley,
-  countdown tells, and final mix balance against the full win/lose loop.
+- Noah runs B13 acceptance first: leave the crib during the epilogue for one
+  visible/noisy walk-by, then juke inside 2.5 m during FOUND. B14 remains
+  blocked until both behaviors pass.
 
 ## Known blockers or risks
 

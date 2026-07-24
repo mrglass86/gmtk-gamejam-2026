@@ -119,6 +119,20 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [ ] Route timing measured from Noah's runs, tuned to 1.4–1.6x — lane A adjusts. Accept: S10.
 - [ ] 19:00 freeze: Noah pastes the tag ritual, lane A exports, Claude validates, Noah uploads the itch draft (walkthrough supplied).
 
+## Must — Saturday regression gate
+
+- [x] B13 detection/grab regressions — perception remains active throughout
+      the post-deposit epilogue and aborts it on sight or loud hearing;
+      `grab_distance` is 1.5 m and FOUND lunges directly inside 2.5 m with
+      line of sight. Accept: live `--verify-b13` epilogue walk-by plus juking
+      catch inside 6 s (`5a09b2f`; automated catch 0.27 s after one juke).
+- [ ] B13 director acceptance — Noah reproduces the epilogue walk-by and a
+      close juking chase in the playable build; both must read and catch
+      correctly before B14 starts.
+- [ ] B14 parent/light behavior features — BLOCKED on B13 director acceptance.
+      At 15:00 degrade to player-switches-only if not green; cut before the
+      17:00 threat window.
+
 ## Should — Saturday (feel day)
 
 - [x] Audio pass pulled forward — CC0 countdown tells, surface/player and parent
