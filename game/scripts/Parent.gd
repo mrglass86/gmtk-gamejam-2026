@@ -511,6 +511,7 @@ var _voice_indicator: MeshInstance3D
 var _voice_indicator_elapsed: float = 0.0
 var _voice_indicator_active: bool = false
 var _verify_b14_visual_noise_count: int = 0
+var _verify_b21_switch_noise_count: int = 0
 
 
 func _ready() -> void:
@@ -3172,9 +3173,6 @@ func _run_b21_live_verification() -> void:
 	var dining_original_on: bool = (
 		dining_switch != null and dining_switch.is_on
 	)
-	var original_click_loudness: float = (
-		dining_switch.click_loudness if dining_switch != null else 0.0
-	)
 
 	Engine.time_scale = maxf(verify_time_scale, 1.0)
 	Engine.physics_ticks_per_second = maxi(
@@ -3260,7 +3258,11 @@ func _run_b21_live_verification() -> void:
 	var expired_change_ignored: bool = false
 	if dining_switch != null and switch_visible_pose_found:
 		facing_turn_speed = 0.0
-		dining_switch.click_loudness = verify_b21_toy_loudness
+		_verify_b21_switch_noise_count = 0
+		if not NoiseSystem.noise_emitted.is_connected(
+			_capture_b21_switch_noise
+		):
+			NoiseSystem.noise_emitted.connect(_capture_b21_switch_noise)
 		routine_rows = [
 			{
 				"time": 0.0,
@@ -3348,6 +3350,11 @@ func _run_b21_live_verification() -> void:
 			and is_zero_approx(suspicion)
 			and _light_anomaly_switch == null
 		)
+	if NoiseSystem.noise_emitted.is_connected(_capture_b21_switch_noise):
+		NoiseSystem.noise_emitted.disconnect(_capture_b21_switch_noise)
+	var switches_emitted_no_gameplay_noise: bool = (
+		_verify_b21_switch_noise_count == 0
+	)
 
 	# A solid player stomp gets the big-event floor even when falloff alone
 	# would leave this six-metre case below the threshold.
@@ -3485,6 +3492,7 @@ func _run_b21_live_verification() -> void:
 		and hidden_click_ignored
 		and recent_sweep_investigated
 		and expired_change_ignored
+		and switches_emitted_no_gameplay_noise
 		and toy_investigated_immediately
 		and far_pose_found
 		and far_detected_on_time
@@ -3498,7 +3506,6 @@ func _run_b21_live_verification() -> void:
 	_clear_light_anomaly()
 	_parent_operating_switch = true
 	if dining_switch != null:
-		dining_switch.click_loudness = original_click_loudness
 		dining_switch.set_state(dining_original_on, false)
 	_parent_operating_switch = false
 	_refresh_light_state_snapshot()
@@ -3516,7 +3523,8 @@ func _run_b21_live_verification() -> void:
 		(
 			"B21 live metrics: cone bright/dark=%d/%d surfaces=%d "
 			+ "samples=%.2f/%.2f; light visible/hidden/recent/expired="
-			+ "%s/%s/%s/%s; toy raw/final=%.1f/%.1f state=%s; "
+			+ "%s/%s/%s/%s switch-noise=%d; "
+			+ "toy raw/final=%.1f/%.1f state=%s; "
 			+ "far brightness=%.2f threshold-time=%.2f s suspicion=%.1f."
 		)
 		% [
@@ -3529,6 +3537,7 @@ func _run_b21_live_verification() -> void:
 			hidden_click_ignored,
 			recent_sweep_investigated,
 			expired_change_ignored,
+			_verify_b21_switch_noise_count,
 			toy_falloff_contribution,
 			big_event_threshold,
 			&"INVESTIGATE" if toy_investigated_immediately else get_state_name(),
@@ -3545,6 +3554,10 @@ func _run_b21_live_verification() -> void:
 		"B21 visible light toggle did not investigate."
 	)
 	assert(hidden_click_ignored, "B21 hidden switch click was heard.")
+	assert(
+		switches_emitted_no_gameplay_noise,
+		"B21 switch flip emitted a gameplay noise event."
+	)
 	assert(
 		recent_sweep_investigated,
 		"B21 recent hidden light change was not noticed by a later cone sweep."
@@ -4908,6 +4921,8 @@ func _run_b14_live_verification() -> void:
 			_verify_b14_visual_noise_count,
 		]
 	)
+	if audio_director != null:
+		audio_director.end_audio_verification()
 	await _settle_verification_audio()
 	get_tree().quit(0 if verification_passed else 1)
 	assert(
@@ -5871,6 +5886,15 @@ func _capture_b14_visual_noise(
 	_source: Node
 ) -> void:
 	_verify_b14_visual_noise_count += 1
+
+
+func _capture_b21_switch_noise(
+	_pos: Vector3,
+	_loudness: float,
+	source: Node
+) -> void:
+	if source is DinnerWorldSwitch:
+		_verify_b21_switch_noise_count += 1
 
 
 func _flat_distance(first: Vector3, second: Vector3) -> float:
