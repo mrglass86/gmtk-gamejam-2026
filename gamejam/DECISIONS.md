@@ -811,3 +811,19 @@ Record decisions another session or tool would otherwise have to rediscover.
   3.0–4.8 s parent-grunt cadence too dense.
 - **Evidence / handoff:** `eed6e31`, `--verify-audio`, A23 handoff, and the
   open A23 row in `WIRING.md`.
+
+## 2026-07-24 — Crib wins use player-centre containment
+
+- **Decision:** `GameFlow` tests the player's centre against the authored crib
+  goal with an 0.08 m tolerance. `Area3D.overlaps_body()` is not an alternate
+  success path.
+- **Why:** Body overlap inflates the goal by the player capsule radius and
+  awarded a win at the reported 2.04 m beside-the-rails position. Centre
+  containment keeps the open-end approach reliable without accepting the
+  parallel outside edge.
+- **Rejected / cut:** Shrinking the visual crib; using raw body overlap;
+  redesigning the goal or layout during freeze.
+- **Owner:** Lane C (finding), lane A (GameFlow fix)
+- **Revisit when:** The inside approach misses at gameplay speed.
+- **Evidence / handoff:** A6 immediate/expiry verification and lane-C
+  `crib-margin` scenario, 2026-07-24.

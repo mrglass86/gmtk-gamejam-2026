@@ -124,6 +124,9 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 
 ## Must — Saturday regression gate
 
+- [x] Lane-C crib-boundary major — win containment uses the player centre and
+      an 0.08 m tolerance; the reported 2.04 m outside case stays PLAYING and
+      A6's inside position still wins immediately and at expiry.
 - [x] A23 family-voice casting — the start motivation is exclusive, live
       `FOUND` and `CARRY` states drive context-aware no-repeat chains through
       one VO player, and the parent carry-grunt pools split 3/1 by snack

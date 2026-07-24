@@ -143,6 +143,9 @@ a journal.
   kid protests and parent grunts fill `CARRY`, and deposit/state exit stops
   the chains. The organic reaction pool is ready and awaits lane B's
   presentation-only Player contact signal in `WIRING.md`.
+  The lane-C crib-boundary major is fixed: `GameFlow` uses the player centre
+  with an 0.08 m margin instead of capsule-inflated Area overlap. The exact
+  2.04 m outside case stays PLAYING; A6's inside position still wins.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.

@@ -18,7 +18,9 @@ Runtime family takes use conservative clip-profiled spectral denoise
 A/B copies remain in the repository, with per-take results recorded in
 `game/audio/denoised/MANIFEST.md`. Takes without a sufficiently quiet profile
 window are omitted from runtime pools so their corresponding CC0 fallback is
-used instead.
+used instead. A23 has one director-requested exception: the 0.38 s
+`caught_grunt_02` organic kid reaction has no clean profile window and uses its
+untouched runtime copy.
 
 ## Kenney packs
 
