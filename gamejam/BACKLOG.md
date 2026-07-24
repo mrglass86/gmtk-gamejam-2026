@@ -126,17 +126,17 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       `grab_distance` is 1.5 m and FOUND lunges directly inside 2.5 m with
       line of sight. Accept: live `--verify-b13` epilogue walk-by plus juking
       catch inside 6 s (`5a09b2f`; automated catch 0.27 s after one juke).
-- [ ] B13 director acceptance — Noah reproduces the epilogue walk-by and a
+- [x] B13 director acceptance — Noah reproduced the epilogue walk-by and a
       close juking chase in the playable build; both must read and catch
-      correctly before B14 starts.
+      correctly before B14 starts. Accepted 2026-07-24.
 - [x] A16 world pack implementation — staged on `codex/a16-world` at
       `9e6be08`/`1565f02`: open living/dining plan, five switches,
       practical-only lighting, south-sweep fridge, hinge/positional audio,
       interaction HUD, TV notes, and prop silhouettes. Accept: `--verify-a16`,
       labeled capture, and 150-polygon nav.
-- [ ] A16 integration — BLOCKED on B13 director acceptance; merge the staged
-      branch only after the live walk-by/juke verdict is green.
-- [ ] B14 parent/light behavior features — BLOCKED on B13 director acceptance.
+- [x] A16 integration — fast-forwarded to main after B13 acceptance; clean
+      editor/startup plus all 24 automated gates pass at `043e990`.
+- [ ] B14 parent/light behavior features — IN PROGRESS, unblocked by B13/A16.
       At 15:00 degrade to player-switches-only if not green; cut before the
       17:00 threat window.
 

@@ -10,16 +10,14 @@ a journal.
   parent's bedtime routine). Locked brief: `gamejam/brief/shoulda-eaten-dinner-brief.md`
 - Current phase: Saturday — original-audio integration, mix walk, and feel
   tuning.
-- Next playable checkpoint: B13 director acceptance — reproduce an escaped
-  walk-by during the capture epilogue and a close juking chase. B14 stays
-  blocked until both pass in live play. A16 is complete and green on
-  `codex/a16-world`, but intentionally not integrated before that verdict.
+- Next playable checkpoint: B14 parent/light behavior acceptance. B13 is
+  director-accepted; A16 is integrated on main and B14 is unblocked.
 
 ## Working build
 
-- Godot version: 4.7.1-stable — A0.2 through A12 plus A4.1/A5.1 and the CC0
-  audio pass are in `game/` (Compatibility renderer). The approved director
-  layout bakes a connected 157-polygon navmesh; input, lighting, noise,
+- Godot version: 4.7.1-stable — A0.2 through A16 plus actor B6–B13 and the
+  original/CC0 audio pass are in `game/` (Compatibility renderer). The approved
+  director layout bakes a connected 150-polygon navmesh; input, lighting, noise,
   indicator, route, ambient-mask, countdown, game-flow, audio, and A9
   presentation/tuning checks pass.
 - Entry scene: `res://scenes/Main.tscn`
@@ -72,14 +70,14 @@ a journal.
   pass. `5a09b2f` adds B13: live post-deposit perception, crib-safe expected
   occupancy, self-door creak filtering, 1.5 m grabs, and a 2.5 m LOS lunge.
   Clean committed-tree startup plus B6–B13 and A15 audio gates pass.
-  `9e6be08`/`1565f02` stage A16 on top of B13: LivingSouth removed;
+  `9e6be08`/`1565f02` integrate A16 on top of B13: LivingSouth removed;
   150-polygon nav;
   five instant positional/noisy switches; bathroom and initially-dark kid-hall
   practicals; Sun removed; renderer attenuation 2.0 with a 0.05 ambient
   readability fallback; exact south-face/south-west-hinge fridge; hinge audio;
   positional gameplay SFX; universal E/door-progress affordance; TV notes; and
-  primitive toy/dog-bed dressing. Startup, B13, A11, A12, A15 audio, and A16
-  gates pass.
+  primitive toy/dog-bed dressing. `043e990` updates superseded legacy gate
+  assumptions. Clean editor/startup plus all 24 A/B/audio gates pass.
 - Remote: https://github.com/mrglass86/gmtk-gamejam-2026 — pushed and tracking
   (2026-07-23). Repo-local URL carries the `mrglass86@` prefix to bypass the
   machine's work-GHE rewrite; work repos unaffected. Push after every green gate.
@@ -89,10 +87,8 @@ a journal.
 
 ## Current focus
 
-- Noah runs B13 acceptance first: leave the crib during the epilogue for one
-  visible/noisy walk-by, then juke inside 2.5 m during FOUND. B14 remains
-  blocked until both behaviors pass. Once accepted, integrate
-  `codex/a16-world` before starting B14.
+- B14 implements parent light-state restoration, TV listening behavior, and
+  the post-capture crib check against the integrated A16 switch contract.
 
 ## Known blockers or risks
 
