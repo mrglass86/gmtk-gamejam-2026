@@ -1,0 +1,9 @@
+# Adversarial QA findings
+
+Last run: 2026-07-24 — production-scene QA harness, Godot 4.7.1-stable.
+
+| Severity | Title | Repro steps | Expected vs actual | Suspected file/cause | Suggested owner |
+|---|---|---|---|---|---|
+| major — fixed | Caught while carrying snack could have been a free win | Start a live run; reveal and collect the snack at the catch point; invoke the production parent catch path; advance 180 physics frames. | Expected: snack drops at the catch point, player stays empty-handed, and GameFlow remains PLAYING. Actual: exactly that; no free win reproduced. | Fixed in `game/scripts/Parent.gd` catch/drop ordering and `game/scripts/Snack.gd` pickup lockout. | B — regression coverage only |
+| minor — persisting | Headless live-scene shutdown reports active OGG resources | Run any Lane C scenario. The gameplay assertions pass; then Godot reports 10–14 OGG resources and 20–29 ObjectDB instances still active at process exit. | Expected: a clean test process. Actual: production audio beds begun by `GameFlow.game_started` persist through the harness child-scene teardown. This did not occur in the pre-existing non-playing verification flags. | `game/scripts/AudioDirector.gd` ambient playback / test-process teardown interaction; needs a normal-root quit reproduction before treating as a player-facing bug. | A |
+| polish — persisting | No gameplay exploit or soft-lock reproduced by the initial adversarial battery | Run `game/tests/qa/run_qa.sh`: caught-snack; 61 live switch events; then 5,200-frame monkey runs with seeded randomized movement, run, and interact inputs. | Expected: terminal win/loss, no impossible snack ownership, and no non-carry input lock beyond 22 seconds. Actual: all initial runs reached a terminal state (LOSS) and met the assertions. | No concrete gameplay cause found. | A/B — rerun after state-machine changes |
