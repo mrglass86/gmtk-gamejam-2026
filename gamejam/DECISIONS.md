@@ -479,3 +479,19 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Evidence / handoff:** `6df8cff`, `6b48552`, combined head `23ffd7c`,
   clean committed-tree `--verify-a11`, B6/B9/B10 regressions, and
   `gamejam/handoffs/2026-07-23-a11-lighting.png`.
+
+## 2026-07-23 — Threat visuals expose escalation and dog hearing
+
+- **Decision:** Parent cone presence scales with threat: alpha starts at 0.12,
+  lerps to 0.34 with suspicion, uses 0.40 in HUNT, and remains 0.45 in
+  FOUND/carry. The awake dog shows its exported hearing radius as a faint
+  purple floor ring that pulses yellow during ALERT/INVESTIGATE; the ring is
+  hidden for its opening sleep.
+- **Why:** Threat should become visually louder as danger rises, and the dog
+  needs an honest, readable reach before it reacts.
+- **Rejected / cut:** A constantly prominent parent cone; an invisible dog
+  hearing radius; showing the dog ring while it sleeps.
+- **Owner:** Noah (direction), lane B (actor presentation)
+- **Revisit when:** Director run six finds the calm marks distracting or the
+  alert pulse unreadable at gameplay camera scale.
+- **Evidence / handoff:** `1fada23`, clean committed-tree `--verify-b12`.

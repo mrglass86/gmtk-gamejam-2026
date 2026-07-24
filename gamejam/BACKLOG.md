@@ -109,6 +109,10 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
       base energy, ambient is 0.04, and the dining fixture is centered while
       analytic light anchors, capsule feedback, and the 0.35 sight boundary
       remain unchanged (`b812cbd`, `--verify-a12`).
+- [x] B12 threat telegraphs — parent cone alpha ramps 0.12→0.34 with
+      suspicion and stays 0.45 in FOUND; the dog's runtime 6 m hearing ring is
+      sleep-hidden, faint purple when calm, and pulses yellow during
+      ALERT/INVESTIGATE (`1fada23`, `--verify-b12`).
 - [ ] Snack round trip wired end to end — lanes A+B. Pickup/drop feedback and
       reveal clearance are verified; accept the complete interaction in S9.
 - [ ] CP5 gate: winnable and losable from the title card — Noah plays a full run.
