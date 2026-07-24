@@ -6,6 +6,8 @@ class_name DinnerPlayer
 
 signal snack_carrying_changed(carrying: bool)
 
+const INTERACTION_TIE_EPSILON: float = 0.001
+
 @export_group("Movement")
 @export var sneak_speed: float = 1.7
 @export var run_speed: float = 3.6
@@ -121,6 +123,40 @@ func set_carrying_snack(carrying: bool) -> void:
 	carrying_snack = carrying
 	_snack_noise_elapsed = 0.0
 	snack_carrying_changed.emit(carrying_snack)
+
+
+func get_nearest_interactable() -> Node3D:
+	if input_locked:
+		return null
+	var best: Node3D
+	var best_distance: float = INF
+	var best_priority: int = -1
+	for candidate: Node in get_tree().get_nodes_in_group("interactable"):
+		var interactable: Node3D = candidate as Node3D
+		if interactable == null:
+			continue
+		var radius: float = float(interactable.get("interaction_radius"))
+		var distance: float = global_position.distance_to(
+			interactable.global_position
+		)
+		if distance > radius:
+			continue
+		var priority: int = 1 if interactable is DinnerDoor else 0
+		if (
+			distance < best_distance - INTERACTION_TIE_EPSILON
+			or (
+				absf(distance - best_distance) <= INTERACTION_TIE_EPSILON
+				and priority > best_priority
+			)
+		):
+			best = interactable
+			best_distance = distance
+			best_priority = priority
+	return best
+
+
+func is_interaction_target(candidate: Node3D) -> bool:
+	return candidate != null and get_nearest_interactable() == candidate
 
 
 func _apply_movement(delta: float) -> void:

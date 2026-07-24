@@ -8,10 +8,10 @@ sources are listed here for provenance and jam review.
 
 Original family voice and household recordings were made for this project and
 are used with the director/parent's permission. Director-selected takes provide
-child and parent voice, door creaks, carpet and wood footsteps, refrigerator
-sounds, wrapper crinkles, a toilet flush, and sink water. No performer names
-are listed. The CC0 cues below remain wired as fallbacks wherever an original
-pool is empty or does not yet cover an event.
+child and parent voice, door creaks, refrigerator sounds, wrapper crinkles, a
+toilet flush, and sink water. No performer names are listed. The CC0 cues below
+remain wired as fallbacks wherever an original pool is empty or does not yet
+cover an event.
 
 ## Kenney packs
 
@@ -41,5 +41,9 @@ recordings.
   CC0 — pet alert whine.
 - [Single Dog Bark (King Charles Spaniel) by JovianSounds](https://freesound.org/people/JovianSounds/sounds/502655/),
   CC0 — pet bark.
+- [Footsteps_Carpet.wav by mlsulli](https://freesound.org/people/mlsulli/sounds/234855/),
+  CC0 — eight edited player carpet-footstep takes.
+- [Footsteps on wood floor by IENBA](https://freesound.org/people/IENBA/sounds/485421/),
+  CC0 — eight edited player hardwood-footstep takes.
 
 License: [Creative Commons CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/)

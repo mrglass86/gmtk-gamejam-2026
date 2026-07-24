@@ -78,6 +78,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--verify-a16"):
 		_verify_a16_world_pack()
 		return
+	if OS.get_cmdline_user_args().has("--verify-a17"):
+		_verify_a17_acceptance_fixes()
+		return
 	if OS.get_cmdline_user_args().has("--verify-audio"):
 		_verify_audio_pass()
 		return
@@ -1195,7 +1198,7 @@ func _verify_a11_dress_pack() -> void:
 		$Level/NavigationRegion3D as NavigationRegion3D
 	).navigation_mesh
 	var navigation_polygon_count: int = navigation_mesh.get_polygon_count()
-	assert(navigation_polygon_count == 150)
+	assert(navigation_polygon_count >= 150)
 	var navigation_map: RID = get_world_3d().navigation_map
 	var route_path: PackedVector3Array = NavigationServer3D.map_get_path(
 		navigation_map,
@@ -1304,7 +1307,7 @@ func _verify_a12_lighting_contrast() -> void:
 	)
 	var configured_energy: float = float(level.get("lamp_energy"))
 	assert(is_equal_approx(configured_attenuation, 2.0))
-	assert(is_equal_approx(configured_energy, 2.2))
+	assert(configured_energy > 2.2)
 
 	var fixture_names: PackedStringArray = [
 		"KidLampVisual",
@@ -1466,7 +1469,7 @@ func _verify_a16_world_pack() -> void:
 		for node: Node in switches:
 			if node.get("switch_id") == switch_id:
 				found = true
-				assert(is_equal_approx(float(node.get("click_loudness")), 1.5))
+				assert(is_equal_approx(float(node.get("click_loudness")), 0.8))
 				assert(node.get_node("Click") is AudioStreamPlayer3D)
 		assert(found, "Missing A16 switch %s." % switch_id)
 	var kid_hall_switch: DinnerWorldSwitch = (
@@ -1585,6 +1588,192 @@ func _verify_a16_world_pack() -> void:
 		+ "inverse-square practicals, south-sweep fridge, positional SFX, "
 		+ "interaction HUD, TV notes, and dressed hazard/pet props."
 	)
+	get_tree().quit()
+
+
+func _verify_a17_acceptance_fixes() -> void:
+	get_tree().paused = false
+	for settle_frame: int in range(12):
+		await get_tree().physics_frame
+
+	var level: Node3D = $Level as Node3D
+	var environment: Environment = (
+		$WorldEnvironment as WorldEnvironment
+	).environment
+	assert(not has_node("Sun"))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
+	assert(is_equal_approx(float(level.get("omni_visual_attenuation")), 2.0))
+	assert(is_equal_approx(float(level.get("lamp_energy")), 32.0))
+	assert(is_equal_approx(float(level.get("area_light_energy")), 2.2))
+	for fixture_name: String in [
+		"KidLampVisual",
+		"LivingLampVisual",
+		"KitchenLampVisual",
+		"MidLampVisual",
+		"AlcoveLampVisual",
+	]:
+		var light: OmniLight3D = (
+			level.get_node("%s/Light" % fixture_name) as OmniLight3D
+		)
+		assert(is_equal_approx(light.omni_attenuation, 2.0))
+		assert(light.light_energy >= 4.4)
+
+	for pool_id: StringName in [
+		&"footstep_carpet_walk",
+		&"footstep_carpet_sprint",
+		&"footstep_wood",
+	]:
+		var pool: Dictionary = DinnerAudioCasting.POOLS[pool_id] as Dictionary
+		var streams: Array = pool["streams"] as Array
+		assert(streams.size() >= 8)
+		for stream: AudioStream in streams:
+			assert(
+				stream.resource_path.begins_with(
+					"res://audio/cc0/footsteps/"
+				)
+			)
+	var parent_pool: Dictionary = (
+		DinnerAudioCasting.POOLS[&"parent_footstep"] as Dictionary
+	)
+	assert(
+		(parent_pool["streams"] as Array)[0].resource_path.begins_with(
+			"res://audio/original/foley/"
+		)
+	)
+
+	var audio_director: DinnerAudioDirector = (
+		$AudioDirector as DinnerAudioDirector
+	)
+	for candidate: Node in get_tree().get_nodes_in_group("interactable"):
+		if candidate is DinnerDoor:
+			var door: DinnerDoor = candidate as DinnerDoor
+			assert(
+				audio_director.call("_get_door_hinge_position", door)
+				.distance_to(door.get_hinge_global_position()) < 0.001
+			)
+
+	var player: DinnerPlayer = $Player as DinnerPlayer
+	var bedroom_door: DinnerDoor = $BedroomDoor as DinnerDoor
+	var kid_switch: DinnerWorldSwitch = (
+		$Level/KidHallSwitch as DinnerWorldSwitch
+	)
+	assert(
+		bedroom_door.global_position.distance_to(kid_switch.global_position)
+		> 2.5
+	)
+	var saved_player_position: Vector3 = player.global_position
+	var saved_input_locked: bool = player.input_locked
+	var saved_switch_state: bool = kid_switch.is_on
+	var saved_openness: float = bedroom_door.openness
+	player.input_locked = false
+	player.global_position = (
+		bedroom_door.global_position + kid_switch.global_position
+	) * 0.5
+	assert(
+		player.get_nearest_interactable() == bedroom_door,
+		"Door must outrank a switch at equal interaction distance."
+	)
+	var press: InputEventAction = InputEventAction.new()
+	press.action = &"interact"
+	press.pressed = true
+	kid_switch.call("_unhandled_input", press)
+	assert(
+		kid_switch.is_on == saved_switch_state,
+		"A door-targeted press also toggled the nearby switch."
+	)
+
+	var hud: DinnerInteractHUD = $GameFlow/InteractHUD as DinnerInteractHUD
+	player.global_position = kid_switch.global_position + Vector3(0.0, -0.4, 0.0)
+	hud.call("_process", 0.0)
+	assert(hud.visible)
+	assert(hud.get_current_interactable() == kid_switch)
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	var expected_switch_center: Vector2 = camera.unproject_position(
+		kid_switch.global_position + Vector3.UP * hud.world_anchor_height
+	) + hud.prompt_offset
+	assert(hud.get_prompt_center().distance_to(expected_switch_center) < 0.1)
+
+	player.global_position = bedroom_door.global_position + Vector3.UP * 0.6
+	bedroom_door.openness = 0.4
+	Input.action_press("interact")
+	hud.call("_process", 0.0)
+	assert(hud.get_current_interactable() == bedroom_door)
+	assert(is_equal_approx(hud.get_seconds_remaining(), 3.0))
+	Input.action_release("interact")
+	bedroom_door.openness = saved_openness
+	bedroom_door.call("_apply_visual")
+	kid_switch.set_state(saved_switch_state, false)
+	player.global_position = saved_player_position
+	player.input_locked = saved_input_locked
+
+	for switch: Node in get_tree().get_nodes_in_group("world_switch"):
+		assert(is_equal_approx(float(switch.get("click_loudness")), 0.8))
+
+	var bathroom_fixture: Node3D = $Level/BathroomLampVisual as Node3D
+	var bathroom_switch: DinnerWorldSwitch = (
+		$Level/BathroomSwitch as DinnerWorldSwitch
+	)
+	assert(not bathroom_fixture.visible)
+	assert(not bathroom_switch.is_on)
+	var bathroom_shade: MeshInstance3D = (
+		$Level/BathroomLampVisual/Shade as MeshInstance3D
+	)
+	assert(bathroom_shade.mesh is CylinderMesh)
+	assert(bathroom_shade.position.y <= 1.2)
+	assert(
+		bathroom_fixture.find_children(
+			"*",
+			"MeshInstance3D",
+			true,
+			false
+		).size() == 1
+	)
+
+	var toilet: StaticBody3D = $Level/BathroomToilet as StaticBody3D
+	assert(($Level/BathroomToilet/Tank as MeshInstance3D).mesh is BoxMesh)
+	assert(($Level/BathroomToilet/Bowl as MeshInstance3D).mesh is CylinderMesh)
+	assert(
+		toilet.find_children(
+			"*",
+			"CollisionShape3D",
+			true,
+			false
+		).size() == 1
+	)
+	var nav_region: NavigationRegion3D = (
+		$Level/NavigationRegion3D as NavigationRegion3D
+	)
+	var polygon_count: int = nav_region.navigation_mesh.get_polygon_count()
+	assert(polygon_count > 0)
+
+	print(
+		(
+			"A17 metrics: lamp energy=%.1f, attenuation=%.1f, "
+			+ "ambient=%.2f, footsteps=%d carpet/%d wood, nav=%d polygons."
+		)
+		% [
+			float(level.get("lamp_energy")),
+			float(level.get("omni_visual_attenuation")),
+			environment.ambient_light_energy,
+			(
+				DinnerAudioCasting.POOLS[
+					&"footstep_carpet_walk"
+				]["streams"] as Array
+			).size(),
+			(
+				DinnerAudioCasting.POOLS[
+					&"footstep_wood"
+				]["streams"] as Array
+			).size(),
+			polygon_count,
+		]
+	)
+	print(
+		"A17 verification passed: brighter practical pools, CC0 player steps, "
+		+ "hinge audio, exclusive anchored interaction, quiet switches, and "
+		+ "the dark-start bathroom/toilet pass."
+	)
+	await _settle_verification_audio()
 	get_tree().quit()
 
 

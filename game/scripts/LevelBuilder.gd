@@ -13,7 +13,8 @@ const WORLD_SWITCH_SCRIPT: Script = preload("res://scripts/WorldSwitch.gd")
 @export var failsafe_floor_thickness: float = 0.2
 @export var failsafe_floor_size: Vector2 = Vector2(30.0, 12.8)
 @export var prop_height: float = 0.8
-@export var lamp_energy: float = 2.2
+@export var lamp_energy: float = 32.0
+@export var area_light_energy: float = 2.2
 @export_range(5.5, 6.0) var lamp_range: float = 5.8
 @export_range(0.0, 10.0) var omni_visual_attenuation: float = 2.0
 @export var omni_source_height: float = 4.5
@@ -106,6 +107,7 @@ func _build_props() -> void:
 	_add_kitchen_table()
 	_add_kitchen_bowl()
 	_add_dining_table()
+	_add_toilet()
 	_add_prop("AdultBed", Vector3(-9.8, 0.4, 4.75), Vector3(4.6, 0.8, 3.1), prop_color)
 	_add_prop("HallShelf", Vector3(10.1, 0.55, 4.35), Vector3(1.4, 1.1, 3.5), prop_color)
 	_add_prop("AdultDoorPanel", Vector3(-12.75, 0.6, 1.5), Vector3(2.3, 1.2, 0.12), wall_color)
@@ -165,11 +167,14 @@ func _build_lights() -> void:
 	_add_omni(
 		"BathroomLampVisual",
 		"bathroom",
-		Vector3(-5.75, 2.15, -3.9),
+		Vector3(-5.75, 1.12, -3.9),
 		0.78,
 		0.0,
 		-1.0,
-		Vector3(-5.75, 4.5, -3.9)
+		Vector3(-5.75, 4.5, -3.9),
+		Vector3.ZERO,
+		false,
+		&"ceiling_disc"
 	)
 	_add_omni(
 		"HallDoorLampVisual",
@@ -222,12 +227,12 @@ func _build_switches() -> void:
 		&"bathroom",
 		Vector3(-4.48, 1.0, -2.15),
 		"BathroomLampVisual",
-		true
+		false
 	)
 	_add_world_switch(
 		"KidHallSwitch",
 		&"kid_hall",
-		Vector3(-11.25, 1.0, -1.34),
+		Vector3(-10.15, 1.0, -1.34),
 		"HallDoorLampVisual",
 		false
 	)
@@ -591,6 +596,36 @@ func _add_front_door_side_table() -> void:
 	add_child(table)
 
 
+func _add_toilet() -> void:
+	var toilet: StaticBody3D = StaticBody3D.new()
+	toilet.name = "BathroomToilet"
+	toilet.position = Vector3(-6.45, 0.0, -5.55)
+	toilet.add_to_group("nav_source")
+	_add_box_collision(
+		toilet,
+		Vector3(0.9, 0.78, 1.2),
+		Vector3(0.0, 0.39, 0.0)
+	)
+	_add_box_visual_part(
+		toilet,
+		"Tank",
+		Vector3(0.0, 0.55, -0.37),
+		Vector3(0.78, 0.72, 0.38),
+		Color("#aeb8c4")
+	)
+	var bowl: MeshInstance3D = MeshInstance3D.new()
+	bowl.name = "Bowl"
+	bowl.position = Vector3(0.0, 0.28, 0.22)
+	var bowl_mesh: CylinderMesh = CylinderMesh.new()
+	bowl_mesh.top_radius = 0.38
+	bowl_mesh.bottom_radius = 0.32
+	bowl_mesh.height = 0.38
+	bowl.mesh = bowl_mesh
+	bowl.material_override = _make_material(Color("#c3ccd6"))
+	toilet.add_child(bowl)
+	add_child(toilet)
+
+
 func _add_omni(
 	node_name: String,
 	zone: String,
@@ -600,12 +635,16 @@ func _add_omni(
 	range_override: float = -1.0,
 	light_world_position: Vector3 = Vector3.ZERO,
 	analytic_floor_position: Vector3 = Vector3.ZERO,
-	starts_enabled: bool = true
+	starts_enabled: bool = true,
+	fixture_style: StringName = &"lamp"
 ) -> void:
 	var fixture: Node3D = Node3D.new()
 	fixture.name = node_name
 	fixture.position = Vector3(position_value.x, 0.0, position_value.z)
-	_add_fixture_visual(fixture, position_value.y, fixture_base_height)
+	if fixture_style == &"ceiling_disc":
+		_add_ceiling_fixture_visual(fixture, position_value.y)
+	else:
+		_add_fixture_visual(fixture, position_value.y, fixture_base_height)
 
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = "Light"
@@ -717,6 +756,29 @@ func _add_fixture_visual(
 	)
 
 
+func _add_ceiling_fixture_visual(
+	fixture: Node3D,
+	source_height: float
+) -> void:
+	var shade: MeshInstance3D = MeshInstance3D.new()
+	shade.name = "Shade"
+	shade.position = Vector3(0.0, source_height, 0.0)
+	shade.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var disc: CylinderMesh = CylinderMesh.new()
+	disc.top_radius = 0.36
+	disc.bottom_radius = 0.36
+	disc.height = 0.08
+	shade.mesh = disc
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.albedo_color = fixture_glow_color
+	material.roughness = 0.7
+	material.emission_enabled = true
+	material.emission = fixture_glow_color
+	material.emission_energy_multiplier = fixture_emission_energy
+	shade.material_override = material
+	fixture.add_child(shade)
+
+
 func _add_fixture_part(
 	parent: Node3D,
 	part_name: String,
@@ -755,7 +817,7 @@ func _add_area_glow(
 	glow.position = position_value
 	glow.rotation_degrees = rotation_degrees_value
 	glow.light_color = color
-	glow.light_energy = lamp_energy * energy_scale
+	glow.light_energy = area_light_energy * energy_scale
 	glow.shadow_enabled = false
 	add_child(glow)
 

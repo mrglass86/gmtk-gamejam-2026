@@ -859,8 +859,7 @@ func is_voice_pool_playing(pool_id: StringName) -> bool:
 
 
 func _get_door_hinge_position(door: DinnerDoor) -> Vector3:
-	var visual: Node3D = door.get_node_or_null(door.door_visual_path) as Node3D
-	return visual.global_position if visual != null else door.global_position
+	return door.get_hinge_global_position()
 
 
 func _select_pool_stream(pool_id: StringName) -> AudioStream:

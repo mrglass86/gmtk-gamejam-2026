@@ -71,6 +71,7 @@ var _programmatic_open_target: float = -1.0
 
 
 func _ready() -> void:
+	add_to_group("interactable")
 	_player = get_node_or_null(player_path) as DinnerPlayer
 	_snack = get_node_or_null(snack_path) as DinnerSnack
 	_door_visual = get_node_or_null(door_visual_path) as Node3D
@@ -184,11 +185,25 @@ func get_creak_volume_db() -> float:
 	)
 
 
+func get_hold_seconds_remaining(is_rushing: bool = false) -> float:
+	var duration: float = rush_open_duration if is_rushing else sneak_open_duration
+	return maxf((1.0 - openness) * duration, 0.0)
+
+
+func get_hinge_global_position() -> Vector3:
+	return (
+		_door_visual.global_position
+		if _door_visual != null
+		else global_position
+	)
+
+
 func _can_open() -> bool:
 	return (
 		openness < 1.0
 		and _is_player_in_range()
 		and not _player.input_locked
+		and _player.is_interaction_target(self)
 		and Input.is_action_pressed("interact")
 	)
 
@@ -217,10 +232,11 @@ func _emit_creak(openness_rate: float, delta: float) -> void:
 	_creak_elapsed = fmod(_creak_elapsed, creak_emit_interval)
 
 	var raw_loudness: float = openness_rate * creak_loudness_per_open_rate
-	var mask: float = clampf(NoiseSystem.get_mask_at(global_position), 0.0, 1.0)
+	var hinge_position: Vector3 = get_hinge_global_position()
+	var mask: float = clampf(NoiseSystem.get_mask_at(hinge_position), 0.0, 1.0)
 	var loudness: float = raw_loudness * (1.0 - mask)
 	if loudness > 0.0:
-		NoiseSystem.emit_noise(global_position, loudness, self)
+		NoiseSystem.emit_noise(hinge_position, loudness, self)
 
 
 func _register_fridge_light() -> void:

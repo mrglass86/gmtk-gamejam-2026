@@ -5,13 +5,17 @@ class_name DinnerInteractHUD
 ## their public openness value; instant switches intentionally never draw it.
 
 @export var player_path: NodePath = NodePath("../../Player")
-@export var prompt_offset: Vector2 = Vector2(0.0, -122.0)
+@export var prompt_offset: Vector2 = Vector2(0.0, -30.0)
+@export var world_anchor_height: float = 1.1
 @export var prompt_radius: float = 27.0
 
 var _player: DinnerPlayer
 var _nearest: Node3D
 var _show_progress: bool = false
 var _progress: float = 0.0
+var _seconds_remaining: float = 0.0
+var _prompt_center: Vector2
+var _has_screen_anchor: bool = false
 
 
 func _ready() -> void:
@@ -21,7 +25,11 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	_nearest = _find_nearest_interactable()
+	_nearest = (
+		_player.get_nearest_interactable()
+		if _player != null
+		else null
+	)
 	_show_progress = (
 		_nearest is DinnerDoor
 		and Input.is_action_pressed("interact")
@@ -31,14 +39,27 @@ func _process(_delta: float) -> void:
 		if _show_progress
 		else 0.0
 	)
-	visible = _nearest != null and _player != null and not _player.input_locked
+	_seconds_remaining = (
+		(_nearest as DinnerDoor).get_hold_seconds_remaining(
+			Input.is_action_pressed("run")
+		)
+		if _show_progress
+		else 0.0
+	)
+	_has_screen_anchor = _update_prompt_center()
+	visible = (
+		_nearest != null
+		and _player != null
+		and not _player.input_locked
+		and _has_screen_anchor
+	)
 	queue_redraw()
 
 
 func _draw() -> void:
 	if not visible:
 		return
-	var center: Vector2 = size * 0.5 + prompt_offset
+	var center: Vector2 = _prompt_center
 	draw_circle(center, prompt_radius, Color(0.035, 0.045, 0.065, 0.88))
 	draw_arc(
 		center,
@@ -72,22 +93,47 @@ func _draw() -> void:
 		25,
 		Color("#f0f3f8")
 	)
-
-
-func _find_nearest_interactable() -> Node3D:
-	if _player == null:
-		return null
-	var best: Node3D
-	var best_distance: float = INF
-	for candidate: Node in get_tree().get_nodes_in_group("interactable"):
-		if not candidate is Node3D:
-			continue
-		var interactable: Node3D = candidate as Node3D
-		var radius: float = float(interactable.get("interaction_radius"))
-		var distance: float = _player.global_position.distance_to(
-			interactable.global_position
+	if _show_progress:
+		var seconds_text: String = "%.1fs" % _seconds_remaining
+		var seconds_size: Vector2 = font.get_string_size(
+			seconds_text,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			19
 		)
-		if distance <= radius and distance < best_distance:
-			best = interactable
-			best_distance = distance
-	return best
+		draw_string(
+			font,
+			center + Vector2(-seconds_size.x * 0.5, prompt_radius + 27.0),
+			seconds_text,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			19,
+			Color("#f0f3f8")
+		)
+
+
+func get_current_interactable() -> Node3D:
+	return _nearest
+
+
+func get_prompt_center() -> Vector2:
+	return _prompt_center
+
+
+func get_seconds_remaining() -> float:
+	return _seconds_remaining
+
+
+func _update_prompt_center() -> bool:
+	if _nearest == null:
+		return false
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	if camera == null:
+		return false
+	var world_anchor: Vector3 = (
+		_nearest.global_position + Vector3.UP * world_anchor_height
+	)
+	if camera.is_position_behind(world_anchor):
+		return false
+	_prompt_center = camera.unproject_position(world_anchor) + prompt_offset
+	return true

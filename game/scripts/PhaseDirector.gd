@@ -59,6 +59,7 @@ func _physics_process(delta: float) -> void:
 
 func apply_phase(current_phase: int) -> void:
 	var clamped_phase: int = clampi(current_phase, 0, 4)
+	var bathroom_enabled: bool = _get_switch_state(&"bathroom", false)
 	var hall_door_enabled: bool = _get_switch_state(&"kid_hall", false)
 	LightSystem.set_zone_enabled("bedroom", true)
 	LightSystem.set_zone_enabled("bathroom", true)
@@ -75,9 +76,10 @@ func apply_phase(current_phase: int) -> void:
 	_set_level_node_visible("KitchenLampVisual", clamped_phase < 3)
 	_set_level_node_visible("MidLampVisual", clamped_phase < 4)
 	_set_level_node_visible("AlcoveLampVisual", clamped_phase < 4)
-	_set_level_node_visible("BathroomLampVisual", true)
-	# The kid-door hall practical is player/parent controlled and starts dark.
-	# It is not part of the countdown hall-zone sweep.
+	# These two practicals are switch controlled and are not part of the
+	# countdown zone sweep.
+	LightSystem.set_light_enabled("BathroomLampVisual", bathroom_enabled)
+	_set_level_node_visible("BathroomLampVisual", bathroom_enabled)
 	LightSystem.set_light_enabled("HallDoorLampVisual", hall_door_enabled)
 	_set_level_node_visible("HallDoorLampVisual", hall_door_enabled)
 	if _tv_glow != null and clamped_phase < 2:

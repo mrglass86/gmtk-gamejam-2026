@@ -13,7 +13,7 @@ const CLICK_STREAM: AudioStream = preload("res://audio/sfx/light_switch.ogg")
 @export var target_fixture_path: NodePath
 @export var starts_on: bool = true
 @export var interaction_radius: float = 1.45
-@export var click_loudness: float = 1.5
+@export var click_loudness: float = 0.8
 @export var click_volume_db: float = -5.0
 
 var is_on: bool = true
@@ -45,7 +45,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if _player == null or _player.input_locked:
 		return
-	if _player.global_position.distance_to(global_position) > interaction_radius:
+	if not _player.is_interaction_target(self):
 		return
 	set_state(not is_on, true)
 	get_viewport().set_input_as_handled()
