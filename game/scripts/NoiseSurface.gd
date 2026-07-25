@@ -49,6 +49,8 @@ func _build_surface() -> void:
 		elif surface_group == &"surface_toys":
 			if show_surface_visual:
 				_build_toy_shapes()
+			_add_toy_piece_collisions()
+			shape = null
 		else:
 			var box_mesh: BoxMesh = BoxMesh.new()
 			box_mesh.size = Vector3(
@@ -75,10 +77,46 @@ func _build_surface() -> void:
 		mesh_instance.position.y = surface_height * 0.5
 		add_child(mesh_instance)
 
-	var collision: CollisionShape3D = CollisionShape3D.new()
-	collision.shape = shape
-	collision.position.y = surface_height * 0.5
-	add_child(collision)
+	if shape != null:
+		var collision: CollisionShape3D = CollisionShape3D.new()
+		collision.shape = shape
+		collision.position.y = surface_height * 0.5
+		add_child(collision)
+
+
+## Tighter per-piece trap colliders (2026-07-25 fairness ruling): the squeak
+## fires on the pill, train, and block themselves — with a small grace margin
+## — not on the empty floor between them. Mirrors _build_toy_shapes layout.
+func _add_toy_piece_collisions() -> void:
+	var spread_x: float = maxf(surface_size.x, 1.8)
+	var spread_z: float = maxf(surface_size.y, 0.9)
+	var piece_boxes: Array[Dictionary] = [
+		{
+			"center": Vector2(-spread_x * 0.31, -spread_z * 0.2),
+			"size": Vector2(0.92, 0.62),
+		},
+		{
+			"center": Vector2(spread_x * 0.25, spread_z * 0.18),
+			"size": Vector2(1.25, 0.58),
+		},
+		{
+			"center": Vector2(0.0, -spread_z * 0.3),
+			"size": Vector2(0.64, 0.64),
+		},
+	]
+	for piece: Dictionary in piece_boxes:
+		var piece_center: Vector2 = piece["center"]
+		var piece_size: Vector2 = piece["size"]
+		var box_shape: BoxShape3D = BoxShape3D.new()
+		box_shape.size = Vector3(piece_size.x, surface_height, piece_size.y)
+		var collision: CollisionShape3D = CollisionShape3D.new()
+		collision.shape = box_shape
+		collision.position = Vector3(
+			piece_center.x,
+			surface_height * 0.5,
+			piece_center.y
+		)
+		add_child(collision)
 
 
 func _build_toy_shapes() -> void:

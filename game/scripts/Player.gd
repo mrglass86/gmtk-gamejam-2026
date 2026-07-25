@@ -69,7 +69,9 @@ const INTERACTION_TIE_EPSILON: float = 0.001
 @export_group("B19 Runtime Verification")
 @export var verify_b19_hardwood_position: Vector3 = Vector3(-11.1, 0.6, 3.95)
 @export var verify_b19_creaky_position: Vector3 = Vector3(6.2, 0.6, 0.0)
-@export var verify_b19_toys_position: Vector3 = Vector3(-2.6, 0.6, 2.4)
+## Starts inside ToyDining's train-piece collider so the sneak-walk sample
+## lands on a real toy under the per-piece trap colliders.
+@export var verify_b19_toys_position: Vector3 = Vector3(-2.55, 0.6, 2.65)
 @export var verify_b19_loudness_tolerance: float = 0.03
 @export var verify_b19_sample_timeout: float = 1.0
 
@@ -202,6 +204,8 @@ func get_nearest_interactable() -> Node3D:
 		)
 		if distance > radius:
 			continue
+		if not _has_interaction_sightline(interactable):
+			continue
 		var priority: int = 1 if interactable is DinnerDoor else 0
 		if (
 			distance < best_distance - INTERACTION_TIE_EPSILON
@@ -218,6 +222,38 @@ func get_nearest_interactable() -> Node3D:
 
 func is_interaction_target(candidate: Node3D) -> bool:
 	return candidate != null and get_nearest_interactable() == candidate
+
+
+## Interactions require a wall-free line: pressing E through a wall at a
+## switch mounted on its far face read as a bug (2026-07-25 playtest). The
+## flat ray stays under the 1.2 m walls; the target's own bodies are
+## excluded so a closed door remains reachable, and floor-detail overlays
+## live on layer 2 so they never block.
+func _has_interaction_sightline(interactable: Node3D) -> bool:
+	var ray_height: float = 0.95
+	var from_point: Vector3 = Vector3(
+		global_position.x,
+		ray_height,
+		global_position.z
+	)
+	var to_point: Vector3 = Vector3(
+		interactable.global_position.x,
+		ray_height,
+		interactable.global_position.z
+	)
+	var query: PhysicsRayQueryParameters3D = (
+		PhysicsRayQueryParameters3D.create(from_point, to_point, 1)
+	)
+	var exclusions: Array[RID] = [get_rid()]
+	for body_node: Node in interactable.find_children(
+		"*",
+		"CollisionObject3D",
+		true,
+		false
+	):
+		exclusions.append((body_node as CollisionObject3D).get_rid())
+	query.exclude = exclusions
+	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 
 
 func _apply_movement(delta: float) -> void:

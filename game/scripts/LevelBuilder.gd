@@ -155,14 +155,17 @@ func _build_props() -> void:
 
 
 func _build_lights() -> void:
+	# Floor lamp in the far west corner so nothing obstructs the nightstand
+	# clock — the countdown itself (2026-07-25 ruling). The analytic pool
+	# moves with it: the crib side of the bedroom reads darker now.
 	_add_omni(
 		"KidLampVisual",
 		"bedroom",
-		Vector3(-10.2, 1.12, -5.6),
+		Vector3(-14.35, 1.12, -5.85),
 		0.85,
-		0.70,
+		0.0,
 		-1.0,
-		Vector3(-10.8, 4.5, -3.8)
+		Vector3(-13.8, 4.5, -4.6)
 	)
 	_add_omni(
 		"LivingLampVisual",

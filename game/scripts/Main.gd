@@ -121,7 +121,7 @@ func _verify_input_map() -> void:
 
 
 func _verify_light_system() -> void:
-	var bedroom_anchor: Vector3 = Vector3(-10.2, 0.0, -5.6)
+	var bedroom_anchor: Vector3 = Vector3(-14.35, 0.0, -5.85)
 	assert(is_equal_approx(LightSystem.get_brightness_at(bedroom_anchor), 1.0))
 	assert(is_zero_approx(LightSystem.get_brightness_at(Vector3(-30.0, 0.0, 0.0))))
 
@@ -298,9 +298,16 @@ func _verify_a41_playtest_fixes() -> void:
 		var hazard: NoiseSurface = get_node("Level/%s" % hazard_name) as NoiseSurface
 		assert(hazard.surface_height <= 0.03, "%s is too tall to walk over." % hazard_name)
 		var collisions: Array[Node] = hazard.find_children("*", "CollisionShape3D", true, false)
-		assert(collisions.size() == 1, "%s needs exactly one overlay collider." % hazard_name)
-		var collision: CollisionShape3D = collisions[0] as CollisionShape3D
-		assert(collision.position.y >= 0.0, "%s collision is not floor-flush." % hazard_name)
+		var expected_colliders: int = (
+			3 if hazard.is_in_group(&"surface_toys") else 1
+		)
+		assert(
+			collisions.size() == expected_colliders,
+			"%s has the wrong overlay collider count." % hazard_name
+		)
+		for collision_node: Node in collisions:
+			var collision: CollisionShape3D = collision_node as CollisionShape3D
+			assert(collision.position.y >= 0.0, "%s collision is not floor-flush." % hazard_name)
 
 	var bathroom_door: DinnerDoor = get_node(
 		"Level/BathroomDoor"
@@ -1058,14 +1065,17 @@ func _verify_a24_silent_switches_and_toy_piles() -> void:
 			true,
 			false
 		)
-		assert(collisions.size() == 1)
-		var overlay_shape: BoxShape3D = (
-			(collisions[0] as CollisionShape3D).shape as BoxShape3D
-		)
-		assert(overlay_shape != null)
-		assert(is_equal_approx(overlay_shape.size.x, toy.surface_size.x))
-		assert(is_equal_approx(overlay_shape.size.y, toy.surface_height))
-		assert(is_equal_approx(overlay_shape.size.z, toy.surface_size.y))
+		# Per-piece trap colliders (2026-07-25 fairness ruling): pill, train,
+		# and block each carry a tight box; no blanket collider remains.
+		assert(collisions.size() == 3)
+		for collision_node: Node in collisions:
+			var piece_shape: BoxShape3D = (
+				(collision_node as CollisionShape3D).shape as BoxShape3D
+			)
+			assert(piece_shape != null)
+			assert(is_equal_approx(piece_shape.size.y, toy.surface_height))
+			assert(piece_shape.size.x < toy.surface_size.x)
+			assert(piece_shape.size.z < toy.surface_size.y)
 		assert(toy.get_node("ToyPill") is MeshInstance3D)
 		assert(toy.get_node("ToyBlock") is MeshInstance3D)
 		var train: Node3D = toy.get_node("ToyTrain") as Node3D
@@ -1345,7 +1355,7 @@ func _verify_a9_practical_lighting() -> void:
 	var capsule_material: StandardMaterial3D = player.get(
 		"_capsule_material"
 	) as StandardMaterial3D
-	player.global_position = Vector3(-10.2, 0.6, -5.6)
+	player.global_position = Vector3(-14.35, 0.6, -5.85)
 	player.call("_update_capsule_readout")
 	var lit_brightness: float = LightSystem.get_brightness_at(
 		player.global_position
@@ -2068,9 +2078,10 @@ func _verify_a16_world_pack() -> void:
 	for toy_name: String in ["ToyHallRug", "ToyDining", "ToyCarpet"]:
 		var toy: NoiseSurface = level.get_node(toy_name) as NoiseSurface
 		assert(toy.surface_height <= 0.03)
+		# Per-piece trap colliders (2026-07-25 fairness ruling).
 		assert(
 			toy.find_children("*", "CollisionShape3D", true, false).size()
-			== 1
+			== 3
 		)
 		assert(
 			toy.find_children("*", "MeshInstance3D", true, false).size()
@@ -2687,32 +2698,10 @@ func _verify_a19_geometry_audit() -> void:
 		) as MeshInstance3D
 		assert(toggle.position.normalized().dot(normal) > 0.99)
 
-	var fixture_rows: Array[Dictionary] = [
-		{"fixture": "KidLampVisual", "support": "Nightstand"},
-	]
-	for fixture_row: Dictionary in fixture_rows:
-		var fixture: Node3D = level.get_node(
-			fixture_row["fixture"]
-		) as Node3D
-		var base: MeshInstance3D = fixture.get_node("Base") as MeshInstance3D
-		var base_bounds: AABB = base.global_transform * base.get_aabb()
-		var support: Node3D = level.get_node(
-			fixture_row["support"]
-		) as Node3D
-		var support_bounds: AABB
-		if fixture_row.has("surface"):
-			var surface: MeshInstance3D = support.get_node(
-				fixture_row["surface"]
-			) as MeshInstance3D
-			support_bounds = surface.global_transform * surface.get_aabb()
-		else:
-			support_bounds = _visible_mesh_world_aabb(support)
-		assert(
-			absf(base_bounds.position.y - support_bounds.end.y) < 0.01,
-			"%s does not sit on %s."
-			% [fixture_row["fixture"], fixture_row["support"]]
-		)
+	# The kid lamp stands on the floor in the far corner so nothing obstructs
+	# the nightstand clock — the countdown itself (2026-07-25 ruling).
 	for floor_fixture_name: String in [
+		"KidLampVisual",
 		"LivingLampVisual",
 	]:
 		var floor_base: MeshInstance3D = level.get_node(
@@ -2763,19 +2752,21 @@ func _verify_a19_geometry_audit() -> void:
 	}
 	for hazard_name: String in hazard_support_tops:
 		var hazard: NoiseSurface = level.get_node(hazard_name) as NoiseSurface
-		var hazard_collision: CollisionShape3D = hazard.find_children(
+		for hazard_shape: Node in hazard.find_children(
 			"*",
 			"CollisionShape3D",
 			true,
 			false
-		)[0] as CollisionShape3D
-		var hazard_bounds: AABB = _collision_world_aabb(hazard_collision)
-		assert(
-			is_equal_approx(
-				hazard_bounds.position.y,
-				float(hazard_support_tops[hazard_name])
+		):
+			var hazard_bounds: AABB = _collision_world_aabb(
+				hazard_shape as CollisionShape3D
 			)
-		)
+			assert(
+				is_equal_approx(
+					hazard_bounds.position.y,
+					float(hazard_support_tops[hazard_name])
+				)
+			)
 
 	var navigation_region: NavigationRegion3D = (
 		$Level/NavigationRegion3D as NavigationRegion3D

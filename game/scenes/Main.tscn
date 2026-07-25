@@ -353,9 +353,9 @@ script = ExtResource("17_snack_visual")
 position = Vector3(-10.2, 1.0, -5.6)
 modulate = Color(0.95, 0.08, 0.08, 1)
 outline_modulate = Color(0.08, 0.01, 0.01, 1)
-font_size = 48
-outline_size = 8
-pixel_size = 0.008
+font_size = 64
+outline_size = 10
+pixel_size = 0.01
 billboard = 1
 no_depth_test = true
 text = "5:00"
@@ -458,6 +458,21 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("18_interact_hud")
+
+[node name="ControlsHint" type="Label" parent="GameFlow"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -46.0
+offset_bottom = -14.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.5, 0.57, 0.68, 0.66)
+theme_override_font_sizes/font_size = 17
+text = "WASD / ARROWS  SNEAK      HOLD SHIFT  RUN      HOLD E  OPEN      R  RESTART"
+horizontal_alignment = 1
+mouse_filter = 2
 
 [node name="TitleCard" type="Control" parent="GameFlow"]
 layout_mode = 3

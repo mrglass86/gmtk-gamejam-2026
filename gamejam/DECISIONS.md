@@ -1316,3 +1316,69 @@ Record decisions another session or tool would otherwise have to rediscover.
   G), or the inspector should also show pet/parent perception radii.
 - **Evidence / handoff:** DebugTools.gd KEY_B branch and wireframe
   builders; Door.gd `_add_fridge_handle`.
+
+## 2026-07-25 — Paper stop-motion filter, margin controls, big clock, corner lamp
+
+- **Decision:** Four director calls after the dither audition.
+  1. The G filter becomes construction-paper stop-motion instead of Bayer
+     dither: soft posterise (flat paper tones), fine paper-fibre grain, a
+     coarse cutout wobble, and a slight exposure flicker — grain, wobble,
+     and exposure all re-randomise at `boil_fps` (8) so the frame boils
+     like hand-photographed cutouts. Same shader file, same G toggle,
+     still default off pending the director's verdict.
+  2. A persistent controls hint sits in the bottom screen margin during
+     play (WASD sneak, hold Shift run, hold E open, R restart); the title
+     and result cards draw over it.
+  3. The nightstand clock scales up (font 48 to 64, pixel size 0.008 to
+     0.01) — the countdown must read at a glance.
+  4. The kid lamp leaves the nightstand for the far west floor corner so
+     nothing obstructs the clock. Its analytic pool moves with it: the
+     crib side of the bedroom is darker now (safer return leg), the west
+     corner is lit. a1/a9/a19 expectations updated to the new anchor and
+     floor-lamp form.
+- **Why:** The Bayer look read as pixel-retro, not the construction-paper
+  fiction; first-time players need controls without re-reading the title
+  card; and the clock is the theme — nothing may sit in front of it.
+- **Rejected / cut:** Keeping the dither as a second toggle (one look,
+  one verdict); a HUD clock duplicate (the diegetic nightstand clock is
+  the countdown).
+- **Owner:** Noah (director), Claude (implementation), operator
+  (verifies).
+- **Revisit when:** The boil reads as noise on the itch embed, the darker
+  crib corner changes catch/return balance in playtest, or the director
+  rules on the filter default.
+- **Evidence / handoff:** `shaders/retro_dither.gdshader` (paper-boil
+  rework), Main.tscn ControlsHint + NightstandClock scale, LevelBuilder
+  KidLampVisual corner move, Main.gd a1/a9/a19 expectation updates.
+
+## 2026-07-25 — Sightline interactions, red world wireframes, fair toy hitboxes
+
+- **Decision:** Three rulings from the director's in-editor inspector pass.
+  1. Interactions require a wall-free flat sightline (0.95 m, under the
+     1.2 m walls): pressing E at a switch mounted on the far face of a
+     wall no longer works, and the HUD prompt hides with it. The target's
+     own bodies are excluded so closed doors remain grabbable;
+     floor-detail overlays (layer 2) never block.
+  2. The B inspector adds RED wireframes for world collision — walls,
+     furniture, crib, props — alongside the green gameplay set (traps,
+     blockers, win volume, interaction radii). Floors stay undrawn.
+  3. Toy piles trade their 2.6 x 1.4 blanket collider for three tight
+     per-piece boxes (pill 0.92 x 0.62, train 1.25 x 0.58, block
+     0.64 x 0.64, small grace margins): walking between the toys is now
+     honestly silent. a24/a41/a19 expectations updated (3 colliders per
+     pile, all floor-flush); b19's toy sample moves inside the train
+     piece.
+- **Why:** The through-wall flip read as a bug on sight; trap fairness
+  must match the visible pieces now that placement is tuned with the
+  inspector.
+- **Rejected / cut:** Per-piece separate bodies (one body, three shapes —
+  surface detection is body-group based); drawing floor slabs in red
+  (blankets the view).
+- **Owner:** Noah (director), Claude (implementation), operator
+  (verifies).
+- **Revisit when:** A legitimate interaction spot reads as blocked (ray
+  height or furniture exclusions may need tuning), or piece margins feel
+  stingy in play.
+- **Evidence / handoff:** Player.gd `_has_interaction_sightline` + b19
+  toy-sample export, NoiseSurface.gd `_add_toy_piece_collisions`,
+  DebugTools.gd red world pass, Main.gd a24/a41/a19 updates.

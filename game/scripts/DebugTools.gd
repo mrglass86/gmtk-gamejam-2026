@@ -387,6 +387,36 @@ func _toggle_collision_debug() -> void:
 	instance.material_override = line_material
 	_collision_debug_root.add_child(instance)
 
+	# World collision (walls, furniture, props) draws in red so wrong-side
+	# interactions and blocked routes are inspectable (2026-07-25).
+	var world_lines: ImmediateMesh = ImmediateMesh.new()
+	world_lines.surface_begin(Mesh.PRIMITIVE_LINES)
+	for candidate: Node in get_tree().get_nodes_in_group("nav_source"):
+		if candidate is NoiseSurface:
+			continue
+		var static_body: StaticBody3D = candidate as StaticBody3D
+		if static_body == null:
+			continue
+		if _is_floor_surface_body(static_body):
+			continue
+		_append_collision_shapes(world_lines, static_body)
+	world_lines.surface_end()
+	var world_instance: MeshInstance3D = MeshInstance3D.new()
+	world_instance.mesh = world_lines
+	var world_material: StandardMaterial3D = StandardMaterial3D.new()
+	world_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	world_material.albedo_color = Color(0.95, 0.32, 0.25)
+	world_material.no_depth_test = true
+	world_instance.material_override = world_material
+	_collision_debug_root.add_child(world_instance)
+
+
+func _is_floor_surface_body(body: StaticBody3D) -> bool:
+	for group: StringName in body.get_groups():
+		if String(group).begins_with("surface_"):
+			return true
+	return false
+
 
 func _append_collision_shapes(lines: ImmediateMesh, root: Node3D) -> void:
 	for shape_node: Node in root.find_children(
