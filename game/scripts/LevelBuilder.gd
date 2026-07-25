@@ -154,6 +154,7 @@ func _build_props() -> void:
 	_add_visual_prop("FrontDoor", Vector3(8.0, 0.6, 6.2), Vector3(2.4, 1.2, 0.15), Color("#62615c"))
 	_add_visual_prop("DoorMat", Vector3(8.0, 0.01, 5.85), Vector3(1.6, 0.02, 0.9), carpet_color)
 	_add_front_door_side_table()
+	_add_pantry_shelf()
 
 
 func _build_lights() -> void:
@@ -763,6 +764,89 @@ func _add_front_door_side_table() -> void:
 			)
 	_add_visual_bounds_box_collision(table)
 	add_child(table)
+
+
+func _add_pantry_shelf() -> void:
+	# Pantry dressing (2026-07-25 director request): a purely visual snack
+	# shelf against the alcove's back (south) wall so the room reads as a
+	# pantry when the door swings open. MeshInstance3D + BoxMesh only — no
+	# collision and no nav_source membership — so the pinned static navmesh
+	# bake is untouched. The door panel sweeps a 3.56 m quarter-disc from its
+	# hinge at (11.325, 2.2); the nearest shelf corner sits 3.72 m out.
+	var shelf: Node3D = Node3D.new()
+	shelf.name = "PantryShelfUnit"
+	shelf.position = Vector3(13.1, 0.0, 6.09)
+	_add_box_visual_part(
+		shelf,
+		"PantryShelfUprightWest",
+		Vector3(-1.63, 0.83, 0.0),
+		Vector3(0.08, 1.66, 0.34),
+		prop_color
+	)
+	_add_box_visual_part(
+		shelf,
+		"PantryShelfUprightEast",
+		Vector3(1.63, 0.83, 0.0),
+		Vector3(0.08, 1.66, 0.34),
+		prop_color
+	)
+	_add_box_visual_part(
+		shelf,
+		"PantryShelfBoardLow",
+		Vector3(0.0, 0.9, 0.0),
+		Vector3(3.18, 0.07, 0.34),
+		hardwood_color
+	)
+	_add_box_visual_part(
+		shelf,
+		"PantryShelfBoardHigh",
+		Vector3(0.0, 1.5, 0.0),
+		Vector3(3.18, 0.07, 0.34),
+		hardwood_color
+	)
+	# Exactly one bag wears the snack-identity orange (the pantry chips ARE
+	# that snack); the rest stay in the desaturated paper-bag neutrals.
+	var bag_specs: Array[Dictionary] = [
+		{
+			"name": "PantryShelfBagOrange",
+			"position": Vector3(-0.8, 1.145, -0.02),
+			"size": Vector3(0.34, 0.42, 0.16),
+			"yaw_degrees": 8.0,
+			"color": Color(0.95, 0.6, 0.27),
+		},
+		{
+			"name": "PantryShelfBagGrey",
+			"position": Vector3(-0.05, 1.115, 0.01),
+			"size": Vector3(0.3, 0.36, 0.15),
+			"yaw_degrees": -11.0,
+			"color": creaky_color,
+		},
+		{
+			"name": "PantryShelfBoxTan",
+			"position": Vector3(0.9, 1.185, -0.01),
+			"size": Vector3(0.4, 0.5, 0.2),
+			"yaw_degrees": 5.0,
+			"color": Color("#9b948b"),
+		},
+		{
+			"name": "PantryShelfBagPale",
+			"position": Vector3(-0.3, 1.725, 0.0),
+			"size": Vector3(0.32, 0.38, 0.16),
+			"yaw_degrees": -7.0,
+			"color": toy_color,
+		},
+	]
+	for bag_spec: Dictionary in bag_specs:
+		var bag: MeshInstance3D = MeshInstance3D.new()
+		bag.name = bag_spec["name"] as String
+		bag.position = bag_spec["position"] as Vector3
+		bag.rotation_degrees.y = float(bag_spec["yaw_degrees"])
+		var bag_mesh: BoxMesh = BoxMesh.new()
+		bag_mesh.size = bag_spec["size"] as Vector3
+		bag.mesh = bag_mesh
+		bag.material_override = _make_material(bag_spec["color"] as Color)
+		shelf.add_child(bag)
+	add_child(shelf)
 
 
 func _add_toilet() -> void:

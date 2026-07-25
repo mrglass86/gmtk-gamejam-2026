@@ -1455,3 +1455,122 @@ Record decisions another session or tool would otherwise have to rediscover.
   `MenuPaperLayer.gd`, Main.tscn TitleCard/ResultCard wiring. NOTE: new
   textures need one editor focus or export run to import before headless
   gates load the scene.
+
+## 2026-07-25 — Endgame lane split: Codex returns as tooling and lane C
+
+- **Decision:** For the final stretch, code lanes A and B are consolidated
+  under Claude and its engineer subagent (all gameplay/scene/audio-wiring
+  edits, carrying the verify-gate and expectation-edit context). Codex,
+  back online early, takes (1) shell tooling/pipeline jobs — rembg menu-art
+  cleanup and ffmpeg audio clip extraction, both delivered — and (2)
+  lane C validation: real-Chrome end-to-end playtests of the exported
+  build (Claude's browser pane throttles frames between interactions, so
+  Codex's live Chrome is the only full-session watcher) and itch page
+  asset prep (cover/banner crops from IMG_7110). Codex does not edit
+  gameplay files or commit; findings route through the director.
+- **Why:** Hours from submission, split by tool strengths: Codex has the
+  shell and a real browser; Claude's side holds the verify-suite context.
+  Collision risk drops to zero by construction.
+- **Rejected / cut:** Returning Codex to code lanes mid-stretch (would
+  re-learn the gate discipline the expensive way).
+- **Owner:** Noah (director), Claude (code lanes), Codex (tooling +
+  lane C).
+- **Revisit when:** The jam ends, or a Codex finding needs a code fix
+  (routes to Claude's engineer as usual).
+- **Evidence / handoff:** Codex reports in the director's session; the
+  cleaned art in `art/menu/keyed/` and clips in
+  `audio/family/toys/clips/`.
+
+## 2026-07-25 — Menu masks via Photoshop; Cabin Sketch replaces Schoolbell
+
+- **Decision:** The four snack/crayon prop images are masked by Photoshop
+  Select Subject, driven by Codex over computer use — the fourth and final
+  masking approach after the runtime shader key, the GDScript baker, and
+  rembg all failed on them. Second Codex pass delivered tight content
+  crops (goldfish 577×497, gummies 636×533, animal crackers 803×552,
+  crayons 1143×617, each with a 14 px transparent margin) overwriting
+  `art/menu/keyed/`. The three construction-paper sheets keep the
+  GDScript-baker output, which worked for them. UI font: the Schoolbell
+  download failed twice, so Codex substituted Cabin Sketch (OFL,
+  sketchier crayon look) — `fonts/CabinSketch-Regular.ttf` +
+  `CabinSketch-OFL.txt`. Wired as a shared `Theme` (default size 20) on
+  TitleCard, ResultCard, ControlsHint, and InteractHUD; the
+  NightstandClock keeps its blocky digits deliberately (it is a digital
+  clock). The OFL file ships beside the font and the itch page must carry
+  the credit line.
+- **Why:** Colorful edge junk defeats luminance/saturation keying;
+  Photoshop's subject model is the strongest mask on hand. Cabin Sketch
+  arguably fits construction paper better than Schoolbell anyway.
+- **Rejected / cut:** Runtime white-key shader on the props (dim iPhone
+  whites), rembg output (director: "really bad"), retrying the Schoolbell
+  download.
+- **Owner:** Codex (masks, font fetch), Claude (wiring), Noah (F5
+  verdict).
+- **Revisit when:** F5 shows the font misreading at its per-card sizes, or
+  the director wants the neater Schoolbell handwriting after all (one
+  path swap in the Theme).
+- **Evidence / handoff:** `art/menu/keyed/IMG_71{12,13,16,19}.png`,
+  `fonts/CabinSketch-Regular.ttf`, Main.tscn `Theme_handwritten`
+  sub-resource. New PNGs/TTF still need one editor focus before headless
+  gates run.
+
+## 2026-07-25 — Menu type spec, mask ownership, and cluster layout (UX audit)
+
+- **Decision:** Per the art-ux-partner audit: (1) Photoshop Select Subject
+  owns ALL seven menu masks — the three papers had surviving contact
+  shadows/table margins from the luminance baker (which also skewed their
+  crops so the stack never registered), and the crackers + crayons files
+  on disk turned out fully unmasked; all five go back through the Codex
+  Photoshop pass (uniform tight crop, consistent paper scale, 1–2 px
+  defringe). The baker's `SOURCES` list is emptied so a stray re-run
+  can't overwrite masks. (2) Cabin Sketch reads ~15–20% small: floor
+  19 px, sizes lifted across the board (Theme default 22; Eyebrow 22 with
+  brighter slate; Title 52 + soft shadow; Objective 24; Controls 22;
+  StartPrompt 28 + shadow; ResultHeading 48; ResultDetail 23;
+  RestartPrompt 26; in-play ControlsHint 20 with alpha .85 + shadow). On
+  photographed paper use soft shadows, never outlines (outlines clog the
+  double-stroke hatching). (3) The in-world InteractHUD prompt stays
+  neutral sans (ThemeDB fallback) for glanceability — deliberate, not a
+  wiring gap. (4) Clusters were part-offscreen at 1280×720: goldfish
+  (1230,170)→(890,110), gummies (1080,620)→(860,480), crackers
+  (310,500)→(150,430); paper stack offsets now reveal black+red on more
+  edges (black −6,−26 / red 14,−12 / blue −10,8). Crayons stay at
+  (250,130); labels draw above clusters by canvas order, so the title
+  reads over them.
+- **Why:** Director: "weird masking on the construction paper" + "font
+  size doesn't look right." Audit confirmed both and found the two
+  unmasked props.
+- **Rejected / cut:** Retuning the space-aligned Controls columns (the a6
+  gate asserts that label's text; zigzag accepted for the jam), outlines
+  on paper text, re-parameterising the baker (can't despill and risks
+  the red paper's scribbles).
+- **Owner:** Noah (director), Claude (scene edits), Codex (five re-masks).
+- **Revisit when:** F5 after the re-masks; or the heading overflows on a
+  longer runtime result string.
+- **Evidence / handoff:** Audit report in the director's session;
+  Main.tscn GameFlow block; `process_menu_art.gd` retired header.
+
+## 2026-07-25 — Pantry readability: visual-only shelf dressing
+
+- **Decision:** The pantry gets an identity the way the fridge got its
+  handle: a shelf unit with snack bags inside the alcove, visible when
+  the door swings. Implementation rule: pantry dressing is PURELY visual
+  — group-less MeshInstance3D/Node3D, BoxMesh only, zero colliders — so
+  the navmesh bake (nav_source group; pinned 164 polygons) and every
+  mesh-sweep gate stay untouched. Exactly one saturated item: an orange
+  bag matching SnackMaterial (0.95, 0.6, 0.27), non-emissive so the real
+  pickup glow still wins; boards/uprights/other bags in the warm neutral
+  palette. Door-clearance rule recorded in the helper: keep pantry props
+  ≥3.6 m from the hinge at (11.325, 2.2) (panel sweep 3.56 m).
+- **Why:** Playtesters could read the fridge but not the pantry; bags on
+  a shelf are the cheapest possible "this is where food lives" signal,
+  and the orange bag doubles as a snack-color teach.
+- **Rejected / cut:** Broader kitchen-primitive remodel (submission is
+  tomorrow); colliders on the shelf (navmesh pin); any cylinder shapes
+  (disc-absence sweeps).
+- **Owner:** Claude engineer (build), Noah (eyeball).
+- **Revisit when:** The door clips the shelf in play, or the shelf pokes
+  through the south wall from the play camera.
+- **Evidence / handoff:** `LevelBuilder.gd` `_add_pantry_shelf()` (called
+  from `_build_props()`), nodes prefixed `PantryShelf*` under
+  `PantryShelfUnit` at (13.1, 0, 6.09).

@@ -6,15 +6,10 @@ extends SceneTree
 ## writes alpha PNGs to art/menu/keyed/. Run once:
 ##   godot --headless --path . --script res://art/menu/process_menu_art.gd
 
-const SOURCES: PackedStringArray = [
-	"IMG_7103",
-	"IMG_7104",
-	"IMG_7105",
-	"IMG_7112",
-	"IMG_7113",
-	"IMG_7116",
-	"IMG_7119",
-]
+## RETIRED 2026-07-25: all seven menu images are now masked by the
+## Photoshop Select Subject pipeline (Codex) and live in art/menu/keyed/.
+## Kept empty so a stray re-run can never overwrite those masks again.
+const SOURCES: PackedStringArray = []
 const SATURATION_GUARD: float = 0.13
 const FEATHER: float = 0.05
 ## Deep drop below the brightest corner so vignette-dimmed table still keys;
