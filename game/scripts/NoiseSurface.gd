@@ -10,6 +10,10 @@ class_name NoiseSurface
 @export_range(0.005, 0.03, 0.005) var surface_height: float = 0.02
 @export var surface_group: StringName = &"surface_creaky"
 @export var surface_color: Color = Color("#9BA0A5")
+## Off = build no overlay visual and let the floor beneath show through. Used
+## to hide wood-sitting creaky boards inside the continuous plank floor
+## (director ruling 2026-07-24); the rug CreakTeacher stays visible.
+@export var show_surface_visual: bool = true
 
 @export_group("Creaky Planks")
 @export_range(2, 3, 1) var creaky_plank_count: int = 3
@@ -33,9 +37,11 @@ func _build_surface() -> void:
 		box_shape.size = Vector3(surface_size.x, surface_height, surface_size.y)
 		shape = box_shape
 		if surface_group == &"surface_creaky":
-			_build_creaky_planks()
+			if show_surface_visual:
+				_build_creaky_planks()
 		elif surface_group == &"surface_toys":
-			_build_toy_shapes()
+			if show_surface_visual:
+				_build_toy_shapes()
 		else:
 			var box_mesh: BoxMesh = BoxMesh.new()
 			box_mesh.size = Vector3(
@@ -55,7 +61,7 @@ func _build_surface() -> void:
 		cylinder_shape.radius = radius
 		cylinder_shape.height = surface_height
 		shape = cylinder_shape
-	if mesh != null:
+	if mesh != null and show_surface_visual:
 		var mesh_instance: MeshInstance3D = MeshInstance3D.new()
 		mesh_instance.mesh = mesh
 		mesh_instance.material_override = _make_surface_material(surface_color)

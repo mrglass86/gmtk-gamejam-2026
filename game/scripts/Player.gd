@@ -23,6 +23,11 @@ const INTERACTION_TIE_EPSILON: float = 0.001
 @export var hardwood_surface_multiplier: float = 1.0
 @export var creaky_surface_multiplier: float = 3.0
 @export var toys_surface_multiplier: float = 4.0
+## Trap surfaces fire at full volume no matter how carefully they are stepped
+## on (2026-07-24 ruling). Both floors sit above Parent's 3.0 stomp-summon
+## threshold; carpet and hardwood keep their gait scaling.
+@export var creaky_trap_floor: float = 3.2
+@export var toys_trap_floor: float = 4.0
 @export_range(0.0, 1.0) var floor_normal_min_y: float = 0.5
 
 @export_group("Movement Texture")
@@ -84,6 +89,7 @@ var _idle_giggle_emitting: bool = false
 var _idle_giggle_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _game_flow: DinnerGameFlow
 var _current_surface_multiplier: float = 1.0
+var _current_surface_kind: StringName = &"hardwood"
 var _capsule_mesh: MeshInstance3D
 var _capsule_material: StandardMaterial3D
 var _capsule_base_position: Vector3
@@ -269,7 +275,10 @@ func _emit_footsteps(delta: float) -> void:
 
 	_footstep_elapsed = fmod(_footstep_elapsed, interval)
 	_step_cycle_has_landed = true
-	var raw_loudness: float = noise_multiplier * _current_surface_multiplier
+	var raw_loudness: float = maxf(
+		noise_multiplier * _current_surface_multiplier,
+		_get_trap_loudness_floor()
+	)
 	_emit_masked_noise(raw_loudness)
 
 
@@ -407,6 +416,7 @@ func _emit_masked_noise(raw_loudness: float) -> void:
 
 func _update_surface_multiplier() -> void:
 	_current_surface_multiplier = hardwood_surface_multiplier
+	_current_surface_kind = &"hardwood"
 	var collision_count: int = get_slide_collision_count()
 	for collision_index in range(collision_count):
 		var collision: KinematicCollision3D = get_slide_collision(collision_index)
@@ -421,14 +431,27 @@ func _update_surface_multiplier() -> void:
 
 func _get_surface_multiplier(collider: Node) -> float:
 	if collider.is_in_group("surface_toys"):
+		_current_surface_kind = &"toys"
 		return toys_surface_multiplier
 	if collider.is_in_group("surface_creaky"):
+		_current_surface_kind = &"creaky"
 		return creaky_surface_multiplier
 	if collider.is_in_group("surface_carpet"):
+		_current_surface_kind = &"carpet"
 		return carpet_surface_multiplier
+	_current_surface_kind = &"hardwood"
 	if collider.is_in_group("surface_hardwood"):
 		return hardwood_surface_multiplier
 	return hardwood_surface_multiplier
+
+
+func _get_trap_loudness_floor() -> float:
+	match _current_surface_kind:
+		&"toys":
+			return toys_trap_floor
+		&"creaky":
+			return creaky_trap_floor
+	return 0.0
 
 
 func _setup_capsule_material() -> void:
@@ -806,8 +829,8 @@ func _run_b19_live_verification() -> void:
 	var run_loudness: float = float(run_sample.get("loudness", -1.0))
 	var values_correct: bool = (
 		absf(hardwood_loudness - 0.2) <= verify_b19_loudness_tolerance
-		and absf(creaky_loudness - 0.6) <= verify_b19_loudness_tolerance
-		and absf(toys_loudness - 0.8) <= verify_b19_loudness_tolerance
+		and absf(creaky_loudness - creaky_trap_floor) <= verify_b19_loudness_tolerance
+		and absf(toys_loudness - toys_trap_floor) <= verify_b19_loudness_tolerance
 		and absf(run_loudness - 1.2) <= verify_b19_loudness_tolerance
 	)
 	var surfaces_correct: bool = (
@@ -885,7 +908,7 @@ func _run_b19_live_verification() -> void:
 	get_tree().quit(0 if verification_passed else 1)
 	assert(
 		values_correct and surfaces_correct,
-		"B19 live footsteps did not preserve the 0.2/0.6/0.8/1.2 profile."
+		"B19 live footsteps did not preserve the 0.2/3.2/4.0/1.2 profile."
 	)
 	assert(
 		indicator_gate_correct,

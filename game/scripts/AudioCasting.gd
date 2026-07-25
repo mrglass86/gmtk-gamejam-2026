@@ -255,7 +255,15 @@ const POOLS: Dictionary = {
 	},
 	&"door_creak_fast": {
 		"streams": [
+			preload("res://audio/original/foley/door_creak_fast_01.ogg"),
+			preload("res://audio/original/foley/door_creak_fast_02.ogg"),
 			preload("res://audio/denoised/foley/door_creak_fast_03.ogg"),
+			preload("res://audio/original/foley/door_creak_fast_04.ogg"),
+			preload("res://audio/original/foley/door_creak_fast_05.ogg"),
+			preload("res://audio/original/foley/door_creak_fast_06.ogg"),
+			preload("res://audio/original/foley/door_creak_fast_07.ogg"),
+			preload("res://audio/original/foley/door_creak_fast_08.ogg"),
+			preload("res://audio/original/foley/door_creak_fast_09.ogg"),
 		],
 		"fallback": preload("res://audio/sfx/door_creak.ogg"),
 		"channel": &"door_creak",
@@ -263,6 +271,9 @@ const POOLS: Dictionary = {
 	},
 	&"door_creak_slow": {
 		"streams": [
+			preload("res://audio/original/foley/door_creak_slow_01.ogg"),
+			preload("res://audio/original/foley/door_creak_slow_02.ogg"),
+			preload("res://audio/original/foley/door_creak_slow_03.ogg"),
 			preload("res://audio/denoised/foley/door_creak_slow_04.ogg"),
 		],
 		"fallback": preload("res://audio/sfx/door_creak.ogg"),
@@ -420,14 +431,13 @@ const EVENTS: Dictionary = {
 	&"win": {
 		"group": &"result",
 		"steps": [
-			{"pool": &"win_sting", "delay_ms": 0},
 			{"pool": &"win_mmm", "delay_ms": 0},
 			{"pool": &"fun_giggle", "delay_ms": 1050, "priority": 4},
 		],
 	},
 	&"lose": {
 		"group": &"result",
-		"steps": [{"pool": &"caught_sting", "delay_ms": 0}],
+		"steps": [{"pool": &"deposit_sniffle", "delay_ms": 0}],
 	},
 	&"wrapper_noise": {
 		"group": &"wrapper",

@@ -184,7 +184,11 @@ enum State {
 @export var glance_random_seed: int = 260724
 
 @export_group("Vision")
-@export var vision_range: float = 7.0
+# A16 merged the living and dining rooms into one open space wider than 7 m, so
+# a brightly-lit player across that room fell outside sight range. 9.5 m lets the
+# parent see across it when it IS looking; the cone angle, brightness gate, and
+# line-of-sight checks below are unchanged, so this only extends reach.
+@export var vision_range: float = 9.5
 @export var routine_cone_angle_degrees: float = 60.0
 @export var investigate_cone_angle_degrees: float = 35.0
 @export var found_cone_angle_degrees: float = 90.0
@@ -266,7 +270,14 @@ enum State {
 
 @export_group("Light Expectations")
 @export var light_anomaly_scan_interval: float = 0.2
-@export var light_change_memory_duration: float = 2.0
+# A remembered off-schedule light change now persists until the parent's cone
+# crosses the changed zone (it investigates) or the zone returns to its
+# phase-expected state (it is forgotten). This long timeout is only a safety
+# backstop, not the 2 s window that used to drop unseen anomalies. B21's expiry
+# check waits (light_change_memory_duration + margin) and so scales with this
+# value; keep it under ~195 s so that loop still reaches the timeout inside its
+# frame budget.
+@export var light_change_memory_duration: float = 120.0
 @export var light_restore_delay: float = 2.0
 @export var light_switch_arrival_distance: float = 0.8
 @export var light_anomaly_cone_padding: float = 0.35
@@ -1025,6 +1036,16 @@ func _update_recent_light_change_awareness(delta: float) -> void:
 		if wall_switch == null or _light_awareness_elapsed > expires_at:
 			_recent_light_changes.erase(switch_key)
 			continue
+		# Resolved (b): the zone is back to its phase-expected on/off state (a
+		# parent restore, a later scheduled phase transition, or the player
+		# toggling it back), so there is no anomaly left to notice.
+		if (
+			not wall_switch.target_light_id.is_empty()
+			and LightSystem.is_light_enabled(wall_switch.target_light_id)
+			== _is_switch_expected_on(wall_switch.switch_id)
+		):
+			_recent_light_changes.erase(switch_key)
+			continue
 		if _light_anomaly_switch != null:
 			continue
 		var observation_position: Vector3 = (
@@ -1738,9 +1759,16 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 	var event_contribution: float = loudness * noise_suspicion_multiplier * falloff
 	if source is DinnerPet:
 		event_contribution = maxf(event_contribution, event_alert_threshold)
-	if (
-		source is DinnerPlayer
-		and loudness >= solid_stomp_loudness_threshold
+	# Toys (surface 4.0) and creaky boards (surface 3.0) are traps: any solid
+	# single-shot at or above the stomp threshold summons from anywhere inside
+	# its audible ring via the big-event floor, bypassing distance falloff and
+	# the two-cue curious stage. This is source-agnostic so a stomp trap that
+	# emits from its own node is covered, not only the player. Pets keep their
+	# own bark model (handled above) and doors keep the sustained two-cue creak,
+	# so both are excluded; quiet steps and wrappers stay under the threshold.
+	elif (
+		loudness >= solid_stomp_loudness_threshold
+		and not (source is DinnerDoor)
 	):
 		event_contribution = maxf(event_contribution, big_event_threshold)
 	var source_id: int = source.get_instance_id() if source != null else 0

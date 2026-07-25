@@ -906,3 +906,89 @@ Record decisions another session or tool would otherwise have to rediscover.
   blocks a route.
 - **Evidence / handoff:** `cebba87`, `--verify-a24`, and A16/A17/A19/A22 plus
   B14/B18 regressions.
+
+## 2026-07-24 — Post-freeze perception polish: sight range, trap summon, light memory
+
+- **Decision:** Three surgical `game/scripts/Parent.gd` fixes from the director's
+  live playtest, all default/export or logic changes, no scene edits (the Main
+  Parent node overrides neither export).
+  1. Raise `vision_range` 7.0 → 9.5 so a brightly lit player across the
+     A16-merged living/dining (wider than 7 m) is seeable. Cone angle,
+     brightness gate, and line-of-sight checks are unchanged, so only reach
+     grows; close-range detection verifies still pass.
+  2. Make the solid-stomp big-event floor source-agnostic. In `_on_noise_emitted`
+     any single-shot at or above `solid_stomp_loudness_threshold` (3.0) that is
+     not a pet and not a door now gets the 30-point big-event floor and
+     investigates immediately from anywhere in its audible ring, bypassing
+     falloff and the two-cue curious stage. Player run-stomps on toys (surface
+     4.0 → 4.8 loudness) and creaky boards (3.0 → 3.6) already hit this via the
+     old `source is DinnerPlayer` gate; the generalization also covers any
+     future trap that emits from its own node. Pets keep the bark model
+     (`event_alert_threshold` floor, so far barks stay CURIOUS), doors keep the
+     sustained two-cue creak — both are excluded via an `elif` after the pet
+     branch and a `not (source is DinnerDoor)` guard.
+  3. Light-change awareness persists until seen or resolved instead of expiring
+     after 2 s. `light_change_memory_duration` raised 2.0 → 120.0 (a safety
+     backstop, not the drop window), and the recent-change scan now forgets a
+     change once the zone is back to its phase-expected on/off state. The parent
+     still learns of a change only visually (cone plus line of sight); switch
+     clicks stay silent, so B21's visual-only rule holds.
+- **Why:** Director QA found a lit player invisible past 7 m across the open
+  room; far-hallway toy/creak stomps read as traps but falloff dropped them
+  under the investigate threshold beyond ~7 m; and a dining light flipped across
+  the room was forgotten before the cone swept it.
+- **Rejected / cut:** Applying the stomp floor to pets or doors (breaks the B15
+  far-bark and first-rush-door CURIOUS gates and B9 far bark); a truly infinite
+  or purely state-based light memory (B21 `expired_change_ignored` requires a
+  finite, test-reachable expiry, so unbounded memory cannot pass — the timeout
+  stays, tied to `light_change_memory_duration`, kept under ~195 s so B21's
+  expiry loop reaches it inside its 12000-frame budget); adding new `--verify-*`
+  code to the frozen script (Bash is blocked in this instance, so new verify
+  code is uncompilable here and a parse slip would fail the whole suite — the
+  two candidate tests are described as manual checks instead).
+- **Owner:** Noah (director), Claude (implementation), operator (runs verifies).
+- **Revisit when:** The 120 s backstop reads too long or short in play, a
+  non-player trap emitter is added that wants its own tuning, or the operator
+  wants automated coverage for the source-agnostic summon and the
+  persist-past-2 s light memory.
+- **Evidence / handoff:** `vision_range`, the `_on_noise_emitted` floor,
+  `light_change_memory_duration`, and `_update_recent_light_change_awareness` in
+  Parent.gd. Verify battery: `--verify-b21 --verify-b15 --verify-b18-core
+  --verify-b18 --verify-b6 --verify-b13`, plus touched `--verify-b8 --verify-b9
+  --verify-b10 --verify-b12 --verify-b14`. Not committed; operator commits after
+  review.
+
+## 2026-07-24 — Trap surfaces: always loud, visually hidden in one wood floor
+
+- **Decision:** Two paired director rulings from live play.
+  1. Footstep trap floors in Player.gd: a step on a toy pile emits at least
+     `toys_trap_floor` (4.0) and a step on a creaky board at least
+     `creaky_trap_floor` (3.2) regardless of gait, applied before masking.
+     Both sit above Parent's 3.0 stomp-summon threshold, so any trap step
+     summons an immediate investigate from its full ring. Carpet and hardwood
+     keep gait scaling; the unmasked B19 profile becomes 0.2 / 3.2 / 4.0 /
+     1.2 and the live `--verify-b19` expectations move with it. This
+     supersedes the earlier "Plain sneak footsteps" profile numbers (0.6 /
+     0.8) — sneaking no longer silences a trap, only normal floor.
+  2. One shared world-triplanar plank material (`WoodFloorMaterial.gd`,
+     seeded procedural texture, no sourced assets) skins every hardwood slab,
+     so the wood area reads as one continuous board floor and slab joints
+     disappear. Creaky overlays sitting on wood (CreakKitchen, CreakAdult)
+     set `show_surface_visual = false` and render nothing — the continuous
+     floor beneath shows through, hiding the trap. The kid-hall CreakTeacher
+     keeps its poke-through planks on the rug as the teaching example, and
+     toy piles stay fully visible. This supersedes the earlier rejection of
+     "hiding creaky/toy tells" for wood-sitting creaks only.
+- **Why:** The director wants Mark-of-the-Ninja-style traps: toys and boards
+  are route hazards you learn and path around, not tiptoe across, and a
+  uniform wood floor must not advertise where the squeaks are.
+- **Rejected / cut:** Hiding toy piles; hiding the rug teacher; a
+  sneak-exemption on traps; sourcing a wood texture (agents cannot download
+  in this setup).
+- **Owner:** Noah (director), Claude (implementation), operator (verifies).
+- **Revisit when:** First-run play finds invisible creaks unfair (re-add a
+  faint seam tell), the 20 m trap rings read too punishing, or the world
+  triplanar projection misbehaves in the web export.
+- **Evidence / handoff:** `WoodFloorMaterial.gd`, LevelBuilder hardwood
+  material branch, NoiseSurface `show_surface_visual`, Main.tscn creak
+  overrides, Player trap floors, updated `--verify-b19` expectations.

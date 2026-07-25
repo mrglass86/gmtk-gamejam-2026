@@ -5,6 +5,10 @@ extends Node3D
 ## baked exactly once at startup into the NavigationRegion3D below this node.
 
 const WORLD_SWITCH_SCRIPT: Script = preload("res://scripts/WorldSwitch.gd")
+## Preloaded rather than referenced by class_name: headless runs resolve
+## global class names from the editor-built cache, which does not know about
+## agent-added scripts until an editor scan.
+const WOOD_FLOOR_MATERIAL = preload("res://scripts/WoodFloorMaterial.gd")
 
 @export var wall_height: float = 1.2
 @export var wall_thickness: float = 0.25
@@ -374,8 +378,12 @@ func _add_floor(node_name: String, center: Vector3, dimensions: Vector2, color: 
 	floor.position = center + Vector3(0.0, -floor_thickness * 0.5, 0.0)
 	floor.add_to_group(surface_group)
 	floor.add_to_group("nav_source")
-	_add_box_visual(floor, Vector3(dimensions.x, floor_thickness, dimensions.y), color)
-	_add_box_collision(floor, Vector3(dimensions.x, floor_thickness, dimensions.y))
+	var slab_size: Vector3 = Vector3(dimensions.x, floor_thickness, dimensions.y)
+	if surface_group == "surface_hardwood":
+		_add_box_visual_with_material(floor, slab_size, WOOD_FLOOR_MATERIAL.shared())
+	else:
+		_add_box_visual(floor, slab_size, color)
+	_add_box_collision(floor, slab_size)
 	add_child(floor)
 
 
@@ -388,10 +396,10 @@ func _add_failsafe_floor() -> void:
 		0.0
 	)
 	slab.add_to_group("surface_hardwood")
-	_add_box_visual(
+	_add_box_visual_with_material(
 		slab,
 		Vector3(failsafe_floor_size.x, failsafe_floor_thickness, failsafe_floor_size.y),
-		hardwood_color
+		WOOD_FLOOR_MATERIAL.shared()
 	)
 	_add_box_collision(
 		slab,
@@ -1004,6 +1012,19 @@ func _add_box_visual(parent: Node3D, dimensions: Vector3, color: Color) -> void:
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.albedo_color = color
 	material.roughness = 1.0
+	mesh_instance.mesh = mesh
+	mesh_instance.material_override = material
+	parent.add_child(mesh_instance)
+
+
+func _add_box_visual_with_material(
+	parent: Node3D,
+	dimensions: Vector3,
+	material: Material
+) -> void:
+	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
+	var mesh: BoxMesh = BoxMesh.new()
+	mesh.size = dimensions
 	mesh_instance.mesh = mesh
 	mesh_instance.material_override = material
 	parent.add_child(mesh_instance)
