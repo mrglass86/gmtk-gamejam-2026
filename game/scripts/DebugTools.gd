@@ -50,6 +50,7 @@ var _camera: Camera3D
 var _overlay_layer: CanvasLayer
 var _overlay_label: Label
 var _collision_debug_root: Node3D
+var _retro_style: int = 0
 var _trial_lamps: Array[Node3D] = []
 var _active_trial_lamp: Node3D
 var _next_trial_lamp_id: int = 1
@@ -78,14 +79,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		and not event.is_echo()
 		and (event as InputEventKey).keycode == KEY_G
 	):
-		# Retro-dither mockup toggle, deliberately outside the debug gate so
-		# the director can judge the look in the release web export
-		# (2026-07-25). Rule on the default state before submission.
+		# Style-audition cycler, outside the debug gate so the director can
+		# judge each look in the release web export (2026-07-25): off ->
+		# paper -> halftone -> hatch -> VHS -> off. Rule on one style and the
+		# default state before submission.
 		var retro_filter: CanvasLayer = (
 			get_node_or_null("../RetroFilter") as CanvasLayer
 		)
 		if retro_filter != null:
-			retro_filter.visible = not retro_filter.visible
+			_retro_style = (_retro_style + 1) % 5
+			retro_filter.visible = _retro_style > 0
+			var dither_rect: ColorRect = (
+				retro_filter.get_node_or_null("DitherRect") as ColorRect
+			)
+			if dither_rect != null and dither_rect.material is ShaderMaterial:
+				(dither_rect.material as ShaderMaterial).set_shader_parameter(
+					"style",
+					_retro_style
+				)
 			get_viewport().set_input_as_handled()
 			return
 	if (

@@ -59,7 +59,9 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 @export var hardwood_step_volume_db: float = -28.0
 @export var run_carpet_step_volume_db: float = -20.0
 @export var run_hardwood_step_volume_db: float = -7.0
-@export var creak_step_volume_db: float = -3.0
+## Creaky boards are the loudest player tell (2026-07-25: louder per the
+## director; the longer groan takes ride the next audio pass).
+@export var creak_step_volume_db: float = 1.0
 @export var toy_squeak_volume_db: float = -3.0
 @export var parent_step_volume_db: float = -7.0
 @export var parent_step_distance: float = 0.85
@@ -461,7 +463,12 @@ func begin_audio_verification() -> void:
 	)
 	Input.action_release("run")
 	_play_player_footstep(_player.creaky_surface_multiplier)
-	assert(_player_footsteps.stream == PLAYER_STEP_CREAK_STREAM)
+	# Expectation edit (2026-07-25): creaky steps now draw from the slow
+	# door-creak takes pool instead of the placeholder tick stream.
+	assert(
+		_pool_contains_stream(&"floor_creak_step", _player_footsteps.stream)
+	)
+	assert(is_equal_approx(_player_footsteps.volume_db, creak_step_volume_db))
 	_last_parent_position = _parent.global_position - Vector3(0.45, 0.0, 0.0)
 	_update_parent_footsteps()
 	_last_parent_position = _parent.global_position - Vector3(0.45, 0.0, 0.0)
@@ -864,8 +871,11 @@ func _play_player_footstep(surface_multiplier: float) -> void:
 		_player_footsteps.stream = TOY_SQUEAK_STREAM
 		_player_footsteps.volume_db = toy_squeak_volume_db
 	elif surface_multiplier >= _player.creaky_surface_multiplier - 0.01:
-		_player_footsteps.stream = PLAYER_STEP_CREAK_STREAM
+		# Director 2026-07-25: board steps groan long and low instead of
+		# the short placeholder tick; the pool carries the lowered pitch.
 		_player_footsteps.volume_db = creak_step_volume_db
+		_play_pool(&"floor_creak_step")
+		return
 	elif surface_multiplier <= _player.carpet_surface_multiplier + 0.01:
 		_player_footsteps.volume_db = (
 			run_carpet_step_volume_db

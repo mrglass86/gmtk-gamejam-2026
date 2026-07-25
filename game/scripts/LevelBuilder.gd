@@ -29,8 +29,8 @@ const WOOD_FLOOR_MATERIAL = preload("res://scripts/WoodFloorMaterial.gd")
 @export var doorway_shadow_opening_height: float = 2.4
 
 @export_group("Practical Light Fixtures")
-@export var fixture_stand_color: Color = Color("#3c4654")
-@export var fixture_glow_color: Color = Color("#dce9ff")
+@export var fixture_stand_color: Color = Color("#4a4844")
+@export var fixture_glow_color: Color = Color("#e8e5df")
 @export var fixture_emission_energy: float = 1.0
 @export var fixture_base_size: Vector3 = Vector3(0.34, 0.08, 0.34)
 @export var fixture_pole_width: float = 0.07
@@ -42,12 +42,14 @@ const WOOD_FLOOR_MATERIAL = preload("res://scripts/WoodFloorMaterial.gd")
 @export var speaker_mask_radius: float = 2.4
 @export_range(0.0, 0.6) var speaker_mask_strength: float = 0.6
 
-@export var wall_color: Color = Color("#6d727a")
-@export var carpet_color: Color = Color("#353a42")
-@export var hardwood_color: Color = Color("#72777d")
-@export var creaky_color: Color = Color("#9ba0a5")
-@export var toy_color: Color = Color("#c4c9ce")
-@export var prop_color: Color = Color("#50565f")
+# Warm monotone palette (2026-07-25 art pass): the house desaturates so the
+# kid, adult, dog, snacks, and signal colours carry all the hue.
+@export var wall_color: Color = Color("#737370")
+@export var carpet_color: Color = Color("#3a3a38")
+@export var hardwood_color: Color = Color("#78746e")
+@export var creaky_color: Color = Color("#a09d98")
+@export var toy_color: Color = Color("#c9c6c0")
+@export var prop_color: Color = Color("#57554f")
 
 
 func _ready() -> void:
@@ -136,7 +138,7 @@ func _build_walls() -> void:
 func _build_props() -> void:
 	_add_crib()
 	_add_prop("Nightstand", Vector3(-10.2, 0.35, -5.6), Vector3(0.8, 0.7, 0.8), prop_color)
-	_add_prop("TVConsole", Vector3(-3.2, 0.75, -4.1), Vector3(0.8, 1.5, 4.0), Color("#627b92"))
+	_add_prop("TVConsole", Vector3(-3.2, 0.75, -4.1), Vector3(0.8, 1.5, 4.0), Color("#6e6e68"))
 	_add_couch()
 	_add_dog_station()
 	_add_prop("KitchenCounter", Vector3(9.8, 0.45, -5.35), Vector3(5.4, 0.9, 2.1), prop_color)
@@ -148,8 +150,8 @@ func _build_props() -> void:
 	_add_prop("AdultBed", Vector3(-9.8, 0.4, 4.75), Vector3(4.6, 0.8, 3.1), prop_color)
 	_add_prop("HallShelf", Vector3(10.1, 0.55, 4.35), Vector3(1.4, 1.1, 3.5), prop_color)
 	_add_prop("AdultDoorPanel", Vector3(-12.75, 0.6, 1.5), Vector3(2.3, 1.2, 0.25), wall_color)
-	_add_prop("KitchenSpeaker", Vector3(8.5, 1.15, -5.3), Vector3(0.5, 0.5, 0.5), Color("#6f7882"))
-	_add_visual_prop("FrontDoor", Vector3(8.0, 0.6, 6.2), Vector3(2.4, 1.2, 0.15), Color("#59616b"))
+	_add_prop("KitchenSpeaker", Vector3(8.5, 1.15, -5.3), Vector3(0.5, 0.5, 0.5), Color("#767570"))
+	_add_visual_prop("FrontDoor", Vector3(8.0, 0.6, 6.2), Vector3(2.4, 1.2, 0.15), Color("#62615c"))
 	_add_visual_prop("DoorMat", Vector3(8.0, 0.01, 5.85), Vector3(1.6, 0.02, 0.9), carpet_color)
 	_add_front_door_side_table()
 
@@ -276,12 +278,12 @@ func _build_lights() -> void:
 		"TVGlow",
 		Vector3(-2.75, 1.25, -4.1),
 		Vector3.ZERO,
-		Color("#7ea5d8"),
+		Color("#93a7bd"),
 		0.75
 	)
 	var tv_glow: AreaLight3D = $TVGlow as AreaLight3D
 	tv_glow.look_at(Vector3(1.55, 0.4, -4.4), Vector3.UP)
-	_add_area_glow("WindowGlow", Vector3(-14.75, 2.4, -4.0), Vector3(0.0, -90.0, 0.0), Color("#c7d5e7"))
+	_add_area_glow("WindowGlow", Vector3(-14.75, 2.4, -4.0), Vector3(0.0, -90.0, 0.0), Color("#d0d0cc"))
 	# DoorStripGlow (under-door strip at the adult room) removed: it read as
 	# an unexplained floor light against the plank floor (2026-07-25).
 
@@ -590,7 +592,7 @@ func _add_kitchen_bowl() -> void:
 	mesh.bottom_radius = 0.25
 	mesh.height = 0.12
 	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = Color("#7f8d9c")
+	material.albedo_color = Color("#8b8a85")
 	material.roughness = 0.72
 	mesh_instance.mesh = mesh
 	mesh_instance.material_override = material
@@ -639,7 +641,7 @@ func _add_fridge_block() -> void:
 		"Body",
 		Vector3(13.75, 1.1, -5.35),
 		Vector3(2.4, 2.2, 2.15),
-		Color("#9aa5b0")
+		Color("#a5a4a0")
 	)
 	_add_visual_bounds_box_collision(fridge_body)
 	add_child(fridge_body)
@@ -773,7 +775,7 @@ func _add_toilet() -> void:
 		"Tank",
 		Vector3(0.0, 0.47, -0.37),
 		Vector3(0.78, 0.72, 0.38),
-		Color("#aeb8c4")
+		Color("#b8b6b1")
 	)
 	var bowl: MeshInstance3D = MeshInstance3D.new()
 	bowl.name = "Bowl"
@@ -783,7 +785,7 @@ func _add_toilet() -> void:
 	bowl_mesh.bottom_radius = 0.32
 	bowl_mesh.height = 0.38
 	bowl.mesh = bowl_mesh
-	bowl.material_override = _make_material(Color("#c3ccd6"))
+	bowl.material_override = _make_material(Color("#c7c5c0"))
 	toilet.add_child(bowl)
 	_add_visual_bounds_box_collision(toilet)
 	add_child(toilet)
@@ -819,7 +821,7 @@ func _add_omni(
 			position_value.z
 		)
 	light.position = resolved_light_position - fixture.position
-	light.light_color = Color("#d6e1f2")
+	light.light_color = Color("#e8e5df")
 	light.light_energy = lamp_energy * energy_scale
 	var visual_range: float = lamp_range
 	var analytic_range: float = (
@@ -882,7 +884,7 @@ func _add_world_switch(
 		if mounted_on_x
 		else Vector3(0.24, 0.34, 0.12)
 	)
-	_add_box_visual(wall_switch, plate_size, Color("#8d96a2"))
+	_add_box_visual(wall_switch, plate_size, Color("#96948e"))
 	var toggle: MeshInstance3D = MeshInstance3D.new()
 	toggle.name = "Toggle"
 	toggle.position = surface_normal * 0.08
@@ -898,7 +900,7 @@ func _add_world_switch(
 		else Vector3(0.08, 0.17, 0.06)
 	)
 	toggle.mesh = toggle_mesh
-	toggle.material_override = _make_material(Color("#dbe3ee"))
+	toggle.material_override = _make_material(Color("#dedcd6"))
 	wall_switch.add_child(toggle)
 	add_child(wall_switch)
 
@@ -908,62 +910,52 @@ func _add_fixture_visual(
 	source_height: float,
 	base_height: float
 ) -> void:
-	var base_center_y: float = base_height + fixture_base_size.y * 0.5
-	_add_fixture_part(
-		fixture,
-		"Base",
-		Vector3(0.0, base_center_y, 0.0),
-		fixture_base_size,
-		fixture_stand_color,
-		false
-	)
-	var pole_bottom: float = base_height + fixture_base_size.y
-	var pole_height: float = maxf(
-		source_height - fixture_shade_size.y * 0.5 - pole_bottom,
-		0.08
-	)
-	_add_fixture_part(
-		fixture,
-		"Pole",
-		Vector3(0.0, pole_bottom + pole_height * 0.5, 0.0),
-		Vector3(fixture_pole_width, pole_height, fixture_pole_width),
-		fixture_stand_color,
-		false
-	)
-	_add_fixture_part(
-		fixture,
-		"Shade",
-		Vector3(0.0, source_height, 0.0),
-		fixture_shade_size,
-		fixture_glow_color,
-		true
-	)
+	# Lamp-shaped fixtures (2026-07-25 art pass): cylinder base and pole with
+	# a truncated-cone shade, replacing the grey boxes. Node names stay
+	# Base/Pole/Shade for the geometry gates.
+	var base: MeshInstance3D = MeshInstance3D.new()
+	base.name = "Base"
+	base.position = Vector3(0.0, base_height + 0.04, 0.0)
+	base.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var base_mesh: CylinderMesh = CylinderMesh.new()
+	base_mesh.top_radius = 0.13
+	base_mesh.bottom_radius = 0.17
+	base_mesh.height = 0.08
+	base.mesh = base_mesh
+	base.material_override = _make_material(fixture_stand_color)
+	fixture.add_child(base)
 
+	var pole_bottom: float = base_height + 0.08
+	var pole_height: float = maxf(source_height - 0.14 - pole_bottom, 0.08)
+	var pole: MeshInstance3D = MeshInstance3D.new()
+	pole.name = "Pole"
+	pole.position = Vector3(0.0, pole_bottom + pole_height * 0.5, 0.0)
+	pole.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var pole_mesh: CylinderMesh = CylinderMesh.new()
+	pole_mesh.top_radius = 0.03
+	pole_mesh.bottom_radius = 0.035
+	pole_mesh.height = pole_height
+	pole.mesh = pole_mesh
+	pole.material_override = _make_material(fixture_stand_color)
+	fixture.add_child(pole)
 
-func _add_fixture_part(
-	parent: Node3D,
-	part_name: String,
-	local_position: Vector3,
-	dimensions: Vector3,
-	color: Color,
-	emissive: bool
-) -> void:
-	var mesh_instance: MeshInstance3D = MeshInstance3D.new()
-	mesh_instance.name = part_name
-	mesh_instance.position = local_position
-	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var mesh: BoxMesh = BoxMesh.new()
-	mesh.size = dimensions
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.75
-	if emissive:
-		material.emission_enabled = true
-		material.emission = fixture_glow_color
-		material.emission_energy_multiplier = fixture_emission_energy
-	mesh_instance.mesh = mesh
-	mesh_instance.material_override = material
-	parent.add_child(mesh_instance)
+	var shade: MeshInstance3D = MeshInstance3D.new()
+	shade.name = "Shade"
+	shade.position = Vector3(0.0, source_height, 0.0)
+	shade.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var shade_mesh: CylinderMesh = CylinderMesh.new()
+	shade_mesh.top_radius = 0.15
+	shade_mesh.bottom_radius = 0.26
+	shade_mesh.height = 0.26
+	shade.mesh = shade_mesh
+	var shade_material: StandardMaterial3D = StandardMaterial3D.new()
+	shade_material.albedo_color = fixture_glow_color
+	shade_material.roughness = 0.75
+	shade_material.emission_enabled = true
+	shade_material.emission = fixture_glow_color
+	shade_material.emission_energy_multiplier = fixture_emission_energy
+	shade.material_override = shade_material
+	fixture.add_child(shade)
 
 
 func _add_area_glow(

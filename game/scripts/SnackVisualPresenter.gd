@@ -30,16 +30,18 @@ class_name SnackVisualPresenter
 ## gentler-but-larger scale pulse. Emission cannot light floors in
 ## Compatibility, so this adds no light=danger contradiction. Cleared by
 ## pickup or any fresh door reveal (Snack.was_dropped).
-@export var dropped_accent_color: Color = Color(0.96, 0.58, 0.28)
+@export var dropped_accent_color: Color = Color(1.0, 0.42, 0.16)
 @export_range(0.0, 1.0, 0.01) var dropped_accent_mix: float = 0.85
 @export var dropped_pulse_speed: float = 6.4
 @export var dropped_emission_energy_base: float = 3.6
 @export var dropped_emission_pulse_amount: float = 0.55
 @export var dropped_pulse_scale_amount: float = 0.16
 @export_group("Snack Identity")
-@export var pantry_packet_color: Color = Color("#fff0a8")
-@export var pantry_foil_color: Color = Color("#f7fbff")
-@export var fridge_scoop_color: Color = Color("#f5f7ff")
+# Snacks are the orange accent of the desaturated house (2026-07-25 art
+# pass); the dropped beacon shifts hotter to stay distinct.
+@export var pantry_packet_color: Color = Color(0.95, 0.6, 0.27)
+@export var pantry_foil_color: Color = Color(0.98, 0.85, 0.66)
+@export var fridge_scoop_color: Color = Color(0.97, 0.68, 0.36)
 @export var fridge_cone_color: Color = Color("#c8c3b8")
 
 var _snack: DinnerSnack

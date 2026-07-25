@@ -1382,3 +1382,76 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Evidence / handoff:** Player.gd `_has_interaction_sightline` + b19
   toy-sample export, NoiseSurface.gd `_add_toy_piece_collisions`,
   DebugTools.gd red world pass, Main.gd a24/a41/a19 updates.
+
+## 2026-07-25 — Warm monotone art pass, style cycler, alarm clock, louder creaks
+
+- **Decision:** Director's art-direction round on the paper-filter build.
+  1. The house desaturates at the source (works with any filter): neutral
+     warm light colour, neutral ambient and background, warm-grey walls,
+     props, appliances, and fittings. Hue is reserved for the kid (blue),
+     adult and dog (purple), snacks (now orange — packet, scoop, and the
+     shared material; the dropped beacon shifts hotter red-orange to stay
+     distinct), and the signal colours (threat red, magenta, hunt orange,
+     clock red).
+  2. Floorboards lengthen: ~0.26 m wide boards running 1.4-2.1 m with
+     single-pixel fainter seams and less per-board jitter — boards, not
+     tile.
+  3. The nightstand digits sit on a physical dark alarm-clock body on the
+     nightstand; the kid and living lamps become lamp-shaped (cylinder
+     base and pole, truncated-cone emissive shade) keeping the
+     Base/Pole/Shade contract; a9/a19 expectations updated (cool-emission
+     assert dropped, kid shade is a CylinderMesh).
+  4. The G key becomes a style cycler: off, paper stop-motion, storybook
+     halftone, pencil hatch, VHS night-video — all boiling, all sharing
+     the same shader with a style uniform. Director auditions and rules
+     on one (and its default) before submission.
+  5. Creaky boards get louder now (`creak_step_volume_db` -3 to +1, a18
+     updated); the longer groan — creaky steps borrowing the recorded
+     slow door-creak takes at lowered pitch — rides the next engineer
+     audio micro-pass.
+- **Why:** The blue/purple cast diluted the actor colours; the short
+  planks read as tile; floating digits and cube lamps broke the fiction;
+  the paper filter needs competitors to be judged fairly; the creak tell
+  was too small for its gameplay weight.
+- **Rejected / cut:** Desaturating via the filter (must hold when the
+  filter is off); recoloring walls per room; a HUD clock.
+- **Owner:** Noah (director), Claude (implementation), engineer (long
+  creaks), operator (verifies).
+- **Revisit when:** The style verdict lands, the orange snack fights the
+  hunt-cone orange in play, or lamp cones clip furniture.
+- **Evidence / handoff:** WoodFloorMaterial consts, LevelBuilder palette +
+  `_add_fixture_visual` rebuild, Main.tscn environment/snack/clock-body,
+  SnackVisualPresenter identity colours, Door.gd fittings,
+  `retro_dither.gdshader` style uniform + DebugTools cycler, Main.gd
+  a9/a18/a19 updates, AudioDirector creak volume.
+
+## 2026-07-25 — Photographed construction-paper menu
+
+- **Decision:** The title card becomes the director's photographed
+  construction paper: the live game sits blurred and dimmed behind
+  (`menu_blur.gdshader` on both cards' Dim rects), a centred stack of the
+  black, scribbled-red, and blue paper cutouts drifts and tilts on
+  desynchronised sines (`MenuPaperLayer.gd`), and four photo props float
+  in the corners. White backgrounds are keyed out in a shader
+  (`menu_paper_key.gdshader` — bright-and-unsaturated pixels go
+  transparent), so no hand masking. The old navy panel goes transparent;
+  its labels now sit on the blue paper. Photos live at 1600 px in
+  `game/art/menu/` (converted from the director's HEICs via sips). The
+  halftone print style (steady, no boil) is the director's current filter
+  favourite. Corner-prop image assignments are provisional pending the
+  director's manifest of which photo is which snack/crayon; the
+  handwriting font (Route A OFL download or Route B calligraphr) swaps in
+  when the file arrives.
+- **Why:** Real photographed paper is the game's fiction made literal, and
+  the shuffling stack reads as the toddler's craft table.
+- **Rejected / cut:** Hand-masked alpha PNGs (shader key is faster and
+  keeps edges); rebuilding labels as part of the photos (text stays live
+  for edits and the coming font).
+- **Owner:** Noah (director, photos, manifest, font), Claude
+  (implementation), operator (import + verifies).
+- **Revisit when:** The key threshold eats a pale prop, the drift reads
+  seasick, or the font lands.
+- **Evidence / handoff:** `menu_paper_key.gdshader`, `menu_blur.gdshader`,
+  `MenuPaperLayer.gd`, Main.tscn TitleCard/ResultCard wiring. NOTE: new
+  textures need one editor focus or export run to import before headless
+  gates load the scene.

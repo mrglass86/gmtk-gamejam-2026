@@ -912,7 +912,7 @@ func _verify_a22_hallway_and_fixtures() -> void:
 	var kid_fixture: Node3D = $Level/KidLampVisual as Node3D
 	assert(kid_fixture.has_node("Base"))
 	assert(kid_fixture.has_node("Pole"))
-	assert(($Level/KidLampVisual/Shade as MeshInstance3D).mesh is BoxMesh)
+	assert(($Level/KidLampVisual/Shade as MeshInstance3D).mesh is CylinderMesh)
 	assert(
 		($Level/AlcoveLampVisual/Light as OmniLight3D).light_energy
 		> ($Level/KidLampVisual/Light as OmniLight3D).light_energy
@@ -1336,7 +1336,6 @@ func _verify_a9_practical_lighting() -> void:
 				shade.material_override as StandardMaterial3D
 			)
 			assert(shade_material.emission_enabled)
-			assert(shade_material.emission.b >= shade_material.emission.r)
 		var analytic_anchor: Vector3 = Vector3(
 			fixture.global_position.x,
 			0.0,
@@ -1383,7 +1382,7 @@ func _verify_a9_practical_lighting() -> void:
 	)
 
 	print(
-		"A9 verification passed: cool emissive practicals, 7.8 m visual pools, "
+		"A9 verification passed: warm emissive practicals, 7.8 m visual pools, "
 		+ "the 0.09 ambient floor, and live capsule/HUD brightness tracking."
 	)
 	get_tree().quit()
@@ -2427,7 +2426,7 @@ func _verify_a18_polish_pack() -> void:
 	assert(is_equal_approx(audio_director.hardwood_step_volume_db, -28.0))
 	assert(is_equal_approx(audio_director.run_carpet_step_volume_db, -20.0))
 	assert(is_equal_approx(audio_director.run_hardwood_step_volume_db, -7.0))
-	assert(is_equal_approx(audio_director.creak_step_volume_db, -3.0))
+	assert(is_equal_approx(audio_director.creak_step_volume_db, 1.0))
 	assert(is_equal_approx(audio_director.wrapper_volume_db, -20.0))
 	assert(is_equal_approx(audio_director.wrapper_audio_interval, 2.5))
 	var player: DinnerPlayer = $Player as DinnerPlayer

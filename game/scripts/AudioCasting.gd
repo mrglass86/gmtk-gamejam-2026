@@ -325,6 +325,22 @@ const POOLS: Dictionary = {
 		"channel": &"player_footsteps",
 		"pitch_jitter": 0.08,
 	},
+	# Director 2026-07-25: a creaky-board step is a drawn-out wooden groan,
+	# not a tick — the recorded slow door-creak takes at a lowered pitch,
+	# kept distinct from the door context by pitch and position. The
+	# original foley takes are sanctioned by the door_creak_ allowlist.
+	&"floor_creak_step": {
+		"streams": [
+			preload("res://audio/original/foley/door_creak_slow_01.ogg"),
+			preload("res://audio/original/foley/door_creak_slow_02.ogg"),
+			preload("res://audio/original/foley/door_creak_slow_03.ogg"),
+			preload("res://audio/denoised/foley/door_creak_slow_04.ogg"),
+		],
+		"fallback": preload("res://audio/sfx/player_step_creak.ogg"),
+		"channel": &"player_footsteps",
+		"pitch_jitter": 0.07,
+		"base_pitch": 0.8,
+	},
 	&"parent_footstep": {
 		"streams": [
 			preload("res://audio/denoised/foley/footstep_wood_01.ogg"),

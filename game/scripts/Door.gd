@@ -329,7 +329,7 @@ func _decorate_door_visual() -> void:
 	)
 	knob.mesh = knob_mesh
 	var knob_material: StandardMaterial3D = StandardMaterial3D.new()
-	knob_material.albedo_color = Color("#c3ccd6")
+	knob_material.albedo_color = Color("#c8c6c0")
 	knob_material.roughness = 0.6
 	knob.material_override = knob_material
 	_door_visual.add_child(knob)
@@ -353,7 +353,7 @@ func _add_fridge_handle(panel: MeshInstance3D) -> void:
 	)
 	handle.mesh = handle_mesh
 	var handle_material: StandardMaterial3D = StandardMaterial3D.new()
-	handle_material.albedo_color = Color("#c3ccd6")
+	handle_material.albedo_color = Color("#c8c6c0")
 	handle_material.roughness = 0.5
 	handle.material_override = handle_material
 	_door_visual.add_child(handle)

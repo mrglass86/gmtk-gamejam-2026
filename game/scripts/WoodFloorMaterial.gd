@@ -10,16 +10,16 @@ extends RefCounted
 
 const TEXTURE_SIZE: int = 256
 const PLANK_ROWS: int = 8
-const PLANK_MIN_LENGTH: int = 96
-const PLANK_MAX_LENGTH: int = 224
+const PLANK_MIN_LENGTH: int = 176
+const PLANK_MAX_LENGTH: int = 256
 const PATTERN_SEED: int = 260724
 const BASE_COLOR: Color = Color("#77726c")
-const SEAM_DARKEN: float = 0.72
-const SEAM_THICKNESS: int = 2
-const PLANK_VALUE_JITTER: float = 0.08
-## One texture tile spans 1 / UV_SCALE metres, so the eight plank rows read
-## as roughly 0.2 m boards under the fixed top-down camera.
-const UV_SCALE: float = 0.625
+const SEAM_DARKEN: float = 0.8
+const SEAM_THICKNESS: int = 1
+const PLANK_VALUE_JITTER: float = 0.05
+## One texture tile spans 1 / UV_SCALE metres: ~0.26 m boards running
+## 1.4-2.1 m with faint seams — long floorboards, not tile (2026-07-25).
+const UV_SCALE: float = 0.48
 
 static var _shared_material: StandardMaterial3D
 

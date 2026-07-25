@@ -68,6 +68,12 @@ enum State {
 ## Extra seconds added to the door's own travel time when deciding how far
 ## ahead of a door-row arrival the entry open command is issued.
 @export var routine_door_entry_lead_margin: float = 0.75
+## The entry open is proximity-triggered (pass-4 bug 3): the parent must
+## also be this close to the panel before it commands the swing, so a
+## diverted parent never leaves the door opening by itself. 2.6 m at
+## routine speed 1.5 covers roughly the 1.75 s the panel needs to clear
+## the 0.35 blocker threshold; a late open degrades to a brief door-hold.
+@export var routine_door_entry_approach_distance: float = 2.6
 ## Within this distance of a commanded routine door the parent stands and
 ## waits until openness clears the blocker threshold instead of walking
 ## through the visual panel.
@@ -265,6 +271,10 @@ enum State {
 @export_group("Found Chase")
 @export var found_speed: float = 3.8
 @export var grab_distance: float = 1.5
+## World height of the flat catch-honesty ray (pass-4 bug 2): the grab
+## additionally needs a wall-free sightline at roughly waist height, so a
+## distance-only catch can no longer reach through a wall mid-corner.
+@export var catch_sightline_height: float = 0.7
 @export var found_lunge_distance: float = 2.5
 @export var found_lose_sight_duration: float = 5.0
 @export var found_escape_suspicion: float = 60.0
@@ -854,17 +864,27 @@ func _update_routine_door_staging(routine_time: float) -> void:
 		if routine_door == null:
 			continue
 		if routine_time < arrival_time:
-			# Entry approach: open the door far enough ahead of arrival that
-			# it clears the blocker threshold before the walk crosses the
-			# doorway, so the parent reads as opening it, never phasing
-			# through the closed panel.
+			# Entry approach: open the door ahead of arrival so it clears
+			# the blocker threshold as the walk crosses the doorway — but
+			# only once the parent is PHYSICALLY near the panel (pass-4
+			# bug 3). A time-only lead left the door swinging by itself
+			# whenever a diversion pulled the parent away mid-approach —
+			# the same off-screen-hand disease as the outlawed phase
+			# timers. A diverted parent now simply never opens it, and a
+			# late open degrades to the existing brief door-hold.
 			var entry_open_lead: float = (
 				routine_door.sneak_open_duration
 				* bathroom_door_open_openness
 				+ routine_door_entry_lead_margin
 			)
 			if routine_time >= arrival_time - entry_open_lead:
-				if not _routine_door_entry_commanded:
+				if (
+					not _routine_door_entry_commanded
+					and _flat_distance(
+						global_position,
+						routine_door.global_position
+					) <= routine_door_entry_approach_distance
+				):
 					_routine_door_entry_commanded = true
 					_routine_transit_door = routine_door
 					routine_door.open_to(bathroom_door_open_openness)
@@ -1784,9 +1804,28 @@ func _move_directly_toward_player(delta: float) -> void:
 		movement.length()
 	)
 	var movement_direction: Vector3 = movement.normalized()
-	global_position += movement_direction * movement_distance
+	var intended_position: Vector3 = (
+		global_position + movement_direction * movement_distance
+	)
+	# The direct-pursuit beeline stays on the carved navmesh (pass-4 bug
+	# 1): clamp each step to the same map the agents use so the chase
+	# slides around furniture footprints instead of crossing the dining
+	# table. Height is preserved — map_get_closest_point snaps to floor.
+	var navigation_map: RID = get_world_3d().navigation_map
+	if NavigationServer3D.map_get_iteration_id(navigation_map) > 0:
+		var clamped_position: Vector3 = (
+			NavigationServer3D.map_get_closest_point(
+				navigation_map,
+				intended_position
+			)
+		)
+		clamped_position.y = global_position.y
+		intended_position = clamped_position
+	var applied_movement: Vector3 = intended_position - global_position
+	applied_movement.y = 0.0
+	global_position = intended_position
 	_face_direction(movement_direction, delta)
-	_moved_along_path_this_frame = movement_distance > 0.0
+	_moved_along_path_this_frame = applied_movement.length() > 0.0
 
 
 func _move_along_path(speed: float, delta: float) -> bool:
@@ -2213,10 +2252,39 @@ func _is_repeat_target_suppressed(target: Vector3) -> bool:
 func _begin_found_or_carry() -> void:
 	if _player == null:
 		return
-	if global_position.distance_to(_player.global_position) <= grab_distance:
+	if (
+		global_position.distance_to(_player.global_position) <= grab_distance
+		and _has_catch_sightline()
+	):
 		_begin_carry()
 	else:
 		_begin_found()
+
+
+## Same flat-ray shape as _has_clear_line_of_sight, at grab height on
+## vision mask 1: floor-detail overlays (layer 2) never block a catch,
+## walls and closed door blockers always do. FOUND entry already requires
+## _can_see_player; this guards only the terminal grab.
+func _has_catch_sightline() -> bool:
+	if _player == null:
+		return false
+	var ray_start: Vector3 = global_position
+	ray_start.y = catch_sightline_height
+	var ray_end: Vector3 = _player.global_position
+	ray_end.y = catch_sightline_height
+	var query: PhysicsRayQueryParameters3D = (
+		PhysicsRayQueryParameters3D.create(
+			ray_start,
+			ray_end,
+			vision_collision_mask
+		)
+	)
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	var result: Dictionary = (
+		get_world_3d().direct_space_state.intersect_ray(query)
+	)
+	return result.is_empty() or result.get("collider") == _player
 
 
 func _begin_found() -> void:
@@ -2246,6 +2314,8 @@ func _begin_carry() -> void:
 	if _state == State.CARRY or _player == null:
 		return
 	if global_position.distance_to(_player.global_position) > grab_distance:
+		return
+	if not _has_catch_sightline():
 		return
 	_clear_searchlight_diversion(true)
 	_clear_interest()
