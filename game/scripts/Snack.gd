@@ -36,6 +36,10 @@ const TYPE_CHIPS: StringName = &"chips"
 
 var available_for_pickup: bool = false
 var carried_by: DinnerPlayer
+## Presentation-only bookkeeping: true while the snack sits on the floor
+## because of a drop (catch or carry enforcement), false for door reveals
+## and while carried. Nothing mechanical reads this flag.
+var was_dropped: bool = false
 
 var _player: DinnerPlayer
 var _visual: VisualInstance3D
@@ -65,6 +69,7 @@ func _physics_process(delta: float) -> void:
 func reveal_for_pickup() -> void:
 	_pickup_lockout_remaining = 0.0
 	available_for_pickup = true
+	was_dropped = false
 	_refresh_visual()
 
 
@@ -97,6 +102,7 @@ func pick_up(player: DinnerPlayer) -> bool:
 	available_for_pickup = false
 	carried_by = player
 	carried_by.set_carrying_snack(true)
+	was_dropped = false
 	_refresh_visual()
 	picked_up.emit(carried_by)
 	return true
@@ -108,6 +114,7 @@ func drop_at(drop_position: Vector3) -> void:
 	carried_by = null
 	global_position = drop_position
 	available_for_pickup = true
+	was_dropped = true
 	_pickup_lockout_remaining = drop_pickup_lockout
 	_refresh_visual()
 	dropped.emit(drop_position)

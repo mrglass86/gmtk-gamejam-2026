@@ -123,6 +123,7 @@ position = Vector3(-11.8, 0.02, -0.05)
 loudness_multiplier = 3.0
 surface_size = Vector2(1.8, 0.9)
 surface_group = &"surface_creaky"
+show_surface_visual = false
 surface_color = Color(0.486275, 0.509804, 0.537255, 1)
 creaky_plank_color_a = Color(0.521569, 0.545098, 0.572549, 1)
 creaky_plank_color_b = Color(0.486275, 0.509804, 0.537255, 1)
@@ -163,6 +164,13 @@ surface_color = Color(0.768627, 0.788235, 0.807843, 1)
 
 [node name="ToyCarpet" parent="Level" instance=ExtResource("8_noise_surface")]
 position = Vector3(-2.2, 0.0, 4.8)
+loudness_multiplier = 4.0
+surface_size = Vector2(2.6, 1.4)
+surface_group = &"surface_toys"
+surface_color = Color(0.768627, 0.788235, 0.807843, 1)
+
+[node name="ToyFoyer" parent="Level" instance=ExtResource("8_noise_surface")]
+position = Vector3(8.3, 0.02, 4.75)
 loudness_multiplier = 4.0
 surface_size = Vector2(2.6, 1.4)
 surface_group = &"surface_toys"
@@ -254,14 +262,15 @@ position = Vector3(12.55, 0.0, -4.2)
 script = ExtResource("9_door")
 door_kind = 2
 provides_snack = true
-open_rotation_degrees = Vector3(0, -90, 0)
+open_rotation_degrees = Vector3(0, 90, 0)
 fridge_blocker_size = Vector3(2.4, 2.2, 0.12)
 blocker_center_offset = Vector3(1.2, 0, 0)
 
 [node name="DoorVisual" type="StaticBody3D" parent="Fridge"]
+position = Vector3(2.4, 0, 0)
 
 [node name="Panel" type="MeshInstance3D" parent="Fridge/DoorVisual"]
-position = Vector3(1.2, 1.1, 0)
+position = Vector3(-1.2, 1.1, 0)
 scale = Vector3(2.4, 2.2, 0.12)
 mesh = SubResource("DoorPanelMesh")
 material_override = SubResource("DoorPanelMaterial")

@@ -40,10 +40,15 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 	"../Level/BathroomDoor"
 )
 @export_node_path("DinnerDoor") var fridge_path: NodePath = NodePath("../Fridge")
+@export_node_path("PhaseDirector") var phase_director_path: NodePath = NodePath(
+	"../PhaseDirector"
+)
 
 @export_group("Countdown Tells")
 @export var tv_click_position: Vector3 = Vector3(-2.75, 1.0, -4.1)
 @export var living_switch_position: Vector3 = Vector3(0.0, 1.1, -4.2)
+# Retained for scene compatibility; the kitchen/dining/foyer shutdowns now
+# click through their real WorldSwitch nodes, not faked positions here.
 @export var kitchen_switch_position: Vector3 = Vector3(10.5, 1.1, -3.0)
 @export var hall_switch_position: Vector3 = Vector3(-0.5, 1.1, 0.5)
 @export var tell_volume_db: float = -3.0
@@ -85,8 +90,11 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 @export var wrapper_audio_interval: float = 2.5
 @export var fridge_pop_volume_db: float = -8.0
 @export var fridge_pop_max_distance: float = 7.0
-@export var bathroom_foley_volume_db: float = -13.0
-@export var bathroom_foley_max_distance: float = 8.0
+# The flush/sink set-piece is a house-wide tell like the phase switch
+# clicks (tell_max_distance 18.0), not local foley: at -13 dB / 8 m the
+# playtest listener across the house heard nothing.
+@export var bathroom_foley_volume_db: float = -8.0
+@export var bathroom_foley_max_distance: float = 18.0
 
 @export_group("Ambient Beds")
 @export var tv_bed_volume_db: float = -15.0
@@ -113,6 +121,9 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 	get_node_or_null(listener_path) as AudioListener3D
 )
 @onready var _fridge: DinnerDoor = get_node_or_null(fridge_path) as DinnerDoor
+@onready var _phase_director: PhaseDirector = (
+	get_node_or_null(phase_director_path) as PhaseDirector
+)
 
 @onready var _tv_click: AudioStreamPlayer3D = $TVClickOff
 @onready var _light_switch: AudioStreamPlayer3D = $LightSwitch
@@ -165,6 +176,8 @@ var _fridge_previous_openness: float = 0.0
 var _fridge_was_opening: bool = false
 var _b14_verification: bool = false
 var _verification_noise_count: int = 0
+var _tv_bed_shutdown: bool = false
+var _speaker_bed_shutdown: bool = false
 var _wrapper_audio_elapsed: float = 0.0
 var _snack_pickup_latched: bool = false
 var _snack_pickup_play_count: int = 0
@@ -268,6 +281,9 @@ func verify_configuration() -> void:
 		&"parent_carry_grunt_empty_handed",
 	]:
 		assert(CASTING.POOLS.has(a23_pool))
+	# Director ruling 2026-07-24: every recorded door-creak take is wired for
+	# variety, so the un-denoised foley originals are sanctioned until the
+	# denoise pipeline is re-run on them.
 	for pool_id: StringName in CASTING.POOLS:
 		var pool_streams: Array = CASTING.POOLS[pool_id].get("streams", [])
 		for stream: AudioStream in pool_streams:
@@ -276,7 +292,10 @@ func verify_configuration() -> void:
 					"res://audio/original/"
 				)
 				or stream.resource_path
-				== "res://audio/original/voice/caught_grunt_02.ogg",
+				== "res://audio/original/voice/caught_grunt_02.ogg"
+				or stream.resource_path.begins_with(
+					"res://audio/original/foley/door_creak_"
+				),
 				"Uncleaned family take remains wired: %s."
 				% stream.resource_path
 			)
@@ -326,11 +345,16 @@ func begin_audio_verification() -> void:
 	assert(_game_start_line_play_count == start_line_count_before + 1)
 	assert(_tv_bed.playing and _speaker_bed.playing)
 	assert(_fridge_hum.playing and _clock_tick.playing)
+	# Expectation edit (2026-07-24 parent-initiated shutdowns): boundaries
+	# arm errands; the audible tell now rides the errand completion.
 	_on_phase_changed(1)
+	_on_shutdown_errand_completed(&"living", true)
 	assert(_light_switch.playing)
 	_on_phase_changed(2)
+	_on_shutdown_errand_completed(&"tv", true)
 	assert(_tv_click.playing and not _tv_bed.playing)
 	_on_phase_changed(3)
+	_on_shutdown_errand_completed(&"kitchen", true)
 	assert(not _speaker_bed.playing)
 	_on_pet_alert_started()
 	assert(_pet_chirp.playing)
@@ -671,6 +695,19 @@ func _connect_gameplay_signals() -> void:
 		)
 	if not _parent.epilogue_kid_protest.is_connected(_on_epilogue_kid_protest):
 		_parent.epilogue_kid_protest.connect(_on_epilogue_kid_protest)
+	if not _parent.bathroom_visit_started.is_connected(
+		_on_bathroom_visit_started
+	):
+		_parent.bathroom_visit_started.connect(_on_bathroom_visit_started)
+	if (
+		_phase_director != null
+		and not _phase_director.shutdown_errand_completed.is_connected(
+			_on_shutdown_errand_completed
+		)
+	):
+		_phase_director.shutdown_errand_completed.connect(
+			_on_shutdown_errand_completed
+		)
 	if not _pet.alert_started.is_connected(_on_pet_alert_started):
 		_pet.alert_started.connect(_on_pet_alert_started)
 	if not _pet.bark_started.is_connected(_on_pet_bark_started):
@@ -695,6 +732,14 @@ func _on_game_started() -> void:
 	_audio_epoch += 1
 	_game_active = true
 	_current_phase = GameClock.phase
+	_tv_bed_shutdown = (
+		_phase_director != null
+		and _phase_director.is_shutdown_effect_applied(&"tv")
+	)
+	_speaker_bed_shutdown = (
+		_phase_director != null
+		and _phase_director.is_shutdown_effect_applied(&"kitchen")
+	)
 	_parent_step_distance_accumulated = 0.0
 	_stop_chase_chain()
 	_stop_carry_chain()
@@ -740,35 +785,54 @@ func _on_game_ended(did_win: bool) -> void:
 	_play_event(&"win" if did_win else &"lose", {}, true)
 
 
+## Phase boundaries no longer fake shutdown clicks here (2026-07-24
+## parent-initiated ruling): the real WorldSwitch or errand completion is
+## the click. A backward scrub clears the bed flags so the ambience
+## returns with its restored phase.
 func _on_phase_changed(next_phase: int) -> void:
-	var previous_phase: int = _current_phase
 	_current_phase = clampi(next_phase, 0, 4)
+	if _current_phase < 2:
+		_tv_bed_shutdown = false
+	if _current_phase < 3:
+		_speaker_bed_shutdown = false
 	if not _game_active:
 		return
-	if _current_phase > previous_phase:
-		match _current_phase:
-			1:
-				_play_light_switch_at(living_switch_position)
-			2:
-				_tv_click.play()
-			3:
-				_play_light_switch_at(kitchen_switch_position)
-			4:
-				_play_light_switch_at(hall_switch_position)
 	_apply_ambient_phase()
+
+
+## Real shutdown moments replace the old faked phase-boundary clicks. The
+## kitchen/dining/foyer stops click through their own WorldSwitch; only
+## the switchless living lamp and the TV console need a sound here. Bed
+## flags apply on force-completions too (performed=false), silently.
+func _on_shutdown_errand_completed(
+	errand_id: StringName,
+	performed: bool
+) -> void:
+	match errand_id:
+		&"living":
+			if performed and _game_active:
+				_play_light_switch_at(living_switch_position)
+		&"tv":
+			_tv_bed_shutdown = true
+			_tv_bed.stop()
+			if performed and _game_active:
+				_tv_click.play()
+		&"kitchen":
+			_speaker_bed_shutdown = true
+			_speaker_bed.stop()
 
 
 func _apply_ambient_phase() -> void:
 	if not _game_active:
 		return
-	if _current_phase < 2:
-		_restart_if_stopped(_tv_bed)
-	else:
+	if _tv_bed_shutdown:
 		_tv_bed.stop()
-	if _current_phase < 3:
-		_restart_if_stopped(_speaker_bed)
 	else:
+		_restart_if_stopped(_tv_bed)
+	if _speaker_bed_shutdown:
 		_speaker_bed.stop()
+	else:
+		_restart_if_stopped(_speaker_bed)
 
 
 func _play_light_switch_at(world_position: Vector3) -> void:
@@ -939,6 +1003,14 @@ func _on_player_deposited() -> void:
 		_play_event(&"deposit")
 
 
+## Signal-driven so the toilet/sink sequence follows the parent's actual
+## visit; the old wall-clock ROUTINE_EVENTS row expired silently whenever
+## the 189.4-204.4 s window passed while the parent was off ROUTINE.
+func _on_bathroom_visit_started() -> void:
+	if _game_active:
+		_play_event(&"bathroom_visit")
+
+
 func _on_epilogue_room_check_started() -> void:
 	if _game_active or _b14_verification:
 		_play_event(&"epilogue_room_check", {}, _b14_verification)
@@ -993,12 +1065,12 @@ func _on_snack_dropped(drop_position: Vector3) -> void:
 
 
 func _on_tv_bed_finished() -> void:
-	if _game_active and _current_phase < 2:
+	if _game_active and not _tv_bed_shutdown:
 		_tv_bed.play()
 
 
 func _on_speaker_bed_finished() -> void:
-	if _game_active and _current_phase < 3:
+	if _game_active and not _speaker_bed_shutdown:
 		_speaker_bed.play()
 
 

@@ -80,7 +80,10 @@ func _build_floors() -> void:
 	_add_floor("EastHallFloor", Vector3(9.0, 0.0, 2.8125), Vector2(4.6, 1.425), hardwood_color, "surface_hardwood")
 	_add_floor("PantryFloor", Vector3(13.05, 0.0, 4.4), Vector2(3.9, 4.0), hardwood_color, "surface_hardwood")
 	_add_floor("PantryThreshold", Vector3(13.05, 0.0, 2.3), Vector2(3.9, 0.4), hardwood_color, "surface_hardwood")
-	_add_floor("HallRug", Vector3(-8.5, 0.02, 0.05), Vector2(9.0, 2.2), carpet_color, "surface_carpet")
+	# Rug starts east of the hidden CreakTeacher (-12.7..-10.9) so the first
+	# steps out of the kid bedroom land on honest creak-capable hardwood
+	# (director ruling, 2026-07-24 playtest follow-up).
+	_add_floor("HallRug", Vector3(-7.35, 0.02, 0.05), Vector2(6.7, 2.2), carpet_color, "surface_carpet")
 
 
 func _build_walls() -> void:
@@ -783,9 +786,9 @@ func _add_omni(
 	var fixture: Node3D = Node3D.new()
 	fixture.name = node_name
 	fixture.position = Vector3(position_value.x, 0.0, position_value.z)
-	if fixture_style == &"ceiling_disc":
-		_add_ceiling_fixture_visual(fixture, position_value.y)
-	else:
+	# Ceiling practicals build no fixture visual: playtesters read the glowing
+	# discs as floor pickups (2026-07-24 playtest). The light pool is the tell.
+	if fixture_style != &"ceiling_disc":
 		_add_fixture_visual(fixture, position_value.y, fixture_base_height)
 
 	var light: OmniLight3D = OmniLight3D.new()
@@ -917,29 +920,6 @@ func _add_fixture_visual(
 		fixture_glow_color,
 		true
 	)
-
-
-func _add_ceiling_fixture_visual(
-	fixture: Node3D,
-	source_height: float
-) -> void:
-	var shade: MeshInstance3D = MeshInstance3D.new()
-	shade.name = "Shade"
-	shade.position = Vector3(0.0, source_height, 0.0)
-	shade.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var disc: CylinderMesh = CylinderMesh.new()
-	disc.top_radius = 0.36
-	disc.bottom_radius = 0.36
-	disc.height = 0.08
-	shade.mesh = disc
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.albedo_color = fixture_glow_color
-	material.roughness = 0.7
-	material.emission_enabled = true
-	material.emission = fixture_glow_color
-	material.emission_energy_multiplier = fixture_emission_energy
-	shade.material_override = material
-	fixture.add_child(shade)
 
 
 func _add_fixture_part(

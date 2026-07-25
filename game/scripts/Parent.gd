@@ -11,6 +11,11 @@ signal light_anomaly_started(switch_id: StringName)
 signal light_anomaly_restored(switch_id: StringName, expected_on: bool)
 signal epilogue_room_check_started()
 signal epilogue_kid_protest()
+## Fires once per routine bathroom visit, at the moment the parent has
+## stepped inside and pulled the door shut. AudioDirector keys the
+## toilet/sink set-piece off this instead of a wall-clock table row, so an
+## interrupted or late visit still gets its foley at the real visit time.
+signal bathroom_visit_started()
 
 enum State {
 	ROUTINE,
@@ -53,7 +58,16 @@ enum State {
 @export var navigation_target_desired_distance: float = 0.02
 @export var facing_turn_speed: float = 5.0
 @export var routine_door_arrival_distance: float = 0.75
-@export_range(0.35, 1.0) var bathroom_door_open_openness: float = 0.7
+# 0.85 swings the visual panel well clear of the doorway; the old 0.7 left
+# the exit walk brushing the panel and entry never opened the door at all.
+@export_range(0.35, 1.0) var bathroom_door_open_openness: float = 0.85
+## Extra seconds added to the door's own travel time when deciding how far
+## ahead of a door-row arrival the entry open command is issued.
+@export var routine_door_entry_lead_margin: float = 0.75
+## Within this distance of a commanded routine door the parent stands and
+## waits until openness clears the blocker threshold instead of walking
+## through the visual panel.
+@export var routine_door_hold_distance: float = 1.2
 @export var routine_rows: Array[Dictionary] = [
 	{
 		"time": 0.0,
@@ -175,6 +189,19 @@ enum State {
 		"facing": Vector3(0.0, 0.0, -1.0),
 	},
 ]
+
+@export_group("Shutdown Errands")
+@export_node_path("PhaseDirector") var phase_director_path: NodePath = NodePath(
+	"../PhaseDirector"
+)
+## Beat between an errand arming (or the routine freeing up) and the parent
+## actually setting off — reads as noticing the time, and lets a dwell
+## arrival land before the detour (B6 samples the kitchen wait at 60 s).
+@export var shutdown_errand_reaction_delay: float = 2.0
+@export var shutdown_errand_speed: float = 1.5
+@export var shutdown_errand_arrival_distance: float = 0.8
+## Pause at the fixture before the click lands; sells reaching for it.
+@export var shutdown_errand_act_duration: float = 0.6
 
 @export_group("Routine Glances")
 @export var glance_interval: float = 15.0
@@ -489,6 +516,13 @@ var _verify_b8_door_creak_heard: bool = false
 var _verify_b9_bowl_clatter_heard: bool = false
 var _routine_staged_door_row: int = -1
 var _routine_staged_door_opened: bool = false
+var _routine_door_entry_commanded: bool = false
+var _routine_transit_door: DinnerDoor
+var _phase_director: PhaseDirector
+var _active_errand: StringName = &""
+var _errand_target_position: Vector3
+var _errand_reaction_remaining: float = 0.0
+var _errand_act_elapsed: float = 0.0
 var _glance_row_index: int = -1
 var _glance_interval_elapsed: float = 0.0
 var _glance_duration_elapsed: float = 0.0
@@ -537,6 +571,8 @@ func _ready() -> void:
 	_kid_hall_switch = (
 		get_node_or_null(kid_hall_switch_path) as DinnerWorldSwitch
 	)
+	_phase_director = get_node_or_null(phase_director_path) as PhaseDirector
+	_errand_reaction_remaining = maxf(shutdown_errand_reaction_delay, 0.0)
 	_glance_rng.seed = glance_random_seed
 	_setup_cone()
 	_setup_voice_indicator()
@@ -710,6 +746,16 @@ func _update_routine(delta: float) -> void:
 	_try_restore_tv_at_couch()
 	var routine_time: float = _get_routine_time()
 	_update_routine_door_staging(routine_time)
+	if _is_waiting_for_routine_door():
+		_cancel_glance()
+		_face_direction(
+			_routine_transit_door.global_position - global_position,
+			delta
+		)
+		return
+	if _update_shutdown_errand(delta):
+		_cancel_glance()
+		return
 	var target: Vector3 = get_base_target(routine_time)
 	_set_navigation_target(target)
 	if _move_along_path(routine_speed, delta):
@@ -800,14 +846,32 @@ func _update_routine_door_staging(routine_time: float) -> void:
 			continue
 		var arrival_time: float = _row_time(row)
 		var departure_time: float = arrival_time + _row_dwell(row)
-		if routine_time < arrival_time:
-			if _routine_staged_door_row == row_index:
-				_routine_staged_door_row = -1
-				_routine_staged_door_opened = false
-			return
 		var routine_door: DinnerDoor = _get_routine_door(door_key)
 		if routine_door == null:
 			continue
+		if routine_time < arrival_time:
+			# Entry approach: open the door far enough ahead of arrival that
+			# it clears the blocker threshold before the walk crosses the
+			# doorway, so the parent reads as opening it, never phasing
+			# through the closed panel.
+			var entry_open_lead: float = (
+				routine_door.sneak_open_duration
+				* bathroom_door_open_openness
+				+ routine_door_entry_lead_margin
+			)
+			if routine_time >= arrival_time - entry_open_lead:
+				if not _routine_door_entry_commanded:
+					_routine_door_entry_commanded = true
+					_routine_transit_door = routine_door
+					routine_door.open_to(bathroom_door_open_openness)
+			else:
+				_routine_door_entry_commanded = false
+				if _routine_transit_door == routine_door:
+					_routine_transit_door = null
+				if _routine_staged_door_row == row_index:
+					_routine_staged_door_row = -1
+					_routine_staged_door_opened = false
+			return
 		if routine_time <= departure_time:
 			if (
 				_routine_staged_door_row != row_index
@@ -817,6 +881,10 @@ func _update_routine_door_staging(routine_time: float) -> void:
 				routine_door.close_immediately()
 				_routine_staged_door_row = row_index
 				_routine_staged_door_opened = false
+				_routine_door_entry_commanded = false
+				_routine_transit_door = null
+				if door_key == &"bathroom":
+					bathroom_visit_started.emit()
 			return
 		var exit_window_end: float = departure_time + routine_door.sneak_open_duration
 		if row_index + 1 < routine_rows.size():
@@ -831,13 +899,157 @@ func _update_routine_door_staging(routine_time: float) -> void:
 			routine_door.open_to(bathroom_door_open_openness)
 			_routine_staged_door_row = row_index
 			_routine_staged_door_opened = true
+			_routine_transit_door = routine_door
 		elif (
 			routine_time > exit_window_end
 			and _routine_staged_door_row == row_index
 		):
 			_routine_staged_door_row = -1
 			_routine_staged_door_opened = false
+			_routine_door_entry_commanded = false
+			if _routine_transit_door == routine_door:
+				_routine_transit_door = null
 		return
+
+
+## Routine-layer shutdown errand (2026-07-24 "parent-initiated at the
+## fixture" ruling). Countdown light/TV changes are performed at their
+## fixture or switch: PhaseDirector arms one errand per live phase boundary
+## and the parent walks each stop next time ROUTINE has control, chaining
+## in arrival order. Returns true while the errand owns movement this tick;
+## investigate/hunt/carry/epilogue simply never call this, which is the
+## queueing behavior — the house stays lit until the routine resumes.
+func _update_shutdown_errand(delta: float) -> bool:
+	if _phase_director == null:
+		return false
+	if (
+		_active_errand != &""
+		and not _phase_director.is_shutdown_errand_pending(_active_errand)
+	):
+		# A scrub, restart, or force-complete resolved it mid-walk.
+		_active_errand = &""
+	if _active_errand == &"":
+		if not _phase_director.has_pending_shutdown_errand():
+			_errand_reaction_remaining = maxf(
+				shutdown_errand_reaction_delay,
+				0.0
+			)
+			return false
+		_errand_reaction_remaining = maxf(
+			_errand_reaction_remaining - delta,
+			0.0
+		)
+		if _errand_reaction_remaining > 0.0:
+			return false
+		if _is_routine_door_window_active(_get_routine_time()):
+			return false
+		var next_errand: StringName = (
+			_phase_director.peek_next_shutdown_errand()
+		)
+		var errand_target: Dictionary = (
+			_phase_director.get_errand_target(next_errand)
+		)
+		if not bool(errand_target.get("valid", false)):
+			# No physical stop exists in this scene; apply directly.
+			_phase_director.complete_shutdown_errand(next_errand)
+			return false
+		_active_errand = next_errand
+		_errand_target_position = errand_target.get(
+			"position",
+			global_position
+		)
+		_errand_act_elapsed = 0.0
+		_set_navigation_target(_errand_target_position, true)
+	if not _can_query_navigation():
+		return true
+	_set_navigation_target(_errand_target_position)
+	if _move_along_path(shutdown_errand_speed, delta):
+		_errand_act_elapsed = 0.0
+		return true
+	if (
+		_flat_distance(global_position, _errand_target_position)
+		> shutdown_errand_arrival_distance
+		and not _navigation_agent.is_navigation_finished()
+	):
+		return true
+	_face_direction(_errand_target_position - global_position, delta)
+	_errand_act_elapsed += delta
+	if _errand_act_elapsed < shutdown_errand_act_duration:
+		return true
+	_perform_active_shutdown_errand()
+	return true
+
+
+## True while the routine timeline is inside a door row's staged span
+## (entry lead through exit window). Errand claims defer here so a queued
+## stop cannot pull the parent out of the bathroom mid-visit or walk it
+## through the closed panel; the errand chains after the visit instead.
+func _is_routine_door_window_active(routine_time: float) -> bool:
+	for row_index in range(routine_rows.size()):
+		var row: Dictionary = routine_rows[row_index]
+		var door_key: StringName = _row_door(row)
+		if door_key == &"":
+			continue
+		var routine_door: DinnerDoor = _get_routine_door(door_key)
+		if routine_door == null:
+			continue
+		var entry_open_lead: float = (
+			routine_door.sneak_open_duration
+			* bathroom_door_open_openness
+			+ routine_door_entry_lead_margin
+		)
+		var arrival_time: float = _row_time(row)
+		var departure_time: float = arrival_time + _row_dwell(row)
+		var exit_window_end: float = (
+			departure_time + routine_door.sneak_open_duration
+		)
+		if row_index + 1 < routine_rows.size():
+			exit_window_end = maxf(
+				exit_window_end,
+				_row_time(routine_rows[row_index + 1])
+			)
+		if (
+			routine_time >= arrival_time - entry_open_lead
+			and routine_time <= exit_window_end
+		):
+			return true
+	return false
+
+
+## The click itself: switch-controlled stops flip the real WorldSwitch
+## (its own presentation click, exempt from the parent's anomaly layer,
+## same class as B14 restores); the switchless living lamp and TV console
+## report straight to PhaseDirector, whose completion signal carries the
+## presentation sound. Then rejoin the live time-indexed routine row —
+## the same resume pattern as the searchlight diversion.
+func _perform_active_shutdown_errand() -> void:
+	var errand_switch: DinnerWorldSwitch = (
+		_phase_director.get_errand_switch(_active_errand)
+	)
+	if errand_switch != null:
+		_parent_operating_switch = true
+		errand_switch.set_state(false, true)
+		_parent_operating_switch = false
+	_phase_director.complete_shutdown_errand(_active_errand)
+	_active_errand = &""
+	_errand_act_elapsed = 0.0
+	_set_navigation_target(get_base_target(_get_routine_time()), true)
+
+
+## True while a routine door transit is commanded but the panel has not yet
+## cleared its blocker threshold and the parent is close enough to clip it.
+func _is_waiting_for_routine_door() -> bool:
+	if _routine_transit_door == null:
+		return false
+	if (
+		_routine_transit_door.openness
+		>= _routine_transit_door.blocker_disable_openness
+	):
+		return false
+	return (
+		_flat_distance(global_position, _routine_transit_door.global_position)
+		<= routine_door_hold_distance
+	)
 
 
 func _get_routine_door(door_key: StringName) -> DinnerDoor:
@@ -1184,8 +1396,18 @@ func _clear_light_anomaly() -> void:
 	_light_restore_elapsed = 0.0
 
 
+## The TV goes dark when the parent's phase-2 console errand has applied
+## (or a scrub force-completed it) — not on the bare phase 2 boundary.
+## Falls back to the raw phase when no PhaseDirector exists so bare-scene
+## contexts keep the legacy semantics.
+func _is_tv_shutdown_applied() -> bool:
+	if _phase_director != null:
+		return _phase_director.is_shutdown_effect_applied(&"tv")
+	return GameClock.phase >= 2
+
+
 func _suppress_tv_for_listening() -> void:
-	if GameClock.phase >= 2:
+	if _is_tv_shutdown_applied():
 		_set_tv_enabled(false)
 		return
 	_tv_suppressed_for_listening = true
@@ -1193,7 +1415,7 @@ func _suppress_tv_for_listening() -> void:
 
 
 func _enforce_tv_listening_state() -> void:
-	if GameClock.phase >= 2:
+	if _is_tv_shutdown_applied():
 		_tv_suppressed_for_listening = false
 		_set_tv_enabled(false)
 	elif _tv_suppressed_for_listening:
@@ -1203,7 +1425,7 @@ func _enforce_tv_listening_state() -> void:
 func _try_restore_tv_at_couch() -> void:
 	if (
 		not _tv_suppressed_for_listening
-		or GameClock.phase >= 2
+		or _is_tv_shutdown_applied()
 		or _flat_distance(global_position, tv_couch_position)
 		> tv_couch_settle_distance
 	):
@@ -1215,7 +1437,7 @@ func _try_restore_tv_at_couch() -> void:
 
 
 func _set_tv_enabled(on: bool) -> void:
-	var effective_on: bool = on and GameClock.phase < 2
+	var effective_on: bool = on and not _is_tv_shutdown_applied()
 	NoiseSystem.set_ambient_source_enabled(tv_ambient_id, effective_on)
 	if _level != null:
 		for node_name: String in [tv_glow_node_name, tv_notes_node_name]:
@@ -1732,7 +1954,7 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 		return
 	if (
 		source == _bathroom_door
-		and _routine_staged_door_opened
+		and (_routine_staged_door_opened or _routine_door_entry_commanded)
 		and _bathroom_door != null
 		and _bathroom_door.is_opening_to_target()
 	):
@@ -3674,6 +3896,8 @@ func _run_b9_live_verification() -> void:
 	suspicion = 0.0
 	_routine_staged_door_row = -1
 	_routine_staged_door_opened = false
+	_routine_door_entry_commanded = false
+	_routine_transit_door = null
 	var bathroom_row: Dictionary = {}
 	for row: Dictionary in routine_rows:
 		if _row_door(row) == &"bathroom":
@@ -3694,10 +3918,19 @@ func _run_b9_live_verification() -> void:
 		GameClock.time_remaining = (
 			GameClock.run_length - _row_time(bathroom_row) - 0.05
 		)
+		# Freeze the clock for the settle window. It ticks in _process with
+		# delta scaled by verify_time_scale (20x), so one render hitch
+		# between physics frames can leap the 15 s dwell into the exit
+		# window, where staging correctly re-opens the just-closed door a
+		# tick before the sample (observed live: openness ~0.003 printing
+		# as 0.00 while failing is_zero_approx). Frozen, elapsed stays at
+		# arrival + 0.05 for all four frames and the sample is exact.
+		GameClock.running = false
 		for _frame_index in range(4):
 			await get_tree().physics_frame
 		bathroom_closed_openness = _bathroom_door.openness
 		bathroom_closed_on_arrival = is_zero_approx(_bathroom_door.openness)
+		GameClock.running = true
 		GameClock.time_remaining = (
 			GameClock.run_length
 			- _row_time(bathroom_row)
@@ -5932,6 +6165,11 @@ func _flat_distance(first: Vector3, second: Vector3) -> float:
 
 
 func _prepare_point_blank_verification() -> void:
+	# A live boundary crossed during the preceding watch loop may have armed
+	# shutdown errands; settle them so the planted pose is not walked away
+	# from mid-detection (B6/B12 point-blank sections).
+	if _phase_director != null:
+		_phase_director.force_complete_pending_errands()
 	suspicion = 0.0
 	_state = State.ROUTINE
 	_investigate_elapsed = 0.0

@@ -869,19 +869,18 @@ func _verify_a22_hallway_and_fixtures() -> void:
 	]
 	for fixture_name: String in overhead_fixture_names:
 		var fixture: Node3D = level.get_node(fixture_name) as Node3D
-		var shade: MeshInstance3D = fixture.get_node("Shade") as MeshInstance3D
 		var source: OmniLight3D = fixture.get_node("Light") as OmniLight3D
-		assert(shade.mesh is CylinderMesh)
+		# Playtest ruling 2026-07-24: ceiling practicals carry no fixture
+		# visual — the floor light pool is the only tell.
+		assert(not fixture.has_node("Shade"))
 		assert(
 			fixture.find_children(
 				"*",
 				"MeshInstance3D",
 				true,
 				false
-			).size() == 1
+			).is_empty()
 		)
-		var shade_bounds: AABB = shade.global_transform * shade.get_aabb()
-		assert(is_equal_approx(shade_bounds.end.y, 1.2))
 		assert(
 			Vector2(
 				fixture.global_position.x,
@@ -1006,7 +1005,7 @@ func _verify_a22_hallway_and_fixtures() -> void:
 	)
 	print(
 		"A22 verification passed: quiet corridor is a switched light risk, "
-		+ "point-blank sight follows 0.35, overhead fixtures read correctly, "
+		+ "point-blank sight follows 0.35, overhead practicals are visual-free, "
 		+ "and analytic/rendered positions agree."
 	)
 	get_tree().quit()

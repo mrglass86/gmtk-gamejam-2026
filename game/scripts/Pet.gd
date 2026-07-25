@@ -27,6 +27,10 @@ enum State {
 @export var initial_sleep_duration: float = 30.0
 @export var patrol_cycle_duration: float = 60.0
 @export var patrol_repath_distance: float = 0.05
+## Presentational only: how far the dog may drift straight toward the live
+## patrol carrot once its quantised nav target reports finished. Keeps the
+## slow patrol continuous instead of 5 cm hops at ~3 Hz.
+@export var patrol_glide_max_distance: float = 0.5
 @export var navigation_path_desired_distance: float = 0.55
 @export var navigation_target_desired_distance: float = 0.02
 @export var wake_exit_position: Vector3 = Vector3(4.2, 0.42, -3.8)
@@ -250,7 +254,9 @@ func _update_base(delta: float) -> void:
 	if _kitchen_bowl != null and _get_clock_elapsed() >= _next_bowl_visit_elapsed:
 		_begin_bowl_visit()
 		return
-	_move_along_path(patrol_speed, delta)
+	if _move_along_path(patrol_speed, delta):
+		return
+	_glide_toward_live_target(target, patrol_speed, delta)
 
 
 func _begin_bowl_visit() -> void:
@@ -416,6 +422,30 @@ func _move_along_path(speed: float, delta: float) -> bool:
 	global_position += movement_direction * movement_distance
 	_face_direction(movement_direction, delta)
 	return true
+
+
+## Presentational patrol smoothing. The time-indexed carrot advances only a
+## few centimetres per tick while the nav target refreshes every
+## patrol_repath_distance, so the dog otherwise stands still and then hops
+## the 5 cm gap at full speed several times a second — the playtest "low
+## framerate" look. Once the nav path reports finished, drift straight
+## toward the live carrot instead. States, nav targets, noise emissions,
+## and the hearing ring are untouched.
+func _glide_toward_live_target(
+	target: Vector3,
+	speed: float,
+	delta: float
+) -> void:
+	if not _has_left_bed or not _can_query_navigation():
+		return
+	var movement: Vector3 = target - global_position
+	movement.y = 0.0
+	var movement_length: float = movement.length()
+	if movement_length <= 0.001 or movement_length > patrol_glide_max_distance:
+		return
+	var movement_direction: Vector3 = movement / movement_length
+	global_position += movement_direction * minf(speed * delta, movement_length)
+	_face_direction(movement_direction, delta)
 
 
 func _move_toward_wake_exit(speed: float, delta: float) -> bool:

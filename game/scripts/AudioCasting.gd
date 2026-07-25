@@ -479,10 +479,13 @@ const EVENTS: Dictionary = {
 	},
 }
 
+## bathroom_visit is deliberately absent here: a wall-clock row silently
+## expired whenever an investigate held the parent off ROUTINE across its
+## window. The parent now emits bathroom_visit_started at the real visit
+## and AudioDirector plays the event from that signal.
 const ROUTINE_EVENTS: Array[Dictionary] = [
 	{"time": 0.0, "window": 8.0, "event": &"routine_couch"},
 	{"time": 60.0, "window": 8.0, "event": &"routine_kitchen"},
 	{"time": 82.0, "window": 8.0, "event": &"routine_couch"},
-	{"time": 189.4, "window": 15.0, "event": &"bathroom_visit"},
 	{"time": 288.5, "window": 11.5, "event": &"routine_bed_check"},
 ]

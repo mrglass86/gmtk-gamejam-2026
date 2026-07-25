@@ -24,6 +24,18 @@ class_name SnackVisualPresenter
 @export var pulse_speed: float = 3.6
 @export var emission_energy_base: float = 2.4
 @export var emission_pulse_amount: float = 0.3
+@export_group("Dropped Highlight")
+## Visual-only rescue beacon for a snack knocked loose by a catch: warm
+## HUD-prompt-orange emission, a faster/stronger energy pulse, and a
+## gentler-but-larger scale pulse. Emission cannot light floors in
+## Compatibility, so this adds no light=danger contradiction. Cleared by
+## pickup or any fresh door reveal (Snack.was_dropped).
+@export var dropped_accent_color: Color = Color(0.96, 0.58, 0.28)
+@export_range(0.0, 1.0, 0.01) var dropped_accent_mix: float = 0.85
+@export var dropped_pulse_speed: float = 6.4
+@export var dropped_emission_energy_base: float = 3.6
+@export var dropped_emission_pulse_amount: float = 0.55
+@export var dropped_pulse_scale_amount: float = 0.16
 @export_group("Snack Identity")
 @export var pantry_packet_color: Color = Color("#fff0a8")
 @export var pantry_foil_color: Color = Color("#f7fbff")
@@ -37,6 +49,7 @@ var _pulse_elapsed: float = 0.0
 var _base_scale: Vector3
 var _presented_type: StringName = &""
 var _pulse_materials: Array[StandardMaterial3D] = []
+var _pulse_base_emission_colors: Array[Color] = []
 var _variant_parts: Array[MeshInstance3D] = []
 var _pickup_pop_tween: Tween
 
@@ -118,6 +131,7 @@ func _apply_snack_type(next_type: StringName) -> void:
 	)
 	_clear_variant_parts()
 	_pulse_materials.clear()
+	_pulse_base_emission_colors.clear()
 	_presented_type = resolved_type
 	if resolved_type == DinnerSnack.TYPE_ICE_CREAM:
 		_build_ice_cream()
@@ -198,15 +212,46 @@ func _make_emissive_material(
 	snack_material.emission = emission_color
 	snack_material.emission_energy_multiplier = emission_energy_base
 	_pulse_materials.append(snack_material)
+	_pulse_base_emission_colors.append(emission_color)
 	return snack_material
 
 
+func _is_dropped_highlight_active() -> bool:
+	return (
+		_snack != null
+		and _snack.was_dropped
+		and _snack.available_for_pickup
+	)
+
+
 func _apply_pulse() -> void:
+	if _is_dropped_highlight_active():
+		_apply_dropped_pulse()
+		return
 	var pulse_weight: float = sin(_pulse_elapsed * pulse_speed * TAU)
 	scale = _base_scale * (1.0 + pulse_scale_amount * pulse_weight)
-	for pulse_material: StandardMaterial3D in _pulse_materials:
+	for material_index: int in range(_pulse_materials.size()):
+		var pulse_material: StandardMaterial3D = _pulse_materials[material_index]
+		pulse_material.emission = _pulse_base_emission_colors[material_index]
 		pulse_material.emission_energy_multiplier = emission_energy_base * (
 			1.0 + emission_pulse_amount * pulse_weight
+		)
+
+
+## Dropped-state variant of the pulse: same materials and node, warmer hue,
+## faster and stronger emission pulse, gentle scale pulse. Purely visual —
+## pickup rules, loudness cadence, and snack identity meshes are untouched.
+func _apply_dropped_pulse() -> void:
+	var pulse_weight: float = sin(_pulse_elapsed * dropped_pulse_speed * TAU)
+	scale = _base_scale * (1.0 + dropped_pulse_scale_amount * pulse_weight)
+	for material_index: int in range(_pulse_materials.size()):
+		var pulse_material: StandardMaterial3D = _pulse_materials[material_index]
+		pulse_material.emission = _pulse_base_emission_colors[
+			material_index
+		].lerp(dropped_accent_color, clampf(dropped_accent_mix, 0.0, 1.0))
+		pulse_material.emission_energy_multiplier = (
+			dropped_emission_energy_base
+			* (1.0 + dropped_emission_pulse_amount * pulse_weight)
 		)
 
 

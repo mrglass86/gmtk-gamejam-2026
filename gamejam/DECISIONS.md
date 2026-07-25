@@ -992,3 +992,202 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Evidence / handoff:** `WoodFloorMaterial.gd`, LevelBuilder hardwood
   material branch, NoiseSurface `show_surface_visual`, Main.tscn creak
   overrides, Player trap floors, updated `--verify-b19` expectations.
+
+## 2026-07-24 — First playtest round: hide the tells, flip the fridge, foyer trap
+
+- **Decision:** From watching the first outside playtester (director's wife):
+  1. The kid-hall CreakTeacher hides too (`show_surface_visual = false`) —
+     every creaky board is now invisible and discovered by sound. Supersedes
+     this morning's "rug teacher stays visible" carve-out.
+  2. Ceiling practicals build no fixture visual at all; playtesters read the
+     glowing discs as floor pickups. The floor light pool (plus the switch
+     plates) is the light's only tell. The kid nightstand lamp keeps its
+     furniture visual.
+  3. New `ToyFoyer` squeaky-toy pile at (8.3, 4.75) beside the front-door
+     shelf, gating the straight alcove line toward the pantry; both careful
+     routes around it (hall side, door-mat side) stay open.
+  4. The fridge door hinges on its right (east) edge: `DoorVisual` moves to
+     the east corner, the panel extends west, and the swing mirrors to +90°.
+     Interaction point, snack reveal, spill light, and blocker are unchanged.
+- **Why:** Real-player reads beat authored intent: visible trap planks and
+  glowing discs both misread, the fridge swing looked wrong, and the pantry
+  route had no noise gate.
+- **Rejected / cut:** Removing the nightstand lamp visual; moving the fridge
+  interaction point with the hinge (would relocate snack reveal and spill).
+- **Owner:** Noah (director), Claude (implementation), operator (verifies).
+- **Revisit when:** A playtester cannot find any creak by trial, the alcove
+  squeeze past ToyFoyer reads unfair, or the mirrored fridge swing clips a
+  prop.
+- **Evidence / handoff:** Main.tscn CreakTeacher/ToyFoyer/Fridge edits,
+  LevelBuilder ceiling-fixture removal. Companion behavior fixes (bathroom
+  set-piece audio and door, dog motion smoothing, dropped-snack marker, dog
+  switch check) tracked in the same evening's engineer pass.
+
+## 2026-07-24 — Playtest behavior fixes: bathroom set-piece, dog motion, dropped snack
+
+- **Decision:** Three script-only fixes plus one investigation ruling from the
+  wife's live web-build session.
+  1. Bathroom visit is now a staged set-piece. Parent.gd opens the door ahead
+     of arrival (entry lead = sneak_open_duration x open target + 0.75 s
+     margin), holds within 1.2 m of the panel until openness clears the 0.35
+     blocker threshold, closes it on arrival as before, and
+     `bathroom_door_open_openness` rises 0.7 -> 0.85. A new
+     `bathroom_visit_started` signal fires at the arrival close;
+     AudioDirector plays the toilet/sink event from that signal and the
+     wall-clock 189.4 s ROUTINE_EVENTS row is deleted (it silently expired
+     whenever an investigate held the parent off ROUTINE across the window).
+     BathroomFoley is promoted to the house-wide tell class: -13 -> -8 dB,
+     max_distance 8 -> 18 m, matching the switch-click tells.
+  2. Dog stutter was the time-indexed patrol carrot: the nav target refreshes
+     every 0.05 m while the carrot moves ~0.17 m/s, so the dog stood still
+     and hopped 5 cm at ~3 Hz. Pet.gd now glides straight toward the live
+     carrot (capped by new `patrol_glide_max_distance` 0.5) once the nav path
+     reports finished — presentational only; states, targets, noise, and
+     ring are untouched.
+  3. Dropped snack gets a rescue-beacon skin: Snack.gd tracks a
+     presentation-only `was_dropped` flag (set on drop_at, cleared on pickup
+     and door reveals) and SnackVisualPresenter pulses the same meshes with
+     HUD-prompt-orange emission (0.96, 0.58, 0.28), faster/stronger energy
+     pulse, and a 0.16 scale pulse. No new lights; mechanics and the 0.3
+     loudness cadence unchanged.
+  4. Ruling (investigate-only): the dog cannot touch lights — Pet.gd has no
+     LightSystem/WorldSwitch references. The "dog turned off the kitchen
+     light" read is the scheduled phase-3 sweep: GameClock phase 3 fires at
+     exactly 180 s, PhaseDirector kills the kitchen zone and syncs the wall
+     switch, AudioDirector clicks at the kitchen switch — and the patrol
+     table puts the dog at its kitchen row (7.4, -1.5) at clock 180 exactly
+     (cycle 60 s + 30 s sleep offset). Deterministic co-occurrence, not a
+     bug.
+- **Why:** Live playtest: parent phased through the closed bathroom panel
+  with no flush/sink audio, the dog read as low-framerate, and the dropped
+  snack vanished into the dark after a catch.
+- **Rejected / cut:** Widening the audio table window or dropping its
+  ROUTINE-state gate (flush would play with the parent mid-chase); repathing
+  the dog every tick (cost, and the brief's smoothing intent); an OmniLight
+  under the dropped snack (fakes lit floor, contradicts light=danger; scene
+  edit territory); moving snack drop mechanics.
+- **Owner:** Noah (director), Claude (engineer pass), operator (verifies).
+- **Revisit when:** The 18 m flush tell reads too loud/quiet in play, the
+  0.85 swing clips a prop, the dog's carrot-speed amble reads too slow, or
+  playtesters want the dropped beacon on door-revealed snacks too.
+- **Evidence / handoff:** Parent.gd door staging/hold/signal + noise guard,
+  AudioCasting.gd ROUTINE_EVENTS, AudioDirector.gd handler + foley exports,
+  Pet.gd glide, Snack.gd `was_dropped`, SnackVisualPresenter.gd dropped
+  pulse. Battery: `--verify-b9 --verify-b6 --verify-b12 --verify-b14
+  --verify-b13 --verify-b15 --verify-b8 --verify-b20 --verify-b17
+  --verify-a20 --verify-audio`. Not committed; operator commits after
+  review.
+
+## 2026-07-24 — Hall rug retreats past the hidden bedroom creak
+
+- **Decision:** HallRug shrinks from x -13.0..-4.0 to x -10.7..-4.0 (center
+  -7.35, length 6.7 m). The kid-bedroom exit zone and the whole hidden
+  CreakTeacher span (-12.7..-10.9) become exposed wood floor; the quiet rug
+  resumes east of the creak and still carries the hall toy pile.
+- **Why:** An invisible creak under carpet contradicts the carpet-is-quiet
+  rule. Wood creaks are coherent; the first steps out of bed now teach the
+  hidden-trap mechanic on an honest surface.
+- **Rejected / cut:** Moving the creak instead (it belongs at the bedroom
+  door); a visible rug seam tell.
+- **Owner:** Noah (director), Claude (implementation).
+- **Revisit when:** The noisier first steps out of bed read as unfair, or the
+  rug's new west edge looks arbitrary in play.
+- **Evidence / handoff:** LevelBuilder `HallRug` line; rides the evening's
+  pending verify/commit batch.
+
+## 2026-07-24 — Scheduled shutdowns are parent-initiated at the fixture
+
+- **Decision:** No countdown light or TV change happens on a bare timer. A
+  phase boundary arms a shutdown errand instead: the parent, next time the
+  routine has control, walks to the controlling fixture or switch (living
+  floor lamp, TV console, kitchen switch, then the dining and foyer switches
+  for the final hall sweep) and initiates the change with the normal click —
+  only then does the world state apply. If the parent is investigating,
+  hunting, or carrying, the errand queues and the house stays lit until the
+  routine resumes. Debug scrubbing force-completes pending errands so ]/[
+  stays usable; restart resets them.
+- **Why:** The playtester read a timer-driven kitchen light-off as the dog
+  doing it. Diegetic shutdown makes the countdown watchable and honest — the
+  bedtime routine is the parent visibly closing down the house.
+- **Rejected / cut:** Keeping any bare-timer light change (director's rule is
+  categorical); teleporting the parent to the switch.
+- **Owner:** Noah (director), engineer pass 2 (implementation), Claude
+  (spec and review), operator (verifies).
+- **Revisit when:** Endgame pacing suffers because the phase-4 hall sweep
+  chains two switch stops inside the last minute, or a queued errand starves
+  long enough that a phase never visibly lands.
+- **Evidence / handoff:** PhaseDirector.apply_phase is today's pure sweep
+  (zone lines 65-71, fixture visibility 73-80); B14 asserts phase-2 TV
+  behavior and B9 asserts routine row timing — implementation must read those
+  verifies first and update expectations deliberately.
+
+## 2026-07-24 — Parent-initiated shutdowns: implementation record
+
+- **Decision:** Errand architecture as ruled, in scripts only.
+  1. PhaseDirector splits into a signal path and a pure path. Live
+     `GameClock.phase_changed` (clock moved by one frame's delta) ARMS
+     errands — living(1), tv(2), kitchen(3), dining+foyer(4) — and a single
+     `_write_world_state()` keys every shutdown line off applied effects
+     instead of raw phase. The public `apply_phase(n)` keeps its legacy
+     contract: force-complete to the pure end-state (used by A5/A7/A22
+     direct calls and boot). Scrubs, direct time writes, `_enter_title`,
+     and restarts are detected as clock jumps > `scrub_detection_jump`
+     (5 s, exported) against a per-frame observed clock and route to
+     `apply_phase` — live-boundary detection failing under low FPS
+     degrades to the legacy instant sweep, never to a stall.
+  2. Parent executes errands in the ROUTINE layer only (searchlight-style
+     detour: walk, act 0.6 s, click, rejoin the live row). New exports:
+     `shutdown_errand_reaction_delay` 2.0 (also keeps B6's 60 s kitchen
+     sample green), `shutdown_errand_speed` 1.5, arrival 0.8, act 0.6.
+     Kitchen/dining/foyer flip their real WorldSwitch under
+     `_parent_operating_switch` (B14-restore exemption class); living lamp
+     and TV console report to PhaseDirector, whose completion signal
+     carries the presentation click (AudioDirector: living switch sound,
+     TVClickOff). Claims defer while a routine door row span is active so
+     an errand cannot pull the parent through the bathroom panel; busy
+     states queue naturally (hook only exists in `_update_routine`).
+  3. AudioDirector's faked phase clicks are deleted; ambient beds follow
+     shutdown flags set by completions (silent on force-completions) and
+     cleared by backward scrubs. Parent TV machinery
+     (`_set_tv_enabled`/suppress/enforce/restore) keys off the applied tv
+     effect with a raw-phase fallback when no PhaseDirector exists.
+     `begin_audio_verification` expectations updated (B19 precedent): each
+     boundary now asserts the errand-completion click instead.
+  4. Kitchen ruling: the kitchen_speaker ambient dies on the same switch
+     completion — one kitchen trip. Phase 4 ruling: per-stop fixture
+     visibility (dining hides Mid+DiningEntry, foyer hides Alcove), hall
+     zone falls when BOTH complete. Searchlight precedence: a pending
+     errand still completes after the search; a searchlight-relit light
+     whose errand already completed stays on (legacy parity, no re-arm).
+  5. Player counter-play confirmed covered by existing machinery: post-
+     errand the light is genuinely switch-state, `_is_switch_expected_on`
+     already matches post-errand reality, so a player flip is a normal
+     B14 anomaly restore. No new code.
+  6. Verify shims, both precedented: `_prepare_point_blank_verification`
+     force-completes pending errands (B6/B12 planted poses must not be
+     walked away from); `--verify-b21` runs PhaseDirector in legacy
+     timer mode (its 120 s live memory wait would otherwise send errand
+     walks sweeping the staged dining anomaly) — same in-code flag
+     precedent as the B15 counter.
+- **Why:** Director ruling above; the errand delay is the intended
+  pressure (multiple pending phases keep the house visibly lit late).
+- **Rejected / cut:** Touching GameClock's locked interface for scrub
+  detection (jump heuristic observes it instead); re-arming errands the
+  searchlight undoes; a dining-zone split (no such zone exists — hall is
+  the phase-4 zone); deferring AudioDirector bed state through polling
+  (signal ordering with PhaseDirector is scene-order dependent; flags are
+  order-independent).
+- **Owner:** Noah (director), Claude (engineer pass 2), operator (verifies).
+- **Revisit when:** Live play shows a starved errand keeping a phase
+  invisible too long, the 5 s scrub threshold misreads on a very slow
+  machine, the phase-4 two-stop chain crowds the endgame, or the dining
+  stop's transient visual-vs-analytic mismatch (hall zone waits for both
+  stops) reads wrong.
+- **Evidence / handoff:** PhaseDirector.gd rewrite (arm/force split,
+  `_write_world_state`), Parent.gd `_update_shutdown_errand` +
+  `_perform_active_shutdown_errand` + door-window claim gate + TV
+  gating, AudioDirector.gd completion handler + bed flags + edited
+  `begin_audio_verification`. Battery: full B suite (b6 b7 b8 b9 b10 b12
+  b13 b14 b15 b17 b18-core b18 b20 b21) + `--verify-a5 --verify-a7
+  --verify-a8 --verify-a20 --verify-a22 --verify-audio` + QA scenarios
+  (monkey, expiry set, restart-fuzz, switch-spam). Not committed.
