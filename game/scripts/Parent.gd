@@ -17,6 +17,10 @@ signal epilogue_kid_protest()
 ## interrupted or late visit still gets its foley at the real visit time.
 signal bathroom_visit_started()
 
+const SCRIBBLE_EMITTER_SCRIPT: GDScript = preload(
+	"res://scripts/ParentScribbleEmitter.gd"
+)
+
 enum State {
 	ROUTINE,
 	CURIOUS,
@@ -2416,39 +2420,24 @@ func _make_cone_material() -> StandardMaterial3D:
 	return material
 
 
+## The indicator node survives as a mesh-less anchor: B14 and the audio
+## verify assert its name and visible flag, and AudioDirector still drives
+## it through show_parent_voice_indicator. The old chunky magenta block is
+## gone (that color language is reserved for noise-danger tells); the
+## visible speech read is the scribble emitter watching this anchor.
 func _setup_voice_indicator() -> void:
 	_voice_indicator = MeshInstance3D.new()
 	_voice_indicator.name = "ParentVoiceIndicator"
 	_voice_indicator.position = Vector3.UP * voice_indicator_height
 	_voice_indicator.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_voice_indicator.visible = false
-	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-	material.no_depth_test = true
-	material.albedo_color = voice_indicator_color
-	material.emission_enabled = true
-	material.emission = voice_indicator_color
-	var icon_mesh: ImmediateMesh = ImmediateMesh.new()
-	icon_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, material)
-	for vertex: Vector3 in [
-		Vector3(-0.45, -0.25, 0.0),
-		Vector3(0.45, -0.25, 0.0),
-		Vector3(0.45, 0.25, 0.0),
-		Vector3(-0.45, -0.25, 0.0),
-		Vector3(0.45, 0.25, 0.0),
-		Vector3(-0.45, 0.25, 0.0),
-		Vector3(-0.12, -0.24, 0.0),
-		Vector3(0.02, -0.48, 0.0),
-		Vector3(0.16, -0.24, 0.0),
-	]:
-		icon_mesh.surface_add_vertex(vertex)
-	icon_mesh.surface_end()
-	_voice_indicator.mesh = icon_mesh
 	_voice_indicator.scale = Vector3.ONE * voice_indicator_scale
 	add_child(_voice_indicator)
+	var scribble_emitter: Node3D = SCRIBBLE_EMITTER_SCRIPT.new() as Node3D
+	scribble_emitter.name = "ParentScribbleEmitter"
+	scribble_emitter.position = Vector3.UP * voice_indicator_height
+	scribble_emitter.set("watch_target", _voice_indicator)
+	add_child(scribble_emitter)
 
 
 func show_parent_voice_indicator(duration: float = -1.0) -> void:
@@ -5808,7 +5797,14 @@ func _run_b18_searchlight_live_verification() -> void:
 	for _frame_index in range(verify_warmup_frames):
 		await get_tree().physics_frame
 
-	var search_start: Vector3 = Vector3(-2.0, 0.7, -0.8)
+	# Staging edit (2026-07-25): the dining switch remount to
+	# (-4.065, 1.0, 2.0) left the old (-2.0, -0.8) stage point nearer to
+	# the bathroom switch, so the searchlight legitimately visited that
+	# instead and the hunt section then skipped both it (left on by the
+	# first section) and the boot-lit kitchen switch. This start puts the
+	# dining switch nearest by a wide margin from the first evaluation in
+	# both sections, keeping the hardcoded dining bookkeeping meaningful.
+	var search_start: Vector3 = Vector3(-3.0, 0.7, 1.2)
 	var search_target: Vector3 = Vector3(5.2, 0.7, -0.8)
 	var investigate_dark_at_start: bool = false
 	var investigate_diversion_started: bool = false

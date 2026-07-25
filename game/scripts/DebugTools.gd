@@ -49,6 +49,7 @@ var _pet: Node3D
 var _camera: Camera3D
 var _overlay_layer: CanvasLayer
 var _overlay_label: Label
+var _collision_debug_root: Node3D
 var _trial_lamps: Array[Node3D] = []
 var _active_trial_lamp: Node3D
 var _next_trial_lamp_id: int = 1
@@ -71,6 +72,34 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if (
+		event is InputEventKey
+		and (event as InputEventKey).pressed
+		and not event.is_echo()
+		and (event as InputEventKey).keycode == KEY_G
+	):
+		# Retro-dither mockup toggle, deliberately outside the debug gate so
+		# the director can judge the look in the release web export
+		# (2026-07-25). Rule on the default state before submission.
+		var retro_filter: CanvasLayer = (
+			get_node_or_null("../RetroFilter") as CanvasLayer
+		)
+		if retro_filter != null:
+			retro_filter.visible = not retro_filter.visible
+			get_viewport().set_input_as_handled()
+			return
+	if (
+		event is InputEventKey
+		and (event as InputEventKey).pressed
+		and not event.is_echo()
+		and (event as InputEventKey).keycode == KEY_B
+	):
+		# Collision inspector, outside the debug gate so the director can use
+		# it in the web export (2026-07-25). It reveals the hidden traps —
+		# MUST be stripped or debug-gated before the submission build.
+		_toggle_collision_debug()
+		get_viewport().set_input_as_handled()
+		return
 	if not OS.is_debug_build():
 		return
 	if event.is_action_pressed("debug_skip"):
@@ -310,6 +339,147 @@ func _nearest_trial_lamp_to(world_position: Vector3) -> Node3D:
 			nearest = lamp
 			nearest_distance = distance
 	return nearest
+
+
+func _toggle_collision_debug() -> void:
+	if (
+		_collision_debug_root != null
+		and is_instance_valid(_collision_debug_root)
+	):
+		_collision_debug_root.queue_free()
+		_collision_debug_root = null
+		return
+	_collision_debug_root = null
+	if _level == null:
+		return
+	_collision_debug_root = Node3D.new()
+	_collision_debug_root.name = "CollisionDebugOverlay"
+	_level.add_child(_collision_debug_root)
+
+	var lines: ImmediateMesh = ImmediateMesh.new()
+	lines.surface_begin(Mesh.PRIMITIVE_LINES)
+	for candidate: Node in get_tree().get_nodes_in_group("nav_source"):
+		if candidate is NoiseSurface:
+			_append_collision_shapes(lines, candidate as Node3D)
+	for candidate: Node in get_tree().get_nodes_in_group("interactable"):
+		var interactable: Node3D = candidate as Node3D
+		if interactable == null:
+			continue
+		if interactable is DinnerDoor:
+			_append_collision_shapes(lines, interactable)
+		var radius_value: Variant = interactable.get("interaction_radius")
+		if radius_value != null:
+			_append_ground_circle(
+				lines,
+				interactable.global_position,
+				float(radius_value)
+			)
+	for candidate: Node in get_tree().get_nodes_in_group("crib_goal"):
+		_append_collision_shapes(lines, candidate as Node3D)
+	lines.surface_end()
+
+	var instance: MeshInstance3D = MeshInstance3D.new()
+	instance.mesh = lines
+	var line_material: StandardMaterial3D = StandardMaterial3D.new()
+	line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	line_material.albedo_color = Color(0.25, 0.95, 0.4)
+	line_material.no_depth_test = true
+	instance.material_override = line_material
+	_collision_debug_root.add_child(instance)
+
+
+func _append_collision_shapes(lines: ImmediateMesh, root: Node3D) -> void:
+	for shape_node: Node in root.find_children(
+		"*",
+		"CollisionShape3D",
+		true,
+		false
+	):
+		var collision: CollisionShape3D = shape_node as CollisionShape3D
+		if collision.shape is BoxShape3D:
+			_append_box_edges(
+				lines,
+				collision.global_transform,
+				(collision.shape as BoxShape3D).size
+			)
+		elif collision.shape is CylinderShape3D:
+			_append_cylinder_edges(
+				lines,
+				collision.global_transform,
+				collision.shape as CylinderShape3D
+			)
+
+
+func _append_box_edges(
+	lines: ImmediateMesh,
+	shape_transform: Transform3D,
+	size: Vector3
+) -> void:
+	var half: Vector3 = size * 0.5
+	var corners: Array[Vector3] = []
+	for x_sign: float in [-1.0, 1.0]:
+		for y_sign: float in [-1.0, 1.0]:
+			for z_sign: float in [-1.0, 1.0]:
+				corners.append(
+					shape_transform * Vector3(
+						half.x * x_sign,
+						half.y * y_sign,
+						half.z * z_sign
+					)
+				)
+	var edges: Array[Vector2i] = [
+		Vector2i(0, 1), Vector2i(0, 2), Vector2i(0, 4),
+		Vector2i(3, 1), Vector2i(3, 2), Vector2i(3, 7),
+		Vector2i(5, 1), Vector2i(5, 4), Vector2i(5, 7),
+		Vector2i(6, 2), Vector2i(6, 4), Vector2i(6, 7),
+	]
+	for edge: Vector2i in edges:
+		lines.surface_add_vertex(corners[edge.x])
+		lines.surface_add_vertex(corners[edge.y])
+
+
+func _append_ground_circle(
+	lines: ImmediateMesh,
+	center: Vector3,
+	radius: float
+) -> void:
+	var segments: int = 24
+	var flat_center: Vector3 = Vector3(center.x, 0.06, center.z)
+	for segment_index: int in range(segments):
+		var angle_a: float = TAU * float(segment_index) / float(segments)
+		var angle_b: float = TAU * float(segment_index + 1) / float(segments)
+		lines.surface_add_vertex(
+			flat_center + Vector3(cos(angle_a), 0.0, sin(angle_a)) * radius
+		)
+		lines.surface_add_vertex(
+			flat_center + Vector3(cos(angle_b), 0.0, sin(angle_b)) * radius
+		)
+
+
+func _append_cylinder_edges(
+	lines: ImmediateMesh,
+	shape_transform: Transform3D,
+	cylinder: CylinderShape3D
+) -> void:
+	var segments: int = 16
+	for cap_sign: float in [-1.0, 1.0]:
+		for segment_index: int in range(segments):
+			var angle_a: float = TAU * float(segment_index) / float(segments)
+			var angle_b: float = TAU * float(segment_index + 1) / float(segments)
+			lines.surface_add_vertex(
+				shape_transform * Vector3(
+					cos(angle_a) * cylinder.radius,
+					cylinder.height * 0.5 * cap_sign,
+					sin(angle_a) * cylinder.radius
+				)
+			)
+			lines.surface_add_vertex(
+				shape_transform * Vector3(
+					cos(angle_b) * cylinder.radius,
+					cylinder.height * 0.5 * cap_sign,
+					sin(angle_b) * cylinder.radius
+				)
+			)
 
 
 func _on_noise_emitted(_pos: Vector3, loudness: float, _source: Node) -> void:

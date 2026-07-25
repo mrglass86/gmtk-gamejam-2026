@@ -395,7 +395,10 @@ func _verify_a5_clock_and_phases() -> void:
 
 	GameClock.scrub(60.0)
 	assert(GameClock.phase == 1 and is_equal_approx(GameClock.time_remaining, 240.0))
-	assert(not ($Level/LivingLampVisual as Node3D).visible)
+	# Expectation edit (pass 3): the floor lamp's furniture body stays
+	# visible through the shutdown; only its light dies.
+	assert(($Level/LivingLampVisual as Node3D).visible)
+	assert(not ($Level/LivingLampVisual/Light as OmniLight3D).visible)
 
 	GameClock.scrub(60.0)
 	assert(GameClock.phase == 2 and is_equal_approx(GameClock.time_remaining, 180.0))
@@ -417,7 +420,7 @@ func _verify_a5_clock_and_phases() -> void:
 	assert(($Level/KitchenLampVisual as Node3D).visible)
 	assert(($Level/MidLampVisual as Node3D).visible)
 	assert(NoiseSystem.get_mask_at(Vector3(8.5, 0.0, -5.3)) > 0.0)
-	assert(not ($Level/LivingLampVisual as Node3D).visible)
+	assert(not ($Level/LivingLampVisual/Light as OmniLight3D).visible)
 	assert(not ($Level/TVGlow as Node3D).visible)
 
 	GameClock.start()
@@ -486,19 +489,19 @@ func _verify_a51_second_walk_fixes() -> void:
 	var fridge_panel: MeshInstance3D = $Fridge/DoorVisual/Panel as MeshInstance3D
 	assert(
 		fridge_hinge.global_position.distance_to(
-			Vector3(12.55, 0.0, -4.2)
+			Vector3(14.95, 0.0, -4.2)
 		) < 0.01
 	)
-	assert(is_equal_approx(fridge_panel.position.x, 1.2))
+	assert(is_equal_approx(fridge_panel.position.x, -1.2))
 	assert(is_zero_approx(fridge_panel.position.z))
 	fridge.set("openness", 1.0)
 	fridge.call("_apply_visual")
-	assert(is_equal_approx(fridge_hinge.rotation_degrees.y, -90.0))
+	assert(is_equal_approx(fridge_hinge.rotation_degrees.y, 90.0))
 	var panel_aabb: AABB = fridge_panel.global_transform * fridge_panel.get_aabb()
 	assert(
 		panel_aabb.size.z > 2.3
 		and panel_aabb.position.z >= fridge_hinge.global_position.z,
-		"Open fridge panel does not point south from its south-west hinge."
+		"Open fridge panel does not point south from its south-east hinge."
 	)
 
 	var parent: Node3D = $Parent
@@ -759,11 +762,13 @@ func _verify_a21_light_and_switch_support() -> void:
 			"%s shadow blocker does not cover its visible wall." % wall_name
 		)
 
+	# The adult door never opens, so its lintel drops to the panel top
+	# (opening 1.25) and closes its over-door spill band (2026-07-25).
 	var lintel_rows: Array[Dictionary] = [
-		{"name": "KidDoorShadowLintel", "width": 2.3},
-		{"name": "BathroomDoorShadowLintel", "width": 2.95},
-		{"name": "AdultDoorShadowLintel", "width": 2.3},
-		{"name": "PantryDoorShadowLintel", "width": 3.55},
+		{"name": "KidDoorShadowLintel", "width": 2.3, "opening": 2.4},
+		{"name": "BathroomDoorShadowLintel", "width": 2.95, "opening": 2.4},
+		{"name": "AdultDoorShadowLintel", "width": 2.3, "opening": 1.25},
+		{"name": "PantryDoorShadowLintel", "width": 3.55, "opening": 2.4},
 	]
 	for lintel_row: Dictionary in lintel_rows:
 		var lintel: MeshInstance3D = level.get_node(
@@ -778,7 +783,7 @@ func _verify_a21_light_and_switch_support() -> void:
 		assert(
 			is_equal_approx(
 				lintel_aabb.position.y,
-				float(level.get("doorway_shadow_opening_height"))
+				float(lintel_row["opening"])
 			)
 			and lintel_aabb.end.y >= required_height - 0.001
 		)
@@ -1274,7 +1279,7 @@ func _verify_a8_tuning() -> void:
 
 func _verify_a9_practical_lighting() -> void:
 	var environment: Environment = ($WorldEnvironment as WorldEnvironment).environment
-	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.09))
 
 	var level: Node3D = $Level as Node3D
 	var configured_range: float = float(level.get("lamp_range"))
@@ -1307,16 +1312,21 @@ func _verify_a9_practical_lighting() -> void:
 			true,
 			false
 		)
-		assert(
-			fixture_parts.size()
-			== (1 if overhead_fixture_names.has(fixture_name) else 3)
-		)
-		var shade: MeshInstance3D = fixture.get_node("Shade") as MeshInstance3D
-		var shade_material: StandardMaterial3D = (
-			shade.material_override as StandardMaterial3D
-		)
-		assert(shade_material.emission_enabled)
-		assert(shade_material.emission.b >= shade_material.emission.r)
+		# Ceiling practicals build no fixture visual (2026-07-24 playtest
+		# ruling); only the two lamp-style fixtures keep their bodies.
+		if overhead_fixture_names.has(fixture_name):
+			assert(fixture_parts.is_empty())
+			assert(not fixture.has_node("Shade"))
+		else:
+			assert(fixture_parts.size() == 3)
+			var shade: MeshInstance3D = (
+				fixture.get_node("Shade") as MeshInstance3D
+			)
+			var shade_material: StandardMaterial3D = (
+				shade.material_override as StandardMaterial3D
+			)
+			assert(shade_material.emission_enabled)
+			assert(shade_material.emission.b >= shade_material.emission.r)
 		var analytic_anchor: Vector3 = Vector3(
 			fixture.global_position.x,
 			0.0,
@@ -1364,7 +1374,7 @@ func _verify_a9_practical_lighting() -> void:
 
 	print(
 		"A9 verification passed: cool emissive practicals, 7.8 m visual pools, "
-		+ "A16 0.05 ambient floor, and live capsule/HUD brightness tracking."
+		+ "the 0.09 ambient floor, and live capsule/HUD brightness tracking."
 	)
 	get_tree().quit()
 
@@ -1375,7 +1385,7 @@ func _verify_a10_presentation() -> void:
 		await get_tree().physics_frame
 
 	var environment: Environment = ($WorldEnvironment as WorldEnvironment).environment
-	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.09))
 
 	var bathroom_door: DinnerDoor = $Level/BathroomDoor as DinnerDoor
 	assert(bathroom_door != null)
@@ -1492,7 +1502,7 @@ func _verify_a10_presentation() -> void:
 	assert(
 		not fridge_panel.find_children("*", "CollisionShape3D", true, false)
 	)
-	assert(is_equal_approx(fridge_hinge.rotation_degrees.y, -90.0))
+	assert(is_equal_approx(fridge_hinge.rotation_degrees.y, 90.0))
 	fridge.close_immediately()
 
 	var tv_glow: AreaLight3D = $Level/TVGlow as AreaLight3D
@@ -1618,11 +1628,8 @@ func _verify_a11_dress_pack() -> void:
 	]
 	for fixture_name: String in fixture_names:
 		var fixture: Node3D = level.get_node(fixture_name) as Node3D
-		var shade: MeshInstance3D = fixture.get_node("Shade") as MeshInstance3D
 		var source: OmniLight3D = fixture.get_node("Light") as OmniLight3D
 		assert(is_equal_approx(source.global_position.y, 4.5))
-		assert(shade.global_position.y < 2.0)
-		assert(source.global_position.distance_to(shade.global_position) > 2.5)
 		var horizontal_offset: float = Vector2(
 			source.global_position.x,
 			source.global_position.z
@@ -1630,10 +1637,20 @@ func _verify_a11_dress_pack() -> void:
 			Vector2(fixture.position.x, fixture.position.z)
 		)
 		if fixture_name in ["KidLampVisual", "LivingLampVisual"]:
+			var shade: MeshInstance3D = (
+				fixture.get_node("Shade") as MeshInstance3D
+			)
+			assert(shade.global_position.y < 2.0)
+			assert(
+				source.global_position.distance_to(shade.global_position)
+				> 2.5
+			)
 			assert(
 				horizontal_offset > 0.4
 			)
 		else:
+			# Ceiling practicals are visual-free (2026-07-24 ruling).
+			assert(not fixture.has_node("Shade"))
 			assert(horizontal_offset < 0.01)
 
 	var front_table: StaticBody3D = (
@@ -1706,22 +1723,17 @@ func _verify_a11_dress_pack() -> void:
 	)
 	assert(route_path.size() > 2)
 
-	var hardwood_luminance: float = (
-		level.get("hardwood_color") as Color
-	).get_luminance()
+	# Creaky boards hide inside the continuous wood floor (2026-07-24 ruling):
+	# no plank visuals may exist, only the silent collider.
 	for creak_name: String in [
 		"CreakTeacher",
 		"CreakKitchen",
 		"CreakAdult",
 	]:
 		var creak: NoiseSurface = level.get_node(creak_name) as NoiseSurface
-		var plank_meshes: Array[Node] = creak.find_children(
-			"*",
-			"MeshInstance3D",
-			true,
-			false
+		assert(
+			creak.find_children("*", "MeshInstance3D", true, false).is_empty()
 		)
-		assert(plank_meshes.size() == 3)
 		assert(
 			creak.find_children(
 				"*",
@@ -1730,20 +1742,6 @@ func _verify_a11_dress_pack() -> void:
 				false
 			).size() == 1
 		)
-		var first_material: StandardMaterial3D = (
-			(plank_meshes[0] as MeshInstance3D).material_override
-			as StandardMaterial3D
-		)
-		var second_material: StandardMaterial3D = (
-			(plank_meshes[1] as MeshInstance3D).material_override
-			as StandardMaterial3D
-		)
-		assert(first_material.albedo_color != second_material.albedo_color)
-		for material: StandardMaterial3D in [first_material, second_material]:
-			var plank_luminance: float = material.albedo_color.get_luminance()
-			assert(plank_luminance > hardwood_luminance)
-			assert(plank_luminance - hardwood_luminance < 0.12)
-			assert(not material.emission_enabled)
 	for toy_name: String in ["ToyHallRug", "ToyDining", "ToyCarpet"]:
 		assert(
 			(level.get_node(toy_name) as NoiseSurface).find_children(
@@ -1776,7 +1774,7 @@ func _verify_a11_dress_pack() -> void:
 		(
 			"A11 metrics: %d nav polygons, %d shadowed lights "
 			+ "(%d omnis), sources y=4.50, dining 4 chairs, "
-			+ "kitchen 3 chairs, creaks 3 planks."
+			+ "kitchen 3 chairs, creaks hidden."
 		)
 		% [
 			navigation_polygon_count,
@@ -1797,7 +1795,7 @@ func _verify_a12_lighting_contrast() -> void:
 		await get_tree().physics_frame
 
 	var environment: Environment = ($WorldEnvironment as WorldEnvironment).environment
-	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.09))
 
 	var level: Node3D = $Level as Node3D
 	var configured_attenuation: float = float(
@@ -1985,7 +1983,7 @@ func _verify_a16_world_pack() -> void:
 	var environment: Environment = (
 		$WorldEnvironment as WorldEnvironment
 	).environment
-	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.09))
 	for fixture_name: String in [
 		"KidLampVisual",
 		"LivingLampVisual",
@@ -2022,13 +2020,15 @@ func _verify_a16_world_pack() -> void:
 	var hinge: Node3D = $Fridge/DoorVisual as Node3D
 	var panel: MeshInstance3D = $Fridge/DoorVisual/Panel as MeshInstance3D
 	assert(
-		hinge.global_position.distance_to(Vector3(12.55, 0.0, -4.2))
+		hinge.global_position.distance_to(Vector3(14.95, 0.0, -4.2))
 		< 0.01
 	)
+	# Mirrored for the right-edge hinge (2026-07-24 playtest ruling): the
+	# panel stays west of the hinge and still sweeps south.
 	for openness_sample: float in [0.0, 0.25, 0.5, 0.75, 1.0]:
 		fridge.openness = openness_sample
 		fridge.call("_apply_visual")
-		assert(panel.global_position.x >= hinge.global_position.x - 0.01)
+		assert(panel.global_position.x <= hinge.global_position.x + 0.01)
 		assert(panel.global_position.z >= hinge.global_position.z - 0.01)
 	assert(absf(panel.global_position.x - hinge.global_position.x) < 0.02)
 	assert(panel.global_position.z > hinge.global_position.z + 1.1)
@@ -2103,7 +2103,7 @@ func _verify_a17_acceptance_fixes() -> void:
 		$WorldEnvironment as WorldEnvironment
 	).environment
 	assert(not has_node("Sun"))
-	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.09))
 	assert(is_equal_approx(float(level.get("omni_visual_attenuation")), 1.45))
 	assert(is_equal_approx(float(level.get("lamp_energy")), 6.5))
 	assert(is_equal_approx(float(level.get("area_light_energy")), 2.2))
@@ -2215,18 +2215,15 @@ func _verify_a17_acceptance_fixes() -> void:
 	)
 	assert(not bathroom_fixture.visible)
 	assert(not bathroom_switch.is_on)
-	var bathroom_shade: MeshInstance3D = (
-		$Level/BathroomLampVisual/Shade as MeshInstance3D
-	)
-	assert(bathroom_shade.mesh is CylinderMesh)
-	assert(bathroom_shade.position.y <= 1.2)
+	# Ceiling practicals are visual-free (2026-07-24 ruling).
+	assert(not bathroom_fixture.has_node("Shade"))
 	assert(
 		bathroom_fixture.find_children(
 			"*",
 			"MeshInstance3D",
 			true,
 			false
-		).size() == 1
+		).is_empty()
 	)
 
 	var toilet: StaticBody3D = $Level/BathroomToilet as StaticBody3D
@@ -2287,7 +2284,7 @@ func _verify_a18_polish_pack() -> void:
 		$WorldEnvironment as WorldEnvironment
 	).environment
 	assert(not has_node("Sun"))
-	assert(is_equal_approx(environment.ambient_light_energy, 0.05))
+	assert(is_equal_approx(environment.ambient_light_energy, 0.09))
 	assert(is_equal_approx(float(level.get("lamp_energy")), 6.5))
 	assert(is_equal_approx(float(level.get("lamp_range")), 7.8))
 	assert(is_equal_approx(float(level.get("analytic_light_range")), 5.8))
@@ -2375,9 +2372,18 @@ func _verify_a18_polish_pack() -> void:
 				and stream.resource_path
 				== "res://audio/original/voice/caught_grunt_02.ogg"
 			)
+			# Director ruling 2026-07-24: every recorded door-creak take is
+			# wired for variety; the un-denoised foley originals are
+			# sanctioned until the denoise pipeline is re-run.
+			var is_sanctioned_door_creak: bool = (
+				stream.resource_path.begins_with(
+					"res://audio/original/foley/door_creak_"
+				)
+			)
 			assert(
 				not stream.resource_path.begins_with("res://audio/original/")
-				or is_a23_short_reaction_override,
+				or is_a23_short_reaction_override
+				or is_sanctioned_door_creak,
 				"Runtime family pool still references an original: %s."
 				% stream.resource_path
 			)
@@ -2559,7 +2565,7 @@ func _verify_a19_geometry_audit() -> void:
 			"name": "Fridge",
 			"node": $Fridge,
 			"size": Vector3(2.4, 2.2, 0.12),
-			"hinge": Vector3(12.55, 0.0, -4.2),
+			"hinge": Vector3(14.95, 0.0, -4.2),
 		},
 	]
 	for door_row: Dictionary in door_rows:
@@ -2716,6 +2722,8 @@ func _verify_a19_geometry_audit() -> void:
 			floor_base.global_transform * floor_base.get_aabb()
 		)
 		assert(is_equal_approx(floor_base_bounds.position.y, 0.0))
+	# Ceiling practicals are visual-free (2026-07-24 playtest ruling): the
+	# geometry audit now enforces their absence.
 	for ceiling_fixture_name: String in [
 		"KitchenLampVisual",
 		"MidLampVisual",
@@ -2726,14 +2734,18 @@ func _verify_a19_geometry_audit() -> void:
 		"CarpetHallLampWest",
 		"CarpetHallLampEast",
 	]:
-		var ceiling_disc: MeshInstance3D = level.get_node(
-			"%s/Shade" % ceiling_fixture_name
-		) as MeshInstance3D
-		var ceiling_disc_bounds: AABB = (
-			ceiling_disc.global_transform * ceiling_disc.get_aabb()
+		var ceiling_fixture: Node3D = level.get_node(
+			ceiling_fixture_name
+		) as Node3D
+		assert(not ceiling_fixture.has_node("Shade"))
+		assert(
+			ceiling_fixture.find_children(
+				"*",
+				"MeshInstance3D",
+				true,
+				false
+			).is_empty()
 		)
-		assert(ceiling_disc.mesh is CylinderMesh)
-		assert(is_equal_approx(ceiling_disc_bounds.end.y, 1.2))
 
 	var bowl: MeshInstance3D = $Level/KitchenBowl/Bowl as MeshInstance3D
 	var bowl_bounds: AABB = bowl.global_transform * bowl.get_aabb()
@@ -3114,7 +3126,9 @@ func _configure_a21_wall_blocking_capture(is_before: bool) -> void:
 		var fixture: Node3D = $Level.get_node(fixture_name) as Node3D
 		fixture.visible = false
 	for area_name: String in ["TVGlow", "WindowGlow", "DoorStripGlow"]:
-		($Level.get_node(area_name) as Light3D).visible = false
+		var area_glow: Light3D = $Level.get_node_or_null(area_name) as Light3D
+		if area_glow != null:
+			area_glow.visible = false
 	($Level/KidHallSwitch as DinnerWorldSwitch).set_state(true, false)
 
 	var bedroom_door: DinnerDoor = $BedroomDoor as DinnerDoor

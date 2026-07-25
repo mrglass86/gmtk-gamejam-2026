@@ -14,6 +14,12 @@ class_name NoiseSurface
 ## to hide wood-sitting creaky boards inside the continuous plank floor
 ## (director ruling 2026-07-24); the rug CreakTeacher stays visible.
 @export var show_surface_visual: bool = true
+## Floor-detail collision lives off layer 1 so the parent's honesty-clipped
+## vision-cone rays and line-of-sight (mask 1) can never notch on a flat —
+## or worse, invisible — overlay and betray a hidden trap. The player keeps
+## colliding through its floor-detail mask; surface detection is
+## group-based (get_slide_collision), so b19 is layer-agnostic.
+@export_flags_3d_physics var surface_collision_layer: int = 2
 
 @export_group("Creaky Planks")
 @export_range(2, 3, 1) var creaky_plank_count: int = 3
@@ -26,6 +32,7 @@ func _ready() -> void:
 	surface_height = clampf(surface_height, 0.005, 0.03)
 	add_to_group(surface_group)
 	add_to_group("nav_source")
+	collision_layer = surface_collision_layer
 	_build_surface()
 
 

@@ -56,6 +56,17 @@ enum DoorKind {
 @export_node_path("Node3D") var door_visual_path: NodePath = NodePath("DoorVisual")
 @export var open_rotation_degrees: Vector3 = Vector3(0.0, -90.0, 0.0)
 
+@export_group("Visual Dressing")
+## Closed swing doors block the A21 over-door spill band (panel top to the
+## doorway opening height); the shadow-only extension rides the panel, so an
+## opening door releases light with the swing (2026-07-25 playtest).
+@export var panel_shadow_extension_top: float = 2.4
+@export var panel_knob_radius: float = 0.05
+@export var panel_knob_height: float = 0.55
+@export var panel_knob_inset: float = 0.2
+@export var fridge_handle_length: float = 1.15
+@export var fridge_handle_edge_inset: float = 0.16
+
 var openness: float = 0.0
 var openness_rate: float = 0.0
 
@@ -81,6 +92,7 @@ func _ready() -> void:
 	if _door_visual != null:
 		_closed_rotation_degrees = _door_visual.rotation_degrees
 		_disable_visual_collision(_door_visual)
+		_decorate_door_visual()
 	_spawn_blocker()
 	_apply_visual()
 	_update_blocker_collision(true)
@@ -269,6 +281,82 @@ func _apply_visual() -> void:
 	if _door_visual == null:
 		return
 	_door_visual.rotation_degrees = _closed_rotation_degrees.lerp(open_rotation_degrees, openness)
+
+
+func _decorate_door_visual() -> void:
+	var panel: MeshInstance3D = (
+		_door_visual.get_node_or_null("Panel") as MeshInstance3D
+	)
+	if panel == null:
+		return
+	if door_kind == DoorKind.FRIDGE:
+		_add_fridge_handle(panel)
+		return
+	var panel_top: float = panel.position.y + panel.scale.y * 0.5
+	if panel_top < panel_shadow_extension_top - 0.05:
+		var extension: MeshInstance3D = MeshInstance3D.new()
+		extension.name = "PanelShadowExtension"
+		extension.cast_shadow = (
+			GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+		)
+		var extension_mesh: BoxMesh = BoxMesh.new()
+		extension_mesh.size = Vector3(
+			panel.scale.x,
+			panel_shadow_extension_top - panel_top,
+			panel.scale.z
+		)
+		extension.position = Vector3(
+			panel.position.x,
+			panel_top + extension_mesh.size.y * 0.5,
+			panel.position.z
+		)
+		extension.mesh = extension_mesh
+		_door_visual.add_child(extension)
+	var knob: MeshInstance3D = MeshInstance3D.new()
+	knob.name = "Knob"
+	knob.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var knob_mesh: CylinderMesh = CylinderMesh.new()
+	knob_mesh.top_radius = panel_knob_radius
+	knob_mesh.bottom_radius = panel_knob_radius
+	knob_mesh.height = panel.scale.z + 0.16
+	knob_mesh.radial_segments = 12
+	knob.rotation_degrees.x = 90.0
+	knob.position = Vector3(
+		panel.position.x
+		+ (panel.scale.x * 0.5 - panel_knob_inset) * signf(panel.position.x),
+		panel_knob_height,
+		panel.position.z
+	)
+	knob.mesh = knob_mesh
+	var knob_material: StandardMaterial3D = StandardMaterial3D.new()
+	knob_material.albedo_color = Color("#c3ccd6")
+	knob_material.roughness = 0.6
+	knob.material_override = knob_material
+	_door_visual.add_child(knob)
+
+
+func _add_fridge_handle(panel: MeshInstance3D) -> void:
+	# Long vertical bar on the door's free (west) edge so the appliance reads
+	# as a fridge at a glance (2026-07-25 director request). Child of the
+	# visual, so it swings with the panel.
+	var handle: MeshInstance3D = MeshInstance3D.new()
+	handle.name = "FridgeHandle"
+	handle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var handle_mesh: BoxMesh = BoxMesh.new()
+	handle_mesh.size = Vector3(0.09, fridge_handle_length, 0.09)
+	handle.position = Vector3(
+		panel.position.x
+		+ (panel.scale.x * 0.5 - fridge_handle_edge_inset)
+		* signf(panel.position.x),
+		panel.position.y,
+		panel.position.z + panel.scale.z * 0.5 + 0.07
+	)
+	handle.mesh = handle_mesh
+	var handle_material: StandardMaterial3D = StandardMaterial3D.new()
+	handle_material.albedo_color = Color("#c3ccd6")
+	handle_material.roughness = 0.5
+	handle.material_override = handle_material
+	_door_visual.add_child(handle)
 
 
 func _disable_visual_collision(node: Node) -> void:

@@ -21,6 +21,7 @@ enum State {
 @export_node_path("NavigationAgent3D") var navigation_agent_path: NodePath = NodePath("NavigationAgent3D")
 @export_node_path("MeshInstance3D") var body_path: NodePath = NodePath("Body")
 @export_node_path("Node3D") var kitchen_bowl_path: NodePath = NodePath("../Level/KitchenBowl")
+@export_node_path("DinnerParent") var parent_actor_path: NodePath = NodePath("../Parent")
 
 @export_group("Patrol")
 @export var patrol_speed: float = 1.5
@@ -31,6 +32,13 @@ enum State {
 ## patrol carrot once its quantised nav target reports finished. Keeps the
 ## slow patrol continuous instead of 5 cm hops at ~3 Hz.
 @export var patrol_glide_max_distance: float = 0.5
+
+@export_group("Parent Separation")
+## Presentational soft body-block: inside this flat distance of the parent
+## the DOG yields with a capped drift away. The parent's verify-locked
+## motion is never touched; never active while bedded or sleeping.
+@export var parent_yield_distance: float = 0.7
+@export var parent_yield_speed: float = 1.4
 @export var navigation_path_desired_distance: float = 0.55
 @export var navigation_target_desired_distance: float = 0.02
 @export var wake_exit_position: Vector3 = Vector3(4.2, 0.42, -3.8)
@@ -120,6 +128,7 @@ enum State {
 
 var _state: State = State.BASE
 var _player: DinnerPlayer
+var _parent_actor: Node3D
 var _navigation_agent: NavigationAgent3D
 var _body: MeshInstance3D
 var _kitchen_bowl: Node3D
@@ -152,6 +161,7 @@ var _bowl_path_started: bool = false
 
 func _ready() -> void:
 	_player = get_node_or_null(player_path) as DinnerPlayer
+	_parent_actor = get_node_or_null(parent_actor_path) as Node3D
 	_navigation_agent = get_node_or_null(navigation_agent_path) as NavigationAgent3D
 	_body = get_node_or_null(body_path) as MeshInstance3D
 	_kitchen_bowl = get_node_or_null(kitchen_bowl_path) as Node3D
@@ -181,6 +191,7 @@ func _physics_process(delta: float) -> void:
 			_update_investigate(delta)
 		State.BARK:
 			_update_bark(delta)
+	_apply_parent_separation(delta)
 	_update_hearing_ring(delta)
 
 
@@ -422,6 +433,31 @@ func _move_along_path(speed: float, delta: float) -> bool:
 	global_position += movement_direction * movement_distance
 	_face_direction(movement_direction, delta)
 	return true
+
+
+## Presentational soft separation: the dog and the parent have no bodies,
+## so they could walk through each other. When the parent gets inside
+## parent_yield_distance the dog drifts away, speed-capped and stronger
+## the deeper the overlap. Never active while bedded or before waking, so
+## B6's 0.00 m sleep drift holds; the parent's own motion is untouched.
+func _apply_parent_separation(delta: float) -> void:
+	if (
+		_parent_actor == null
+		or not _has_left_bed
+		or _is_initially_sleeping()
+	):
+		return
+	var away: Vector3 = global_position - _parent_actor.global_position
+	away.y = 0.0
+	var away_length: float = away.length()
+	if away_length >= parent_yield_distance or away_length <= 0.001:
+		return
+	var push_weight: float = 1.0 - away_length / parent_yield_distance
+	var push_distance: float = minf(
+		parent_yield_speed * push_weight * delta,
+		parent_yield_distance - away_length
+	)
+	global_position += away / away_length * push_distance
 
 
 ## Presentational patrol smoothing. The time-indexed carrot advances only a

@@ -29,6 +29,10 @@ const INTERACTION_TIE_EPSILON: float = 0.001
 @export var creaky_trap_floor: float = 3.2
 @export var toys_trap_floor: float = 4.0
 @export_range(0.0, 1.0) var floor_normal_min_y: float = 0.5
+## NoiseSurface overlays moved to their own physics layer so vision rays
+## ignore them; the player must still ride and slide-detect them, so this
+## is OR-ed into the body's scene collision mask at ready.
+@export_flags_3d_physics var floor_detail_collision_mask: int = 2
 
 @export_group("Movement Texture")
 @export var sneak_hop_height: float = 0.06
@@ -108,6 +112,7 @@ var _verify_b19_last_surface_multiplier: float = -1.0
 
 
 func _ready() -> void:
+	collision_mask = collision_mask | floor_detail_collision_mask
 	_game_flow = get_node_or_null(game_flow_path) as DinnerGameFlow
 	if idle_giggle_random_seed == 0:
 		_idle_giggle_rng.randomize()

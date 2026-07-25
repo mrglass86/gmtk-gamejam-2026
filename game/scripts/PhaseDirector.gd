@@ -57,6 +57,8 @@ var _current_phase: int = 0
 var _pending_errands: Array[StringName] = []
 var _applied_effects: Dictionary = {}
 var _last_observed_time_remaining: float = -1.0
+var _living_shade_lit_material: StandardMaterial3D
+var _living_shade_dark_material: StandardMaterial3D
 # B21 stands the parent in a replaced routine row for a ~120 s live memory
 # wait; errand walks during that window could sweep its cone across the
 # staged dining anomaly. Under that one harness, boundaries keep the legacy
@@ -242,7 +244,7 @@ func _write_world_state() -> void:
 	NoiseSystem.set_ambient_source_enabled("kitchen_speaker", not kitchen_off)
 
 	_set_level_node_visible("KidLampVisual", true)
-	_set_level_node_visible("LivingLampVisual", not living_off)
+	_set_living_lamp_lit(not living_off)
 	_set_level_node_visible("TVGlow", not tv_off)
 	_set_level_node_visible("TVNotes", not tv_off)
 	_set_level_node_visible("KitchenLampVisual", not kitchen_off)
@@ -266,6 +268,43 @@ func _write_world_state() -> void:
 	for node: Node in get_tree().get_nodes_in_group("world_switch"):
 		if node.has_method("sync_state_from_target"):
 			node.call("sync_state_from_target")
+
+
+## The living floor lamp is real furniture: its Base/Pole/Shade body stays
+## visible through the shutdown. Completion kills only the OmniLight child
+## and the shade's emissive glow (albedo kept, so the shade reads as dark
+## fabric). Disc-less ceiling practicals keep plain node visibility.
+func _set_living_lamp_lit(lit: bool) -> void:
+	if _level == null:
+		return
+	var fixture: Node3D = (
+		_level.get_node_or_null("LivingLampVisual") as Node3D
+	)
+	if fixture == null:
+		return
+	fixture.visible = true
+	var lamp_light: Light3D = fixture.get_node_or_null("Light") as Light3D
+	if lamp_light != null:
+		lamp_light.visible = lit
+	var shade: MeshInstance3D = (
+		fixture.get_node_or_null("Shade") as MeshInstance3D
+	)
+	if shade == null:
+		return
+	if _living_shade_lit_material == null:
+		var shade_material: StandardMaterial3D = (
+			shade.material_override as StandardMaterial3D
+		)
+		if shade_material == null:
+			return
+		_living_shade_lit_material = shade_material
+		_living_shade_dark_material = (
+			shade_material.duplicate() as StandardMaterial3D
+		)
+		_living_shade_dark_material.emission_enabled = false
+	shade.material_override = (
+		_living_shade_lit_material if lit else _living_shade_dark_material
+	)
 
 
 func _get_switch_state(switch_id: StringName, fallback: bool) -> bool:

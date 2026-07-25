@@ -82,8 +82,9 @@ func _build_floors() -> void:
 	_add_floor("PantryThreshold", Vector3(13.05, 0.0, 2.3), Vector2(3.9, 0.4), hardwood_color, "surface_hardwood")
 	# Rug starts east of the hidden CreakTeacher (-12.7..-10.9) so the first
 	# steps out of the kid bedroom land on honest creak-capable hardwood
-	# (director ruling, 2026-07-24 playtest follow-up).
-	_add_floor("HallRug", Vector3(-7.35, 0.02, 0.05), Vector2(6.7, 2.2), carpet_color, "surface_carpet")
+	# (director ruling, 2026-07-24 playtest follow-up). Its 0.02 m lip rides
+	# the floor-detail layer so vision rays cannot notch on it.
+	_add_floor("HallRug", Vector3(-7.35, 0.02, 0.05), Vector2(6.7, 2.2), carpet_color, "surface_carpet", 2)
 
 
 func _build_walls() -> void:
@@ -117,10 +118,13 @@ func _build_walls() -> void:
 		Vector3(-5.65, 0.0, -1.5),
 		Vector2(2.95, wall_thickness)
 	)
+	# The adult door never opens, so its shadow frame drops to the panel top:
+	# no over-door spill band into or out of the locked room (2026-07-25).
 	_add_doorway_shadow_lintel(
 		"AdultDoorShadowLintel",
 		Vector3(-12.75, 0.0, 1.5),
-		Vector2(2.3, wall_thickness)
+		Vector2(2.3, wall_thickness),
+		1.25
 	)
 	_add_doorway_shadow_lintel(
 		"PantryDoorShadowLintel",
@@ -275,23 +279,28 @@ func _build_lights() -> void:
 	var tv_glow: AreaLight3D = $TVGlow as AreaLight3D
 	tv_glow.look_at(Vector3(1.55, 0.4, -4.4), Vector3.UP)
 	_add_area_glow("WindowGlow", Vector3(-14.75, 2.4, -4.0), Vector3(0.0, -90.0, 0.0), Color("#c7d5e7"))
-	_add_area_glow("DoorStripGlow", Vector3(-12.75, 0.2, 1.3), Vector3(-90.0, 0.0, 0.0), Color("#d5dce8"))
+	# DoorStripGlow (under-door strip at the adult room) removed: it read as
+	# an unexplained floor light against the plank floor (2026-07-25).
 
 
 func _build_switches() -> void:
+	# Remounted onto LVertical's real span (z 1.4..3.575) — the old z 0.85 sat
+	# in the doorway gap and read as a floating switch (2026-07-25 playtest).
 	_add_world_switch(
 		"DiningSwitch",
 		&"dining",
-		Vector3(-4.065, 1.0, 0.85),
+		Vector3(-4.065, 1.0, 2.0),
 		"MidLampVisual",
 		true,
 		Vector3.RIGHT,
 		PackedStringArray(["DiningEntryLampVisual"])
 	)
+	# Pulled inside DogKitchenDivider's real span (z ends -1.4) for the same
+	# floating-switch reason.
 	_add_world_switch(
 		"KitchenSwitch",
 		&"kitchen",
-		Vector3(6.985, 1.0, -1.15),
+		Vector3(6.985, 1.0, -1.7),
 		"KitchenLampVisual",
 		true,
 		Vector3.RIGHT
@@ -375,12 +384,13 @@ func _add_review_label(label_text: String, position_value: Vector3) -> void:
 	add_child(label)
 
 
-func _add_floor(node_name: String, center: Vector3, dimensions: Vector2, color: Color, surface_group: String) -> void:
+func _add_floor(node_name: String, center: Vector3, dimensions: Vector2, color: Color, surface_group: String, collision_layer_value: int = 1) -> void:
 	var floor: StaticBody3D = StaticBody3D.new()
 	floor.name = node_name
 	floor.position = center + Vector3(0.0, -floor_thickness * 0.5, 0.0)
 	floor.add_to_group(surface_group)
 	floor.add_to_group("nav_source")
+	floor.collision_layer = collision_layer_value
 	var slab_size: Vector3 = Vector3(dimensions.x, floor_thickness, dimensions.y)
 	if surface_group == "surface_hardwood":
 		_add_box_visual_with_material(floor, slab_size, WOOD_FLOOR_MATERIAL.shared())
@@ -453,15 +463,20 @@ func _add_wall_shadow_occluder(
 func _add_doorway_shadow_lintel(
 	node_name: String,
 	floor_center: Vector3,
-	opening_size: Vector2
+	opening_size: Vector2,
+	opening_height_override: float = -1.0
 ) -> void:
 	var resolved_height: float = maxf(
 		wall_shadow_occluder_height,
 		omni_source_height + 0.7
 	)
 	var opening_height: float = clampf(
-		doorway_shadow_opening_height,
-		wall_height,
+		(
+			opening_height_override
+			if opening_height_override > 0.0
+			else doorway_shadow_opening_height
+		),
+		0.1,
 		resolved_height - 0.1
 	)
 	var lintel: MeshInstance3D = MeshInstance3D.new()

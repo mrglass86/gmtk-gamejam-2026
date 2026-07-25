@@ -1191,3 +1191,128 @@ Record decisions another session or tool would otherwise have to rediscover.
   b13 b14 b15 b17 b18-core b18 b20 b21) + `--verify-a5 --verify-a7
   --verify-a8 --verify-a20 --verify-a22 --verify-audio` + QA scenarios
   (monkey, expiry set, restart-fuzz, switch-spam). Not committed.
+
+## 2026-07-25 — Playtest pass 3: cone layer split, lamp body, dog yield, VO scribbles
+
+- **Decision:** Four items from the director's post-pass-2 playtest; item 5
+  (per-type sound-glyph language) descoped to a design per the allowance.
+  1. Floor-detail collision leaves layer 1. NoiseSurface sets a new
+     `surface_collision_layer` export (default 2) on itself; the Player
+     OR-s a new `floor_detail_collision_mask` (2) into its scene mask so
+     it still rides and slide-detects overlays (b19's detection is
+     group-based, layer-agnostic). The parent's cone rays and LOS keep
+     mask 1 and can no longer notch on flat or invisible overlays — a
+     cone notch at empty floor was advertising the hidden creak trap.
+     HallRug stays LevelBuilder-owned (forbidden this pass); flagged.
+  2. The living-lamp shutdown no longer hides furniture. PhaseDirector's
+     `_set_living_lamp_lit` keeps the Base/Pole/Shade body visible,
+     toggles only the OmniLight child and swaps the shade's material to a
+     duplicate with emission off (albedo kept — dark fabric read).
+     Brightness is analytic (LightSystem), so this is purely cosmetic.
+     A5's three living-lamp visibility asserts updated to the Light child
+     (B19 precedent); disc-less ceiling practicals keep node visibility.
+  3. Dog yields to the parent: presentational soft separation in Pet.gd
+     (`parent_yield_distance` 0.7, `parent_yield_speed` 1.4) — a capped
+     radial drift away, stronger with overlap, never while bedded or
+     sleeping (b6 sleep drift 0.00 holds). Parent motion untouched.
+  4. Parent VO indicator rebuilt as scribbles: the ParentVoiceIndicator
+     node survives mesh-less (name + visible flag are asserted by b14 and
+     the audio verify — expectations KEPT, not edited) and a new
+     ParentScribbleEmitter (TVNoteEmitter pattern) watches it, spawning
+     2-3 deterministic code-drawn sine-stroke squiggle sprites that rise,
+     wobble, and fade in paper-white. Magenta stays reserved for
+     noise-danger tells; b16's giggle ring is untouched.
+- **Why:** Cone notches leaked hidden traps and read as broken; vanishing
+  furniture broke the room; actor overlap read as a bug; the magenta VO
+  block clashed with the danger-color language.
+- **Rejected / cut:** Editing forbidden files (Main.tscn, Door.gd,
+  DebugTools.gd, LevelBuilder.gd — the fixture region proved unnecessary
+  since the lamp split mutates materials at runtime); Label3D font glyphs
+  for scribbles (no-assets rule); parent-side separation (verify-locked
+  paths); item 5 build-out this pass (battery risk) — design recorded in
+  the engineer report: derive glyph type in NoiseIndicatorManager from
+  the emitted source node + a Player surface-kind getter
+  (`_current_surface_kind` already exists), AudioDirector call sites for
+  presentation-only clicks, motion grammar per sound class.
+- **Owner:** Noah (director), Claude (engineer pass 3), operator (battery).
+- **Revisit when:** a21/a22's polygon==164 trips (then the navmesh parse
+  mask must include layer 2 — orchestrator side), the yield radius reads
+  wrong at the bowl, the scribble cadence reads too busy, or item 5 gets
+  scheduled.
+- **Evidence / handoff:** NoiseSurface.gd layer export, Player.gd mask,
+  PhaseDirector.gd `_set_living_lamp_lit`, Main.gd A5 expectation edits,
+  Pet.gd `_apply_parent_separation`, ParentScribbleEmitter.gd (new),
+  Parent.gd `_setup_voice_indicator` rebuild. Full battery + QA rerun.
+  Not committed.
+
+## 2026-07-25 — Playtest round 2: readability and juice rulings
+
+- **Decision:** From the director's morning session on the shipped build.
+  1. Switches remount on real wall spans: DiningSwitch to z 2.0 (LVertical),
+     KitchenSwitch to z -1.7 (inside DogKitchenDivider) — the old spots
+     floated in doorway gaps.
+  2. ToyFoyer moves to (9.7, 1.85): the trap now gates the kitchen-table to
+     foyer-cabinet squeeze on the pantry corridor, not the front-door mat.
+  3. Retro dither ships as an in-engine mockup: screen-space Bayer dither +
+     per-channel palette quantise (`shaders/retro_dither.gdshader`) on a
+     CanvasLayer under the UI, toggled with G, default OFF, deliberately
+     outside the debug gate so the look is judgeable in the release web
+     export. Director rules on default state (and whether the key stays)
+     before submission.
+  4. Over-door light leaks close: DoorStripGlow removed; the never-opening
+     adult door's shadow frame drops to its panel top (lintel override
+     1.25); every swing-door visual spawns a shadow-only extension from
+     panel top to the 2.4 m doorway band, riding the panel so an opening
+     door releases light with the swing — the bathroom visit now reads as a
+     light cue.
+  5. Doors read against walls: shared door panels turn a warm wood tone
+     (0.49, 0.435, 0.375) with a knob cylinder at the free end; the fridge
+     keeps an appliance tone via its own material. Pantry discoverability
+     was the driving worry.
+  6. Engineer pass 3 (behavior lane): cone rays must ignore floor-detail
+     colliders (they notch on invisible creak boxes today — a secret leak);
+     the living-lamp shutdown keeps the lamp body visible (glow and light
+     die, furniture stays); parent/dog soft separation (dog yields,
+     presentational only); the mutter block becomes floaty scribble words;
+     and a per-type sound-glyph language (click pop, creak wobble, step
+     dot, squeak burst — tempo matches the sound) built on the
+     TVNotes/indicator patterns.
+- **Why:** Round-2 live reads: floating switch, vanishing lamp, phasing
+  actors, cone notches on hidden traps, indistinct doors, over-wall spill,
+  and the chunky mutter block; the long-wished retro dither is now cheap to
+  audition in-engine without Codex.
+- **Rejected / cut:** A static image mockup for the dither (unjudgeable
+  without motion and the real palette); recoloring walls instead of doors;
+  removing the locked-adult-door fiction.
+- **Owner:** Noah (director), Claude (scene/level/shader lane), engineer
+  pass 3 (behavior lane), operator (verifies).
+- **Revisit when:** The dither verdict lands (default on, off, or strip the
+  key), a knob or shadow extension clips a swing, or the glyph language
+  crowds the night read.
+- **Evidence / handoff:** LevelBuilder switch/glow/lintel edits, Door.gd
+  `_decorate_door_visual`, Main.tscn retro filter + fridge material + toy
+  move, `shaders/retro_dither.gdshader`, and the pass-3 report when it
+  lands.
+
+## 2026-07-25 — Collision inspector on B; the fridge grows a handle
+
+- **Decision:** (1) DebugTools gains a runtime collision inspector on the B
+  key, deliberately outside the debug gate so it works in the web export:
+  green unshaded no-depth wireframes for every NoiseSurface collider (the
+  now-invisible creaks and the toy piles), door blockers, the crib win
+  volume, and interaction-radius circles for every interactable. It reveals
+  the hidden traps, so it MUST be stripped or debug-gated before the itch
+  submission build — same pre-submission gate as the G dither key ruling.
+  (2) The fridge door carries a long vertical handle bar on its free west
+  edge (exports `fridge_handle_length` / `fridge_handle_edge_inset`),
+  riding the panel so it swings with the door; swing doors keep their small
+  knobs.
+- **Why:** The director needs hitbox visibility while tuning invisible
+  traps, and the fridge silhouette needed an unmistakable appliance tell.
+- **Rejected / cut:** Godot's editor-only visible-collision mode (absent in
+  release web builds); a handle on the hinge side.
+- **Owner:** Noah (director), Claude (implementation).
+- **Revisit when:** The submission build is cut (strip or gate B, rule on
+  G), or the inspector should also show pet/parent perception radii.
+- **Evidence / handoff:** DebugTools.gd KEY_B branch and wireframe
+  builders; Door.gd `_add_fridge_handle`.
