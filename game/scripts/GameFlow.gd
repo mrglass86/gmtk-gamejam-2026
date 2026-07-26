@@ -27,6 +27,14 @@ enum State {
 @export_node_path("Label") var result_detail_path: NodePath = NodePath(
 	"ResultCard/Panel/ResultDetail"
 )
+## Director's photographed result cards (2026-07-26). The wording is baked into
+## the images, so the labels above stay wired and updated but render invisible.
+@export_node_path("TextureRect") var win_card_path: NodePath = NodePath(
+	"ResultCard/WinCard"
+)
+@export_node_path("TextureRect") var lose_card_path: NodePath = NodePath(
+	"ResultCard/LoseCard"
+)
 
 @export_group("Crib Goal")
 @export_range(0.0, 0.1) var goal_body_margin: float = 0.08
@@ -41,6 +49,8 @@ var _title_card: Control
 var _result_card: Control
 var _result_heading: Label
 var _result_detail: Label
+var _win_card: TextureRect
+var _lose_card: TextureRect
 var _verification_mode: bool = false
 
 
@@ -51,6 +61,8 @@ func _ready() -> void:
 	_result_card = get_node_or_null(result_card_path) as Control
 	_result_heading = get_node_or_null(result_heading_path) as Label
 	_result_detail = get_node_or_null(result_detail_path) as Label
+	_win_card = get_node_or_null(win_card_path) as TextureRect
+	_lose_card = get_node_or_null(lose_card_path) as TextureRect
 	_verification_mode = OS.get_cmdline_user_args().has("--verify-a6")
 
 	if _should_bypass_presentation():
@@ -128,6 +140,10 @@ func _finish_game(did_win: bool) -> void:
 	_player.set_input_locked(true)
 	_title_card.visible = false
 	_result_card.visible = true
+	if _win_card != null:
+		_win_card.visible = did_win
+	if _lose_card != null:
+		_lose_card.visible = not did_win
 	if did_win:
 		_result_heading.text = "BACK IN BED"
 		_result_detail.text = "Snack secured. Bedtime never saw it coming."

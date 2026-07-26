@@ -886,9 +886,22 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 	if audible_fraction <= 0.001:
 		return
 	var surface_multiplier: float = _player._current_surface_multiplier
-	var expected_step_loudness: float = (
-		_player._get_noise_multiplier() * surface_multiplier
-	)
+	var noise_multiplier: float = _player._get_noise_multiplier()
+	var expected_step_loudness: float = noise_multiplier * surface_multiplier
+	# Director 2026-07-25: "all collisions with a creaky floor or toy should be
+	# max volume." Player floors a trap step's gameplay loudness at
+	# creaky_trap_floor / toys_trap_floor no matter how slowly it is stepped on,
+	# so this footstep fingerprint has to floor it the same way. Without the
+	# floor a sneaking trap step arrived at 3.2 / 4.0 while this still expected
+	# sneak x surface (0.2 x 3.0 = 0.6 / 0.2 x 4.0 = 0.8), failed the match, and
+	# played no sound at all — the trap punished the player silently. Gated on
+	# real movement so the mirror matches Player._emit_footsteps exactly and a
+	# standing snack or giggle noise still cannot masquerade as a step.
+	if noise_multiplier > 0.0:
+		expected_step_loudness = maxf(
+			expected_step_loudness,
+			_player._get_trap_loudness_floor()
+		)
 	var recovered_raw_loudness: float = loudness / audible_fraction
 	var comparison_tolerance: float = maxf(0.06, expected_step_loudness * 0.12)
 	if absf(recovered_raw_loudness - expected_step_loudness) > comparison_tolerance:

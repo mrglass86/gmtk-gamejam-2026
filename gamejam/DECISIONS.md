@@ -1669,6 +1669,41 @@ Record decisions another session or tool would otherwise have to rediscover.
   (`toy_squeak_01..66`, `dog_01..02`); pet_bark jitter raised 0.04 → 0.07
   because two takes alone read as a loop. Pruning = delete preload lines;
   no gate asserts either pool's size.
+## 2026-07-26 — Photographed menu/result cards replace the live layout
+
+- **Decision:** The title and both result screens are now single
+  photographed cards with the wording baked in: `art/menu/cards/{menu,
+  win,lose}.png`, shown by `MenuCard` on TitleCard and by
+  `WinCard`/`LoseCard` on ResultCard (GameFlow toggles which of the two
+  is visible in `_finish_game`). The three-sheet `PaperStack` is hidden
+  and both Panels are `modulate` alpha 0, so the live Labels stay wired
+  and still receive their text (gates and GameFlow untouched) but render
+  invisible. The four snack/crayon clusters survive as the only moving
+  elements. Cards are inset 150/55 from the viewport with keep-aspect
+  centring.
+- **Why:** The director's composed cards read better than the runtime
+  layout, and the game has exactly two endings so baked wording loses
+  nothing. Known cosmetic cost, accepted by ruling: the compositing tool
+  eats one space ("backto"), and that ships.
+- **Rejected / cut:** Live type on a blank card (three export rounds
+  failed to produce a textless card and the clock ran out); silencing or
+  deleting the now-invisible Labels (GameFlow writes to them).
+- **LAYOUT RULE — do not use absolute pixel positions for menu
+  elements.** The editor window runs ~1987×1077 logical while the itch
+  embed is 1280×720, so fixed coordinates land in different places. The
+  clusters are anchored at viewport FRACTIONS (0.241/0.775 x,
+  0.203/0.790 y) tuned to where the card's corners fall at 1280×720.
+  `MenuPaperLayer` now captures its rest pose on the first `_process`
+  frame, not in `_ready`, because anchored controls have no final rect
+  during `_ready`.
+- **Owner:** Noah (art + ruling), Claude (wiring).
+- **Revisit when:** The card art changes aspect, or a cluster drifts off
+  a corner at a new resolution.
+- **Evidence / handoff:** Main.tscn GameFlow block, `GameFlow.gd`
+  win/lose card paths, `MenuPaperLayer.gd` lazy base capture.
+
+## 2026-07-25 (cont.) — dog take naming
+
 - **Naming caveat (director, same evening):** the `dog_*.ogg` takes are
   NOT a real dog — they are a toy that plays a dog sound. Filenames stay
   as-is (renaming on submission eve buys nothing), but the credits must
@@ -1940,3 +1975,62 @@ barks wired as sanctioned pools" (same day, above). Everything else there stands
   A18's `denoised_stream_count >= 60` recounted by hand at **66** after all
   cuts (was 70; -3 parent_footstep, -1 wrapper_shush). `POOLS.size() >= 30`
   holds at 40. No geometry touched — navmesh stands at 164.
+
+## 2026-07-25 — Trap steps were silent, not quiet: the footstep fingerprint
+## missed Player's trap floors
+
+- **Decision:** `AudioDirector._on_noise_emitted` now mirrors Player's own trap
+  floor when it reconstructs what a footstep "should" have sounded like:
+  `expected_step_loudness = maxf(noise_multiplier * surface_multiplier,
+  _player._get_trap_loudness_floor())`, applied only when
+  `noise_multiplier > 0.0` so the mirror matches `Player._emit_footsteps`
+  exactly. Nothing else changed — no volume export moved, no gameplay noise
+  touched, no expectation edited.
+- **Why (the actual root cause, which was NOT an attenuation):**
+  `AudioDirector` has no footstep signal. It listens to `NoiseSystem` and
+  *fingerprints* player noise events to tell a step from a snack crinkle or an
+  idle giggle, by recomputing the loudness it expects a step to carry.
+  `Player._emit_footsteps` emits
+  `maxf(noise_multiplier * surface_multiplier, trap_floor)` — so a SNEAKING step
+  on a creaky board emitted **3.2** and on toys **4.0**, while the fingerprint
+  still expected `0.2 * 3.0 = 0.6` and `0.2 * 4.0 = 0.8`. Tolerance is
+  `max(0.06, expected * 0.12)`, i.e. 0.072 / 0.096, so the match failed by a
+  factor of five and `_play_player_footstep` was **never called**. The trap made
+  no sound at all. RUNNING on a trap matched (1.2 x 3.0 = 3.6 > 3.2 floor;
+  1.2 x 4.0 = 4.8 > 4.0), which is why the bug reads as sneak-only and why the
+  director hit it "when sneaking on carpet" — the hall traps sit on carpet, but
+  the carpet is irrelevant to the mechanism.
+- **The director's stated diagnosis was wrong and worth recording as such:**
+  there is no sneak/carpet attenuation on trap steps to bypass.
+  `_play_player_footstep` already tests the two trap surfaces FIRST, assigns
+  `toy_squeak_volume_db` / `creak_step_volume_db` flat, and returns before the
+  gait and carpet branches; `_play_pool`'s `player_footsteps` channel does not
+  touch `volume_db` at all. Raising those two exports would have "fixed" nothing
+  — silence has no volume.
+- **Rejected / cut:** Raising `creak_step_volume_db` / `toy_squeak_volume_db`
+  (they were never applied, and a18 pins the creak at 1.0). Loosening the
+  fingerprint tolerance (would let the 0.3 snack noise and 0.5 giggle
+  masquerade as steps). Giving Player a real `footstep_taken` signal, which is
+  the correct long-term shape — it is a public-API change to the most
+  gate-covered actor file on submission morning.
+- **Known residual (pre-existing class, not introduced):** the fingerprint is a
+  heuristic, so a non-step player noise can collide with a step's expected
+  value at particular ambient-mask depths (an idle giggle inside an ~0.82-0.86
+  mask now recovers near 3.2 while standing on a creaky board). Worst case is
+  one spurious creak; the alternative was a silent trap. The real fix is the
+  Player signal, post-jam.
+- **Owner:** Noah (director ruling: "all collisions with a creaky floor or toy
+  should be max volume"), Claude engineer (fix), operator (battery).
+- **Revisit when:** Post-jam, when Player can safely gain an explicit
+  footstep signal and the fingerprint can be deleted outright.
+- **Evidence / handoff:** `game/scripts/AudioDirector.gd` `_on_noise_emitted`
+  (the only production call site of `_play_player_footstep`).
+  `Player.gd:319-323` emits the floored loudness; `Player.gd:489-495` is
+  `_get_trap_loudness_floor()`; `Player.gd:871-876` (verify-b19) already pins
+  the live sneak emissions at `creaky_trap_floor` / `toys_trap_floor`, which is
+  what proves the mismatch. NO expectation edits: a18, a10, a17 and
+  `--verify-audio` all assert against exports or call
+  `_play_player_footstep` directly, bypassing `_on_noise_emitted`; b19 runs
+  with `_game_active` false, so `_on_noise_emitted` early-returns there. Note
+  `STATE.md`'s "live hardwood/creaky/toy emissions are 0.2/0.6/0.8" is STALE —
+  b19 asserts 0.2/3.2/4.0.

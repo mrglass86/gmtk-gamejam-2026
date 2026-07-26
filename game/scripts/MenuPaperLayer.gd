@@ -15,15 +15,21 @@ class_name MenuPaperLayer
 var _base_position: Vector2
 var _base_rotation: float
 var _elapsed: float = 0.0
+## Anchored layers do not have their final rect during _ready (2026-07-26), so
+## the rest pose is captured on the first frame instead.
+var _base_captured: bool = false
 
 
 func _ready() -> void:
 	pivot_offset = size * 0.5
-	_base_position = position
-	_base_rotation = rotation
 
 
 func _process(delta: float) -> void:
+	if not _base_captured:
+		pivot_offset = size * 0.5
+		_base_position = position
+		_base_rotation = rotation
+		_base_captured = true
 	_elapsed += delta
 	var safe_drift_period: float = maxf(drift_period, 0.1)
 	var safe_rotation_period: float = maxf(rotation_period, 0.1)
