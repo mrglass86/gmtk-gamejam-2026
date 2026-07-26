@@ -50,7 +50,7 @@ var _camera: Camera3D
 var _overlay_layer: CanvasLayer
 var _overlay_label: Label
 var _collision_debug_root: Node3D
-var _retro_style: int = 0
+var _retro_style: int = 2
 var _trial_lamps: Array[Node3D] = []
 var _active_trial_lamp: Node3D
 var _next_trial_lamp_id: int = 1
@@ -73,16 +73,17 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not OS.is_debug_build():
+		return
 	if (
 		event is InputEventKey
 		and (event as InputEventKey).pressed
 		and not event.is_echo()
 		and (event as InputEventKey).keycode == KEY_G
 	):
-		# Style-audition cycler, outside the debug gate so the director can
-		# judge each look in the release web export (2026-07-25): off ->
-		# paper -> halftone -> hatch -> VHS -> off. Rule on one style and the
-		# default state before submission.
+		# Style cycler, debug-only since the 2026-07-25 ruling: the steady
+		# storybook halftone (style 2) ships as the locked default look;
+		# this cycler remains for editor-side tuning only.
 		var retro_filter: CanvasLayer = (
 			get_node_or_null("../RetroFilter") as CanvasLayer
 		)
@@ -105,13 +106,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		and not event.is_echo()
 		and (event as InputEventKey).keycode == KEY_B
 	):
-		# Collision inspector, outside the debug gate so the director can use
-		# it in the web export (2026-07-25). It reveals the hidden traps —
-		# MUST be stripped or debug-gated before the submission build.
+		# Collision inspector, debug-only: it reveals the hidden traps, so
+		# release builds must never see it (pre-submission gate resolved
+		# 2026-07-25 via the function-top debug gate).
 		_toggle_collision_debug()
 		get_viewport().set_input_as_handled()
-		return
-	if not OS.is_debug_build():
 		return
 	if event.is_action_pressed("debug_skip"):
 		GameClock.scrub(scrub_seconds)

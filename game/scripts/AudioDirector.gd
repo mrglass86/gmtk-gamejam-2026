@@ -285,18 +285,28 @@ func verify_configuration() -> void:
 		assert(CASTING.POOLS.has(a23_pool))
 	# Director ruling 2026-07-24: every recorded door-creak take is wired for
 	# variety, so the un-denoised foley originals are sanctioned until the
-	# denoise pipeline is re-run on them.
+	# denoise pipeline is re-run on them. Director 2026-07-25: the extracted
+	# family clips under audio/family/toys/clips/ are likewise sanctioned;
+	# the raw session takes beside them stay banned.
 	for pool_id: StringName in CASTING.POOLS:
 		var pool_streams: Array = CASTING.POOLS[pool_id].get("streams", [])
 		for stream: AudioStream in pool_streams:
 			assert(
-				not stream.resource_path.begins_with(
-					"res://audio/original/"
+				(
+					not stream.resource_path.begins_with(
+						"res://audio/original/"
+					)
+					and not stream.resource_path.begins_with(
+						"res://audio/family/"
+					)
 				)
 				or stream.resource_path
 				== "res://audio/original/voice/caught_grunt_02.ogg"
 				or stream.resource_path.begins_with(
 					"res://audio/original/foley/door_creak_"
+				)
+				or stream.resource_path.begins_with(
+					"res://audio/family/toys/clips/"
 				),
 				"Uncleaned family take remains wired: %s."
 				% stream.resource_path
@@ -601,7 +611,7 @@ func _wire_streams_and_tuning() -> void:
 	_pet_chirp.stream = PET_CHIRP_STREAM
 	_pet_chirp.volume_db = pet_chirp_volume_db
 	_pet_chirp.max_distance = pet_max_distance
-	_pet_bark.stream = PET_BARK_STREAM
+	_pet_bark.stream = _select_pool_stream(&"pet_bark")
 	_pet_bark.volume_db = pet_bark_volume_db
 	_pet_bark.max_distance = pet_max_distance
 
@@ -868,8 +878,12 @@ func _on_noise_emitted(pos: Vector3, loudness: float, source: Node) -> void:
 func _play_player_footstep(surface_multiplier: float) -> void:
 	_player_footsteps.global_position = _player.global_position
 	if surface_multiplier >= _player.toys_surface_multiplier - 0.01:
-		_player_footsteps.stream = TOY_SQUEAK_STREAM
+		# Director 2026-07-25: the family toy-squeak takes carry the trap
+		# tell; the pool supplies variety, the export keeps the placeholder
+		# volume. Gameplay loudness stays Player-owned and untouched.
 		_player_footsteps.volume_db = toy_squeak_volume_db
+		_play_pool(&"toy_squeak")
+		return
 	elif surface_multiplier >= _player.creaky_surface_multiplier - 0.01:
 		# Director 2026-07-25: board steps groan long and low instead of
 		# the short placeholder tick; the pool carries the lowered pitch.
@@ -896,8 +910,6 @@ func _play_player_footstep(surface_multiplier: float) -> void:
 		)
 		_play_pool(&"footstep_wood")
 		return
-	_player_footsteps.pitch_scale = _rng.randf_range(0.92, 1.08)
-	_player_footsteps.play()
 
 
 func _update_parent_footsteps() -> void:
@@ -1042,7 +1054,9 @@ func _on_pet_bark_started() -> void:
 	if not _game_active:
 		return
 	_pet_bark.global_position = _pet.global_position
-	_pet_bark.play()
+	# Director 2026-07-25: family dog takes replace the placeholder bark;
+	# the bark's gameplay noise stays Pet-owned and unmasked.
+	_play_pool(&"pet_bark")
 	_play_event(&"dog_attention")
 
 
@@ -1217,6 +1231,10 @@ func _play_pool(pool_id: StringName, priority_override: int = -1) -> bool:
 			_parent_footsteps.stream = stream
 			_parent_footsteps.pitch_scale = pitch
 			_parent_footsteps.play()
+		&"pet_bark":
+			_pet_bark.stream = stream
+			_pet_bark.pitch_scale = pitch
+			_pet_bark.play()
 		&"door_creak":
 			_door_creak.stream = stream
 			_door_creak.pitch_scale = pitch

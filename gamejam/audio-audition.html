@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shoulda Eaten Dinner — audio audition</title>
+<style>
+  :root {
+    --bg: #131316;
+    --panel: #1b1b20;
+    --panel-2: #212128;
+    --line: #2e2e37;
+    --text: #eceaf0;
+    --dim: #9d9aa8;
+    --mono: #b9c6d6;
+    --accent: #7fb2ff;
+    --warn: #f0b45c;
+    --cc0: #7fd0d8;
+    --family: #8fd39a;
+    --dead: #f08a8a;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 120px; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px 140px; }
+  header.top { padding: 56px 0 32px; }
+  h1 { font-size: 34px; line-height: 1.2; margin: 0 0 6px; font-weight: 600; }
+  .sub { color: var(--dim); font-size: 17px; margin: 0 0 28px; }
+  .howto {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 22px 26px;
+  }
+  .howto h2 { font-size: 15px; margin: 0 0 12px; letter-spacing: 0.02em; color: var(--dim); font-weight: 600; }
+  .howto ol { margin: 0; padding-left: 20px; }
+  .howto li { margin-bottom: 9px; }
+  .howto li:last-child { margin-bottom: 0; }
+  .howto code, .fname, code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .howto code { font-size: 13px; color: var(--mono); background: #26262e; padding: 1px 6px; border-radius: 5px; }
+  nav.sticky {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(19,19,22,0.94);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    margin-top: 34px;
+    padding: 12px 0;
+  }
+  nav.sticky .navinner { max-width: 1080px; margin: 0 auto; padding: 0 28px; display: flex; flex-wrap: wrap; gap: 6px 8px; }
+  nav.sticky a {
+    color: var(--dim); text-decoration: none; font-size: 12.5px;
+    border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px;
+    white-space: nowrap;
+  }
+  nav.sticky a:hover { color: var(--text); border-color: #4a4a58; background: var(--panel-2); }
+  section { padding: 46px 0 10px; border-top: 1px solid var(--line); margin-top: 34px; }
+  section:first-of-type { border-top: none; }
+  .snum { color: var(--dim); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+  h2.moment { font-size: 25px; margin: 0 0 8px; font-weight: 600; }
+  .when { color: var(--dim); font-size: 16px; margin: 0 0 8px; max-width: 76ch; }
+  .pool {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-top: 20px;
+  }
+  .pool h3 { font-size: 17px; margin: 0 0 6px; font-weight: 600; }
+  .pool .note { color: var(--dim); font-size: 14.5px; margin: 0 0 12px; max-width: 78ch; }
+  .tuning {
+    font-size: 13px; color: var(--mono);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: #24242c; border-radius: 7px; padding: 7px 11px; margin: 0 0 14px;
+    display: inline-block;
+  }
+  .flags { margin: 0 0 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .flag { font-size: 12px; border-radius: 999px; padding: 3px 10px; border: 1px solid; }
+  .f-placeholder { color: var(--warn); border-color: #5c4526; background: #322612; }
+  .f-cc0 { color: var(--cc0); border-color: #26535c; background: #12292d; }
+  .f-family { color: var(--family); border-color: #2c5433; background: #142a18; }
+  .f-dead { color: var(--dead); border-color: #5c2a2a; background: #2f1414; }
+  .clips { display: flex; flex-direction: column; gap: 8px; }
+  .clips.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(430px, 1fr)); gap: 8px 24px; }
+  .clip { display: flex; align-items: center; gap: 14px; }
+  .clip .fname { font-size: 12.5px; color: var(--mono); flex: 0 0 232px; word-break: break-all; }
+  .clip audio { height: 34px; width: 100%; max-width: 340px; }
+  button.rate {
+    background: var(--panel-2); color: var(--text); border: 1px solid #45455a;
+    border-radius: 8px; padding: 7px 13px; font-size: 13.5px; cursor: pointer;
+    margin-bottom: 14px; font-family: inherit;
+  }
+  button.rate:hover { border-color: var(--accent); }
+  .alsoin { font-size: 14px; color: var(--dim); margin-top: 14px; border-left: 2px solid var(--line); padding-left: 12px; }
+  footer { color: var(--dim); font-size: 14px; padding-top: 46px; border-top: 1px solid var(--line); margin-top: 40px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap" style="padding-bottom:0">
+    <h1>Shoulda Eaten Dinner — every sound the game can play</h1>
+    <p class="sub">Grouped by the moment it happens in, in rough play order.</p>
+
+    <div class="howto">
+      <h2>How to use this page</h2>
+      <ol>
+        <li>Work down one section at a time. Play every clip in it back to back — that is roughly what a player hears during that moment, because the game picks at random from the set and never repeats the same clip twice in a row.</li>
+        <li>Write down the filenames you want cut. Cutting a clip is one line deleted from <code>game/scripts/AudioCasting.gd</code> — the line that names that file. Nothing else has to change, and no test checks how many clips a set has.</li>
+        <li>Want a clip to play at a different moment instead? Note the filename and the moment. Moving it is the same one line, pasted into a different set.</li>
+        <li>Watch for the coloured tags. <span class="flag f-placeholder">placeholder</span> means no family recording exists yet for that moment — the game is playing a stand-in. <span class="flag f-cc0">CC0 stock</span> means it is a free download, not your family. <span class="flag f-dead">not currently triggered</span> means the sound is loaded but nothing in the game plays it today.</li>
+        <li>Nothing here plays automatically and nothing loads until you press play, so the page opens instantly.</li>
+      </ol>
+      <p class="sub" style="margin:14px 0 0;font-size:14px">If a player shows as unsupported, open this page in Chrome — some browsers are fussy about .ogg files.</p>
+    </div>
+  </div>
+</header>
+
+<nav class="sticky">
+  <div class="navinner">
+    <a href="#s01">Run starts</a>
+    <a href="#s02">The house</a>
+    <a href="#s03">Carpet</a>
+    <a href="#s04">Wood floor</a>
+    <a href="#s05">Creaky board</a>
+    <a href="#s06">Toy pile</a>
+    <a href="#s07">Doors</a>
+    <a href="#s08">Fridge</a>
+    <a href="#s09">Grabbing a snack</a>
+    <a href="#s10">Carrying it</a>
+    <a href="#s11">Dropping it</a>
+    <a href="#s12">Kid noises</a>
+    <a href="#s13">Parent walking</a>
+    <a href="#s14">Parent chatter</a>
+    <a href="#s15">Bathroom</a>
+    <a href="#s16">Parent hears you</a>
+    <a href="#s17">The chase</a>
+    <a href="#s18">The toy dog</a>
+    <a href="#s19">Caught</a>
+    <a href="#s20">Carried back</a>
+    <a href="#s21">Put back</a>
+    <a href="#s22">Winning</a>
+    <a href="#s23">Losing</a>
+    <a href="#s24">Epilogue</a>
+    <a href="#s25">Safety nets</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<section id="s01">
+  <div class="snum">Moment 01</div>
+  <h2 class="moment">The run starts</h2>
+  <p class="when">Fires once, the instant the run begins — before the player has moved.</p>
+
+  <div class="pool">
+    <h3>The kid's opening line</h3>
+    <p class="note">One line, always the same one. It is the only clip in its set, so it is heard on every single run — the most-repeated line in the game.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">1 clip &middot; pitch wobbles &plusmn;5% each play &middot; normal speed &middot; no volume offset</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">carry_red_handed_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_red_handed_01.ogg"></audio></div>
+    </div>
+    <p class="alsoin">This take is deliberately held back from the "being carried back" set so the opening line never turns up mid-carry.</p>
+  </div>
+</section>
+
+<section id="s02">
+  <div class="snum">Moment 02</div>
+  <h2 class="moment">The house in the background</h2>
+  <p class="when">These loop quietly under everything from the moment the run starts; the TV and the kitchen speaker each go silent for good when the parent finishes turning them off.</p>
+
+  <div class="pool">
+    <h3>Looping room tone</h3>
+    <p class="note">Four beds, each tied to a spot in the house and only audible near it. The TV is the loudest and reaches about 3 m; the fridge hum only carries about 5 m; the clock about 4 m. They restart themselves forever until the run ends.</p>
+    <p class="flags"><span class="flag f-placeholder">stock / placeholder</span></p>
+    <p class="tuning">4 loops &middot; the fridge hum is the only one wired as a set (&plusmn;5% pitch); the other three play as-is</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">ambience/tv_murmur.ogg</span><audio controls preload="none" src="../game/audio/ambience/tv_murmur.ogg"></audio></div>
+      <div class="clip"><span class="fname">ambience/speaker_music.ogg</span><audio controls preload="none" src="../game/audio/ambience/speaker_music.ogg"></audio></div>
+      <div class="clip"><span class="fname">ambience/fridge_hum.ogg</span><audio controls preload="none" src="../game/audio/ambience/fridge_hum.ogg"></audio></div>
+      <div class="clip"><span class="fname">ambience/clock_tick.ogg</span><audio controls preload="none" src="../game/audio/ambience/clock_tick.ogg"></audio></div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>Lights-out tells</h3>
+    <p class="note">The parent's shutdown chores. The lamp click plays when the living-room lamp errand finishes; the TV click plays when the TV errand finishes and kills the TV murmur with it. Both are house-wide tells — audible from about 18 m, much further than normal foley — so the player can track the parent by them.</p>
+    <p class="flags"><span class="flag f-placeholder">stock / placeholder</span></p>
+    <p class="tuning">2 clips &middot; played straight, no pitch wobble, no set to pick from</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">sfx/light_switch.ogg</span><audio controls preload="none" src="../game/audio/sfx/light_switch.ogg"></audio></div>
+      <div class="clip"><span class="fname">sfx/tv_click_off.ogg</span><audio controls preload="none" src="../game/audio/sfx/tv_click_off.ogg"></audio></div>
+    </div>
+  </div>
+</section>
+
+<section id="s03">
+  <div class="snum">Moment 03</div>
+  <h2 class="moment">Sneaking on carpet</h2>
+  <p class="when">Every footstep the player takes on a carpeted floor — the quietest surface in the house.</p>
+
+  <div class="pool">
+    <h3>Carpet steps</h3>
+    <p class="note">The same eight recordings serve both walking and sprinting; only the volume changes, and it changes a lot — a walked carpet step is barely there, a sprinted one is over twenty times louder to the ear. If you cut one of these eight it disappears from both walking and running.</p>
+    <p class="flags"><span class="flag f-cc0">CC0 stock, not family</span></p>
+    <p class="tuning">8 clips &middot; pitch wobbles &plusmn;8% each step &middot; normal speed &middot; walk is very quiet, sprint is much louder</p>
+    <div class="clips grid">
+      <div class="clip"><span class="fname">carpet_01.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/carpet_01.wav"></audio></div>
+      <div class="clip"><span class="fname">carpet_02.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/carpet_02.wav"></audio></div>
+      <div class="clip"><span class="fname">carpet_03.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/carpet_03.wav"></audio></div>
+      <div class="clip"><span class="fname">carpet_04.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/carpet_04.wav"></audio></div>
+      <div class="clip"><span class="fname">carpet_05.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/carpet_05.wav"></audio></div>
+      <div class="clip"><span class="fname">carpet_06.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/carpet_06.wav"></audio></div>
+      <div class="clip"><span class="fname">carpet_07.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/carpet_07.wav"></audio></div>
+      <div class="clip"><span class="fname">carpet_08.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/carpet_08.wav"></audio></div>
+    </div>
+    <p class="alsoin">These are free stock downloads, not your recordings — the obvious candidate for a family re-record if you want the whole game to sound like your house.</p>
+  </div>
+</section>
+
+<section id="s04">
+  <div class="snum">Moment 04</div>
+  <h2 class="moment">Sneaking on the wood floor</h2>
+  <p class="when">Every footstep on bare hardwood — the default floor, and much louder than carpet.</p>
+
+  <div class="pool">
+    <h3>Wood steps</h3>
+    <p class="note">One set covering walking and running; running is dramatically louder and is the main way the parent catches a careless player. This is also the sound wired up before anything happens, so it is the first thing the game holds ready.</p>
+    <p class="flags"><span class="flag f-cc0">CC0 stock, not family</span></p>
+    <p class="tuning">8 clips &middot; pitch wobbles &plusmn;8% each step &middot; normal speed &middot; running is far louder than walking</p>
+    <div class="clips grid">
+      <div class="clip"><span class="fname">wood_01.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/wood_01.wav"></audio></div>
+      <div class="clip"><span class="fname">wood_02.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/wood_02.wav"></audio></div>
+      <div class="clip"><span class="fname">wood_03.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/wood_03.wav"></audio></div>
+      <div class="clip"><span class="fname">wood_04.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/wood_04.wav"></audio></div>
+      <div class="clip"><span class="fname">wood_05.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/wood_05.wav"></audio></div>
+      <div class="clip"><span class="fname">wood_06.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/wood_06.wav"></audio></div>
+      <div class="clip"><span class="fname">wood_07.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/wood_07.wav"></audio></div>
+      <div class="clip"><span class="fname">wood_08.wav</span><audio controls preload="none" src="../game/audio/cc0/footsteps/wood_08.wav"></audio></div>
+    </div>
+  </div>
+</section>
+
+<section id="s05">
+  <div class="snum">Moment 05</div>
+  <h2 class="moment">Standing on a creaky board</h2>
+  <p class="when">A footstep that lands on one of the marked creaky floorboards — the loudest noise the player can make on foot.</p>
+
+  <div class="pool">
+    <h3>Board groan</h3>
+    <p class="note">These are your slow door-creak recordings played back at four-fifths speed, which drops them into a long, low wooden groan instead of a short tick. Because they are slowed down, they last noticeably longer than a normal step. The button below flips between what the game plays and the raw recording.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">4 clips &middot; played at 0.8x speed, so it reads as a deep wooden groan &middot; pitch wobbles a further &plusmn;7% each step &middot; loudest player footstep in the game</p>
+    <div class="pool-rate" data-basepitch="0.8">
+      <button class="rate" type="button">rate</button>
+      <div class="clips">
+        <div class="clip"><span class="fname">door_creak_slow_01.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_slow_01.ogg"></audio></div>
+        <div class="clip"><span class="fname">door_creak_slow_02.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_slow_02.ogg"></audio></div>
+        <div class="clip"><span class="fname">door_creak_slow_03.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_slow_03.ogg"></audio></div>
+        <div class="clip"><span class="fname">door_creak_slow_04.ogg (denoised)</span><audio controls preload="none" src="../game/audio/denoised/foley/door_creak_slow_04.ogg"></audio></div>
+      </div>
+    </div>
+    <p class="alsoin">Important: these are the exact same four files as the slow door creak in <a href="#s07" style="color:var(--accent)">Moment 07</a>. Deleting one here does not remove it from doors, and vice versa — they are two separate lists pointing at one set of recordings. If you want the board and the door to stop sounding related, one of the two needs different takes.</p>
+  </div>
+</section>
+
+<section id="s06">
+  <div class="snum">Moment 06</div>
+  <h2 class="moment">Stepping in the toy pile</h2>
+  <p class="when">A footstep that lands in the scattered toys — the trap tell that gives the player away.</p>
+
+  <div class="pool">
+    <h3>Toy squeaks</h3>
+    <p class="note">Sixty-six family takes. This is by far the biggest set in the game and the one most worth pruning by ear: with this many clips a player will only ever hear a handful per run, so weak takes are pure dead weight. The game never plays the same one twice in a row. Cut freely — nothing checks how many are left.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">66 clips &middot; pitch wobbles &plusmn;5% each step &middot; normal speed &middot; loud, and it also has a one-in-four chance of setting off the kid's little reaction noise in Moment 12</p>
+    <div class="clips grid">
+      <div class="clip"><span class="fname">toy_squeak_01.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_02.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_03.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_03.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_04.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_04.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_05.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_05.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_06.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_06.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_07.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_07.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_08.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_08.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_09.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_09.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_10.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_10.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_11.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_11.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_12.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_12.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_13.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_13.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_14.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_14.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_15.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_15.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_16.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_16.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_17.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_17.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_18.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_18.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_19.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_19.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_20.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_20.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_21.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_21.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_22.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_22.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_23.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_23.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_24.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_24.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_25.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_25.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_26.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_26.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_27.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_27.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_28.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_28.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_29.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_29.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_30.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_30.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_31.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_31.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_32.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_32.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_33.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_33.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_34.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_34.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_35.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_35.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_36.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_36.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_37.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_37.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_38.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_38.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_39.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_39.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_40.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_40.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_41.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_41.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_42.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_42.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_43.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_43.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_44.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_44.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_45.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_45.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_46.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_46.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_47.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_47.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_48.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_48.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_49.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_49.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_50.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_50.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_51.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_51.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_52.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_52.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_53.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_53.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_54.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_54.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_55.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_55.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_56.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_56.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_57.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_57.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_58.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_58.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_59.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_59.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_60.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_60.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_61.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_61.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_62.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_62.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_63.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_63.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_64.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_64.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_65.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_65.ogg"></audio></div>
+      <div class="clip"><span class="fname">toy_squeak_66.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/toy_squeak_66.ogg"></audio></div>
+    </div>
+  </div>
+</section>
+
+<section id="s07">
+  <div class="snum">Moment 07</div>
+  <h2 class="moment">Opening a door</h2>
+  <p class="when">Plays continuously while any door is being pushed open — the bedroom door, the pantry, the bathroom door, and the fridge all count as doors.</p>
+
+  <div class="pool">
+    <h3>Easing a door open slowly</h3>
+    <p class="note">Chosen when the player is nudging the door gently. Four takes.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">4 clips &middot; normal speed &middot; the set asks for &plusmn;8% pitch wobble, but see the note below</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">door_creak_slow_01.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_slow_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">door_creak_slow_02.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_slow_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">door_creak_slow_03.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_slow_03.ogg"></audio></div>
+      <div class="clip"><span class="fname">door_creak_slow_04.ogg (denoised)</span><audio controls preload="none" src="../game/audio/denoised/foley/door_creak_slow_04.ogg"></audio></div>
+    </div>
+    <p class="alsoin">Same four files as the creaky floorboard in <a href="#s05" style="color:var(--accent)">Moment 05</a>, where they are slowed to 0.8x. Two separate lists, one set of recordings.</p>
+  </div>
+
+  <div class="pool">
+    <h3>Shoving a door open fast</h3>
+    <p class="note">Chosen when the door is being swung open quickly. Nine takes — the largest foley set in the game after the toys.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">9 clips &middot; normal speed &middot; the set asks for &plusmn;8% pitch wobble, but see the note below</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">door_creak_fast_01.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_fast_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">door_creak_fast_02.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_fast_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">door_creak_fast_03.ogg (denoised)</span><audio controls preload="none" src="../game/audio/denoised/foley/door_creak_fast_03.ogg"></audio></div>
+      <div class="clip"><span class="fname">door_creak_fast_04.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_fast_04.ogg"></audio></div>
+      <div class="clip"><span class="fname">door_creak_fast_05.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_fast_05.ogg"></audio></div>
+      <div class="clip"><span class="fname">door_creak_fast_06.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_fast_06.ogg"></audio></div>
+      <div class="clip"><span class="fname">door_creak_fast_07.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_fast_07.ogg"></audio></div>
+      <div class="clip"><span class="fname">door_creak_fast_08.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_fast_08.ogg"></audio></div>
+      <div class="clip"><span class="fname">door_creak_fast_09.ogg</span><audio controls preload="none" src="../game/audio/original/foley/door_creak_fast_09.ogg"></audio></div>
+    </div>
+    <p class="alsoin">Worth knowing for both door sets: in play the door itself takes over the pitch and loudness the moment the clip starts, based on how fast it is actually swinging. So the &plusmn;8% wobble written into the sets never really applies to doors — what you hear in game is the door's own speed. Judge these takes on their character, not their pitch.</p>
+    <p class="alsoin">All but one take in each door set is the raw, un-denoised recording — they still have room noise on them. Sanctioned for now, but if any sound hissy next to the cleaned takes, that is why.</p>
+  </div>
+</section>
+
+<section id="s08">
+  <div class="snum">Moment 08</div>
+  <h2 class="moment">The fridge</h2>
+  <p class="when">The pop fires the instant the fridge starts swinging open; the fridge also creaks like any other door while it moves, and hums continuously when you stand near it.</p>
+
+  <div class="pool">
+    <h3>Fridge door pop</h3>
+    <p class="note">Currently borrows the snack-pickup sound — there is no dedicated fridge-seal recording. Heard from about 7 m.</p>
+    <p class="flags"><span class="flag f-placeholder">placeholder — no family take</span></p>
+    <p class="tuning">no clips of its own; falls back to one stand-in file &middot; pitch wobbles &plusmn;6% &middot; normal speed</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">sfx/snack_pickup.ogg</span><audio controls preload="none" src="../game/audio/sfx/snack_pickup.ogg"></audio></div>
+    </div>
+    <p class="alsoin">A prime candidate for a recording session: a real fridge-door thunk would sell the kitchen instantly, and the same file is currently doing double duty as the snack grab in Moment 09.</p>
+  </div>
+</section>
+
+<section id="s09">
+  <div class="snum">Moment 09</div>
+  <h2 class="moment">Grabbing a snack</h2>
+  <p class="when">Fires once when the player picks the snack up. Which sounds play depends on whether the snack is a pantry snack or the ice cream from the freezer.</p>
+
+  <div class="pool">
+    <h3>Pantry snack grab</h3>
+    <p class="note">The normal case — chips and anything that is not ice cream.</p>
+    <p class="flags"><span class="flag f-placeholder">placeholder — no family take</span></p>
+    <p class="tuning">no clips of its own; falls back to one stand-in file &middot; pitch wobbles &plusmn;6% &middot; normal speed</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">sfx/snack_pickup.ogg</span><audio controls preload="none" src="../game/audio/sfx/snack_pickup.ogg"></audio></div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>Ice-cream scoop</h3>
+    <p class="note">Plays instead of the pantry grab when the snack is ice cream. It is the snack-drop sound sped up and pulled way down in volume to read as a small scrape rather than a thud. Press the button to hear it as the game plays it.</p>
+    <p class="flags"><span class="flag f-placeholder">placeholder — no family take</span></p>
+    <p class="tuning">no clips of its own; falls back to one stand-in file &middot; played at 1.3x speed, so the drop thud reads higher and quicker &middot; pulled down about 12 dB, i.e. much quieter than the pantry grab &middot; &plusmn;6% wobble</p>
+    <div class="pool-rate" data-basepitch="1.3">
+      <button class="rate" type="button">rate</button>
+      <div class="clips">
+        <div class="clip"><span class="fname">sfx/snack_drop.ogg</span><audio controls preload="none" src="../game/audio/sfx/snack_drop.ogg"></audio></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>The kid's reaction to the ice cream</h3>
+    <p class="note">Plays on top of the scoop, only for the ice cream. It is the same recording as the winning "mmm" in Moment 22, just a touch quieter — so the player hears the victory noise twice in a winning ice-cream run.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">1 clip &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; about 2 dB quieter than normal voice</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">win_mmm_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/win_mmm_01.ogg"></audio></div>
+    </div>
+    <p class="alsoin">If that doubling bothers you, this is the one to swap for a different take — the win moment has more riding on it.</p>
+  </div>
+</section>
+
+<section id="s10">
+  <div class="snum">Moment 10</div>
+  <h2 class="moment">Carrying the snack around</h2>
+  <p class="when">Repeats roughly every 2.5 seconds for as long as the player is holding a snack — so a long careful walk back means hearing this over and over.</p>
+
+  <div class="pool">
+    <h3>Wrapper crinkle</h3>
+    <p class="note">The pantry-snack version. Only two takes, repeating every couple of seconds — this is the set most likely to feel repetitive in a long run, and the best argument for recording a few more.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">2 clips &middot; pitch wobbles &plusmn;8% &middot; normal speed &middot; quiet foley, about 8 m reach</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">wrapper_crinkle_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/foley/wrapper_crinkle_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">wrapper_crinkle_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/foley/wrapper_crinkle_02.ogg"></audio></div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>Ice-cream carry</h3>
+    <p class="note">Plays instead of the crinkle while carrying ice cream. Another reuse of the drop sound, sped up hard so it reads as a light tub-shift rather than a thud.</p>
+    <p class="flags"><span class="flag f-placeholder">placeholder — no family take</span></p>
+    <p class="tuning">no clips of its own; falls back to one stand-in file &middot; played at 1.55x speed, well over half again as fast &middot; pulled down about 8 dB &middot; &plusmn;8% wobble</p>
+    <div class="pool-rate" data-basepitch="1.55">
+      <button class="rate" type="button">rate</button>
+      <div class="clips">
+        <div class="clip"><span class="fname">sfx/snack_drop.ogg</span><audio controls preload="none" src="../game/audio/sfx/snack_drop.ogg"></audio></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>"Shhh" over the wrapper</h3>
+    <p class="note">Written as an occasional shush landing shortly after a crinkle, about one time in five.</p>
+    <p class="flags"><span class="flag f-family">family recording</span> <span class="flag f-dead">not currently triggered</span></p>
+    <p class="tuning">1 clip &middot; pitch wobbles &plusmn;6% &middot; normal speed</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">wrapper_shush_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/wrapper_shush_01.ogg"></audio></div>
+    </div>
+    <p class="alsoin">Heads up: the carry loop plays the crinkle directly and never runs the little two-part sequence this shush belongs to, so as the game stands today this line never plays. Nothing to cut — but if you like it, it needs wiring up. Worth raising with the build lane.</p>
+  </div>
+</section>
+
+<section id="s11">
+  <div class="snum">Moment 11</div>
+  <h2 class="moment">Dropping the snack</h2>
+  <p class="when">Fires the moment the snack leaves the player's hands, wherever it lands.</p>
+
+  <div class="pool">
+    <h3>The snack hitting the floor</h3>
+    <p class="note">A fixed sound, not a set — every drop sounds identical. Fairly quiet and only carries about 8 m.</p>
+    <p class="flags"><span class="flag f-placeholder">placeholder — no family take</span></p>
+    <p class="tuning">1 fixed clip &middot; no pitch wobble &middot; normal speed</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">sfx/snack_drop.ogg</span><audio controls preload="none" src="../game/audio/sfx/snack_drop.ogg"></audio></div>
+    </div>
+    <p class="alsoin">This one file is doing three jobs: the drop here, the ice-cream scoop in Moment 09, and the ice-cream carry in Moment 10. Replacing it changes all three.</p>
+  </div>
+
+  <div class="pool">
+    <h3>The kid's reaction to dropping it</h3>
+    <p class="note">Plays over the thud. One take, heard every time — worth being sure it holds up to repetition.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">1 clip &middot; pitch wobbles &plusmn;5% &middot; normal speed</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">snack_drop_voice_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/snack_drop_voice_01.ogg"></audio></div>
+    </div>
+  </div>
+</section>
+
+<section id="s12">
+  <div class="snum">Moment 12</div>
+  <h2 class="moment">The kid's own little noises</h2>
+  <p class="when">Small unprompted sounds from the player character while sneaking around, not tied to being seen.</p>
+
+  <div class="pool">
+    <h3>Idle giggle</h3>
+    <p class="note">Fires when the player stands still long enough for the character to giggle to themselves. Deliberately mixed well down — about 8 dB below a normal line — so it reads as under-the-breath rather than a shout.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">3 clips &middot; pitch wobbles &plusmn;6% &middot; normal speed &middot; 8 dB quieter than other voice lines &middot; lowest priority, so any other line talks over it</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">chase_giggle_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/chase_giggle_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">chase_giggle_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/chase_giggle_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">chase_giggle_03.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/chase_giggle_03.ogg"></audio></div>
+    </div>
+    <p class="alsoin">These same three takes also open the chase giggles in <a href="#s17" style="color:var(--accent)">Moment 17</a> — there at full volume and back to back. Cutting one here does not cut it there.</p>
+  </div>
+
+  <div class="pool">
+    <h3>Bumping into something</h3>
+    <p class="note">A small involuntary noise when the kid knocks into something reactive — the toy pile is the confirmed example. It only plays about one time in four, never twice within 2.5 seconds, and never while another line is already going, so it stays sparse.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">2 clips &middot; pitch wobbles &plusmn;6% &middot; normal speed &middot; roughly a 1-in-4 chance per bump</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">caught_grunt_01.ogg (denoised)</span><audio controls preload="none" src="../game/audio/denoised/voice/caught_grunt_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">caught_grunt_02.ogg (raw, not cleaned)</span><audio controls preload="none" src="../game/audio/original/voice/caught_grunt_02.ogg"></audio></div>
+    </div>
+    <p class="alsoin">The second take is the untouched raw recording — it was too short to clean up, so it may sound noisier than everything around it. If it sticks out, cutting it leaves the set with one clip, which is fine.</p>
+    <p class="alsoin">The full list of objects that can set this off lives in the player script, not the audio table — trigger beyond the toy pile unconfirmed.</p>
+  </div>
+</section>
+
+<section id="s13">
+  <div class="snum">Moment 13</div>
+  <h2 class="moment">The parent walking the house</h2>
+  <p class="when">Plays continuously as the parent moves, roughly one step per stride — the player's main way of tracking where they are.</p>
+
+  <div class="pool">
+    <h3>Parent footsteps</h3>
+    <p class="note">Your own recorded footsteps, unlike the player's stock ones. Only three takes, and they play constantly for the whole run, so this is the most-heard set in the game by a wide margin. Reaches about 12 m — further than the player's own steps.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">3 clips &middot; pitch wobbles &plusmn;8% each step &middot; normal speed</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">footstep_wood_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/foley/footstep_wood_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">footstep_wood_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/foley/footstep_wood_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">footstep_wood_03.ogg</span><audio controls preload="none" src="../game/audio/denoised/foley/footstep_wood_03.ogg"></audio></div>
+    </div>
+    <p class="alsoin">If any of the three has an obvious tell — a scuff, a click — it will be recognisable within seconds of play. Three is already thin, so consider replacing rather than cutting.</p>
+  </div>
+</section>
+
+<section id="s14">
+  <div class="snum">Moment 14</div>
+  <h2 class="moment">The parent's routine chatter</h2>
+  <p class="when">Scheduled lines that fire at fixed points in the run, but only while the parent is calmly going about their routine — if they are busy investigating a noise at that moment, the line is skipped for good.</p>
+
+  <div class="pool">
+    <h3>Muttering on the couch</h3>
+    <p class="note">Plays right at the start of the run, and again about a minute and twenty in. Because it fires twice per run from a set of three, players will often hear two of these three in a single playthrough.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">3 clips &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; low priority — anything more urgent cuts it off</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">parent_couch_mutter_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_couch_mutter_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">parent_couch_mutter_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_couch_mutter_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">parent_couch_mutter_03.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_couch_mutter_03.ogg"></audio></div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>Heading for the kitchen</h3>
+    <p class="note">Fires once, about a minute into the run — the parent announcing they are about to go where the snacks are.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">2 clips &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; low priority</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">parent_kitchen_intent_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_kitchen_intent_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">parent_kitchen_intent_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_kitchen_intent_02.ogg"></audio></div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>Time to check the bedroom</h3>
+    <p class="note">Fires late — nearly five minutes into the run — as the parent decides to look in on the kid. Only one take exists, and it is the same line reused for the epilogue in Moment 24.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">1 clip &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; low priority</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">parent_bed_check_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_bed_check_02.ogg"></audio></div>
+    </div>
+    <p class="alsoin">Note the filename ends in 02 — take 01 is not wired in anywhere. If a second take exists in your source folder it could be added here in one line.</p>
+  </div>
+</section>
+
+<section id="s15">
+  <div class="snum">Moment 15</div>
+  <h2 class="moment">The parent's bathroom trip</h2>
+  <p class="when">A two-part set piece that runs when the parent actually goes to the bathroom: the flush first, then the tap running nine seconds later. It is the player's biggest safe window.</p>
+
+  <div class="pool">
+    <h3>Flush, then the tap</h3>
+    <p class="note">Both are mixed as house-wide tells rather than local noises — audible from about 18 m, deliberately, because a listener across the house heard nothing in playtest at normal foley levels. One take each, so they sound identical every run.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">2 clips, one per stage &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; the tap comes 9 seconds after the flush</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">toilet_flush_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/foley/toilet_flush_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">sink_running_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/foley/sink_running_01.ogg"></audio></div>
+    </div>
+    <p class="alsoin">Length matters more than character here — the gap between these two is the safe window, so if the tap clip is short the window feels short.</p>
+  </div>
+</section>
+
+<section id="s16">
+  <div class="snum">Moment 16</div>
+  <h2 class="moment">The parent hears something</h2>
+  <p class="when">Fires when a noise makes the parent perk up, and again when they switch into actively searching. In a noisy run this is the line the player hears most often from the parent.</p>
+
+  <div class="pool">
+    <h3>"What was that?"</h3>
+    <p class="note">One set covers both the first flicker of suspicion and the full search, so the same three takes can land twice in quick succession. Medium priority — it will talk over routine chatter and giggles, but the catch and carry lines talk over it.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">3 clips &middot; pitch wobbles &plusmn;5% &middot; normal speed</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">parent_investigate_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_investigate_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">parent_investigate_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_investigate_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">parent_investigate_03.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_investigate_03.ogg"></audio></div>
+    </div>
+    <p class="alsoin">Three takes carrying two different beats. If one of them sounds too alarmed for a first flicker of suspicion, that is the mismatch to flag — splitting them into a suspicious set and a searching set is a small change.</p>
+  </div>
+</section>
+
+<section id="s17">
+  <div class="snum">Moment 17</div>
+  <h2 class="moment">Spotted — the chase</h2>
+  <p class="when">The parent's shout fires the instant they actually see the player; the kid's giggles then run back to back, one after another with a short breath between, for as long as the chase lasts.</p>
+
+  <div class="pool">
+    <h3>The parent calling you out</h3>
+    <p class="note">Six takes — the biggest voice set for the parent, and rightly so: it is the loudest story beat in the game.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">6 clips &middot; pitch wobbles &plusmn;5% &middot; normal speed</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">parent_found_call_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_found_call_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">parent_found_call_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_found_call_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">parent_found_call_03.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_found_call_03.ogg"></audio></div>
+      <div class="clip"><span class="fname">parent_found_call_04.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_found_call_04.ogg"></audio></div>
+      <div class="clip"><span class="fname">parent_found_call_05.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_found_call_05.ogg"></audio></div>
+      <div class="clip"><span class="fname">parent_found_call_06.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_found_call_06.ogg"></audio></div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>The kid giggling through the chase</h3>
+    <p class="note">Eleven takes played in a continuous chain — one finishes, a short gap, the next starts, until the chase ends. This is the only set the player hears several of in a row, so listen to these as a run rather than one at a time. Note it mixes the three chase giggles with all eight of the win giggles, so a chase can spend the winning material before the player ever wins.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">11 clips &middot; pitch wobbles &plusmn;6% &middot; normal speed &middot; chained back to back with a 0.14–0.30 second breath between</p>
+    <div class="clips grid">
+      <div class="clip"><span class="fname">chase_giggle_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/chase_giggle_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">chase_giggle_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/chase_giggle_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">chase_giggle_03.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/chase_giggle_03.ogg"></audio></div>
+      <div class="clip"><span class="fname">win_giggle_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/win_giggle_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">win_giggle_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/win_giggle_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">win_giggle_03.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/win_giggle_03.ogg"></audio></div>
+      <div class="clip"><span class="fname">win_giggle_04.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/win_giggle_04.ogg"></audio></div>
+      <div class="clip"><span class="fname">win_giggle_05.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/win_giggle_05.ogg"></audio></div>
+      <div class="clip"><span class="fname">win_giggle_06.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/win_giggle_06.ogg"></audio></div>
+      <div class="clip"><span class="fname">win_giggle_07.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/win_giggle_07.ogg"></audio></div>
+      <div class="clip"><span class="fname">win_giggle_08.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/win_giggle_08.ogg"></audio></div>
+    </div>
+    <p class="alsoin">This same set is also the celebration in <a href="#s22" style="color:var(--accent)">Moment 22</a>, where one clip plays a beat after the win. The first three are the same files as the idle giggles in Moment 12.</p>
+  </div>
+</section>
+
+<section id="s18">
+  <div class="snum">Moment 18</div>
+  <h2 class="moment">The toy dog</h2>
+  <p class="when">The toy stirs when the player gets too close: a chirp when it first notices, then the bark — and the parent reacts to the bark a quarter-second later.</p>
+
+  <div class="pool">
+    <h3>The toy noticing you</h3>
+    <p class="note">A fixed electronic chirp, played straight with no variation. Carries about 12 m.</p>
+    <p class="flags"><span class="flag f-placeholder">placeholder — no family take</span></p>
+    <p class="tuning">1 fixed clip &middot; no pitch wobble &middot; normal speed</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">sfx/pet_chirp.ogg</span><audio controls preload="none" src="../game/audio/sfx/pet_chirp.ogg"></audio></div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>The toy barking</h3>
+    <p class="note">Two family takes of the toy's dog sound — this is a toy that plays a dog noise, not a real dog. Only two survived the recording session, which is why the pitch wobble is set wider than usual: with just two clips alternating, a bit more variation stops it reading as a loop.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">2 clips &middot; pitch wobbles &plusmn;7%, wider than normal to disguise the short set &middot; normal speed &middot; loud, about 12 m reach</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">dog_01.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/dog_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">dog_02.ogg</span><audio controls preload="none" src="../game/audio/family/toys/clips/dog_02.ogg"></audio></div>
+    </div>
+    <p class="alsoin">With only two clips there is nothing to prune here — if either is weak, the fix is another recording pass at the toy, not a deletion.</p>
+  </div>
+
+  <div class="pool">
+    <h3>The parent reacting to the toy</h3>
+    <p class="note">Lands a quarter of a second after the bark, every time. One take, so it is identical on every bark — and the toy can bark repeatedly in a tense run.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">1 clip &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; low priority &middot; delayed 250 ms behind the bark</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">parent_dog_attention_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_dog_attention_01.ogg"></audio></div>
+    </div>
+  </div>
+</section>
+
+<section id="s19">
+  <div class="snum">Moment 19</div>
+  <h2 class="moment">Getting caught</h2>
+  <p class="when">The parent's hand lands on the player: a musical sting immediately, then the kid's reaction just over a tenth of a second later.</p>
+
+  <div class="pool">
+    <h3>Caught sting</h3>
+    <p class="note">The one non-diegetic sound in the game — music, not something in the house. Plays flat with no variation at all.</p>
+    <p class="flags"><span class="flag f-placeholder">placeholder — no family take</span></p>
+    <p class="tuning">no clips of its own; falls back to one stand-in file &middot; pitch wobble deliberately set to zero so it never sounds detuned &middot; normal speed</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">sfx/caught_sting.ogg</span><audio controls preload="none" src="../game/audio/sfx/caught_sting.ogg"></audio></div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>The kid's caught reaction</h3>
+    <p class="note">Lands 120 ms behind the sting, so the two read as one event. One take only — heard on every single catch.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">1 clip &middot; pitch wobbles &plusmn;6% &middot; normal speed &middot; delayed 120 ms behind the sting</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">caught_grunt_03.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/caught_grunt_03.ogg"></audio></div>
+    </div>
+    <p class="alsoin">Takes 01 and 02 from the same session are used for the bump noise in Moment 12. If 03 is the weakest of the three, they can be swapped.</p>
+  </div>
+</section>
+
+<section id="s20">
+  <div class="snum">Moment 20</div>
+  <h2 class="moment">Being carried back to bed</h2>
+  <p class="when">Runs for the whole walk back, from the catch until the player is put down. The kid protests first, then kid and parent alternate — a parent grunt every three to five seconds, kid lines filling the gaps.</p>
+
+  <div class="pool">
+    <h3>Kid protesting, caught with the snack</h3>
+    <p class="note">Used when the player was holding a snack when caught. Six takes, chained one after another for the whole carry, so a long carry can burn through most of the set.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">6 clips &middot; pitch wobbles &plusmn;6% &middot; normal speed &middot; highest priority — cuts off anything else</p>
+    <div class="clips grid">
+      <div class="clip"><span class="fname">carry_red_handed_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_red_handed_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_red_handed_03.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_red_handed_03.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_red_handed_04.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_red_handed_04.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_red_handed_05.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_red_handed_05.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_red_handed_06.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_red_handed_06.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_red_handed_08.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_red_handed_08.ogg"></audio></div>
+    </div>
+    <p class="alsoin">Take 01 from this session is the game's opening line (Moment 01) and is kept out of here on purpose. Take 07 is not wired in anywhere — if it exists and you like it, it is one line to add.</p>
+  </div>
+
+  <div class="pool">
+    <h3>Kid protesting, caught empty-handed</h3>
+    <p class="note">Used when the player had no snack. Seven takes, same chaining.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">7 clips &middot; pitch wobbles &plusmn;6% &middot; normal speed &middot; highest priority</p>
+    <div class="clips grid">
+      <div class="clip"><span class="fname">carry_empty_handed_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_empty_handed_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_empty_handed_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_empty_handed_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_empty_handed_03.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_empty_handed_03.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_empty_handed_04.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_empty_handed_04.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_empty_handed_05.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_empty_handed_05.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_empty_handed_06.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_empty_handed_06.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_empty_handed_07.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_empty_handed_07.ogg"></audio></div>
+    </div>
+    <p class="alsoin">The first three of these are also the kid's protest in the epilogue (<a href="#s24" style="color:var(--accent)">Moment 24</a>) — separate list, same files.</p>
+  </div>
+
+  <div class="pool">
+    <h3>Parent grunting, carrying you with the snack</h3>
+    <p class="note">Fires every three to five seconds during the carry, but only after the kid has protested at least once — so the kid always speaks first.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">3 clips &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; highest priority</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">parent_grunt_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_grunt_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">parent_grunt_03.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_grunt_03.ogg"></audio></div>
+      <div class="clip"><span class="fname">parent_grunt_04.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_grunt_04.ogg"></audio></div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>Parent grunting, carrying you empty-handed</h3>
+    <p class="note">The same beat for the no-snack carry, but with a single take — so it repeats identically every few seconds on a long walk back. The most obvious repetition risk in the game.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">1 clip &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; highest priority</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">parent_grunt_07.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_grunt_07.ogg"></audio></div>
+    </div>
+    <p class="alsoin">Takes 05 and 06 from this session are not wired in anywhere. If they exist, adding one or two here is a one-line-each fix and would help this moment more than any deletion.</p>
+  </div>
+</section>
+
+<section id="s21">
+  <div class="snum">Moment 21</div>
+  <h2 class="moment">Put back in the room</h2>
+  <p class="when">The parent sets the kid down and leaves: a sniffle right away, then a resigned second line about 1.7 seconds later.</p>
+
+  <div class="pool">
+    <h3>The sniffle</h3>
+    <p class="note">One take, always the same. It is also the entire sound of losing (Moment 23).</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">1 clip &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; highest priority</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">deposit_sniffle_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/deposit_sniffle_01.ogg"></audio></div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>Making peace with it</h3>
+    <p class="note">Lands 1.7 seconds after the sniffle, once the parent has gone. Two takes.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">2 clips &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; delayed 1.7 s behind the sniffle</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">deposit_reconcile_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/deposit_reconcile_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">deposit_reconcile_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/deposit_reconcile_02.ogg"></audio></div>
+    </div>
+  </div>
+</section>
+
+<section id="s22">
+  <div class="snum">Moment 22</div>
+  <h2 class="moment">Winning</h2>
+  <p class="when">The run ends in success: the satisfied noise immediately, then a giggle just over a second later. All house ambience stops dead at the same moment.</p>
+
+  <div class="pool">
+    <h3>The satisfied "mmm"</h3>
+    <p class="note">One take — the payoff line of the whole game. Also used, slightly quieter, when grabbing the ice cream in Moment 09, so players on an ice-cream run hear it twice.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">1 clip &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; highest priority</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">win_mmm_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/win_mmm_01.ogg"></audio></div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>The celebration giggle</h3>
+    <p class="note">One clip drawn from the same eleven-strong set as the chase giggles, playing 1.05 seconds after the "mmm" and forced to top priority so nothing can cut it off. Play the set in <a href="#s17" style="color:var(--accent)">Moment 17</a> to audition it — it is the same list.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">draws 1 of 11 clips &middot; pitch wobbles &plusmn;6% &middot; normal speed &middot; delayed 1.05 s behind the "mmm"</p>
+    <p class="alsoin">Because the chase and the win share one list, a win that follows a long chase can land on a giggle the player just heard. Splitting the eight win takes back out into their own list would fix that — one decision, not a deletion.</p>
+  </div>
+
+  <div class="pool">
+    <h3>Win sting</h3>
+    <p class="note">A musical sting for the win, loaded and ready at the same level as the caught sting.</p>
+    <p class="flags"><span class="flag f-placeholder">placeholder — no family take</span> <span class="flag f-dead">not currently triggered</span></p>
+    <p class="tuning">no clips of its own; falls back to one stand-in file &middot; pitch wobble set to zero &middot; normal speed</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">sfx/win_sting.ogg</span><audio controls preload="none" src="../game/audio/sfx/win_sting.ogg"></audio></div>
+    </div>
+    <p class="alsoin">Heads up: unlike the caught sting, nothing in the game currently plays this. The win is the "mmm" plus a giggle and no music. If you expected a musical button on the win, that is the gap — worth raising with the build lane.</p>
+  </div>
+</section>
+
+<section id="s23">
+  <div class="snum">Moment 23</div>
+  <h2 class="moment">Losing</h2>
+  <p class="when">The run ends in failure. The entire sound of losing is one sniffle, with everything else cut to silence.</p>
+
+  <div class="pool">
+    <h3>The losing sound</h3>
+    <p class="note">Exactly the same take as the sniffle when you are put back in the room (Moment 21) — reproduced here because it deserves judging as an ending in its own right. There is no second beat and no sting after it.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">1 clip &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; highest priority</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">deposit_sniffle_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/deposit_sniffle_01.ogg"></audio></div>
+    </div>
+    <p class="alsoin">If losing should feel bigger than being carried back mid-run, this is the moment that needs new material rather than a cut.</p>
+  </div>
+</section>
+
+<section id="s24">
+  <div class="snum">Moment 24</div>
+  <h2 class="moment">Epilogue — the parent checks the room</h2>
+  <p class="when">The closing beat after the run: the parent looks in on the bedroom, and the kid answers back.</p>
+
+  <div class="pool">
+    <h3>The parent at the door</h3>
+    <p class="note">The same single take as the scheduled bedroom check in Moment 14, reused here. Reproduced so you can judge it as an ending line.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">1 clip &middot; pitch wobbles &plusmn;5% &middot; normal speed &middot; low priority</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">parent_bed_check_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/parent_bed_check_02.ogg"></audio></div>
+    </div>
+  </div>
+
+  <div class="pool">
+    <h3>The kid answering back</h3>
+    <p class="note">Three takes — and they are the first three empty-handed carry protests from Moment 20, reused. So a player who was caught empty-handed may hear the same line twice in one run, once mid-carry and once at the very end.</p>
+    <p class="flags"><span class="flag f-family">family recording</span></p>
+    <p class="tuning">3 clips &middot; pitch wobbles &plusmn;6% &middot; normal speed &middot; highest priority</p>
+    <div class="clips">
+      <div class="clip"><span class="fname">carry_empty_handed_01.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_empty_handed_01.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_empty_handed_02.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_empty_handed_02.ogg"></audio></div>
+      <div class="clip"><span class="fname">carry_empty_handed_03.ogg</span><audio controls preload="none" src="../game/audio/denoised/voice/carry_empty_handed_03.ogg"></audio></div>
+    </div>
+    <p class="alsoin">This is the clearest case for moving rather than cutting: if the epilogue wants its own line, swapping these three for different takes is three lines changed.</p>
+  </div>
+</section>
+
+<section id="s25">
+  <div class="snum">Moment 25</div>
+  <h2 class="moment">Safety nets you should never hear</h2>
+  <p class="when">Each set has a stand-in behind it. These only ever play if a set is emptied completely — so if you cut every clip from a set, this is what the game falls back to.</p>
+
+  <div class="pool">
+    <h3>Stand-ins behind the family sets</h3>
+    <p class="note">Listed so nothing surprises you: if you delete all the toy squeaks, the game plays the old placeholder squeak rather than going silent. Same for footsteps, doors, the toy dog, and the parent's steps. None of these are heard in the game as it stands today.</p>
+    <p class="flags"><span class="flag f-placeholder">placeholder — stand-in only</span></p>
+    <p class="tuning">7 files &middot; each sits behind one set &middot; only reached if that set is emptied</p>
+    <div class="clips grid">
+      <div class="clip"><span class="fname">sfx/toy_squeak.ogg</span><audio controls preload="none" src="../game/audio/sfx/toy_squeak.ogg"></audio></div>
+      <div class="clip"><span class="fname">sfx/pet_bark.ogg</span><audio controls preload="none" src="../game/audio/sfx/pet_bark.ogg"></audio></div>
+      <div class="clip"><span class="fname">sfx/door_creak.ogg</span><audio controls preload="none" src="../game/audio/sfx/door_creak.ogg"></audio></div>
+      <div class="clip"><span class="fname">sfx/player_step_creak.ogg</span><audio controls preload="none" src="../game/audio/sfx/player_step_creak.ogg"></audio></div>
+      <div class="clip"><span class="fname">sfx/player_step_carpet.ogg</span><audio controls preload="none" src="../game/audio/sfx/player_step_carpet.ogg"></audio></div>
+      <div class="clip"><span class="fname">sfx/player_step_hardwood.ogg</span><audio controls preload="none" src="../game/audio/sfx/player_step_hardwood.ogg"></audio></div>
+      <div class="clip"><span class="fname">sfx/parent_step.ogg</span><audio controls preload="none" src="../game/audio/sfx/parent_step.ogg"></audio></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Built from <code>game/scripts/AudioCasting.gd</code> (which clips exist and how they are tuned) and <code>game/scripts/AudioDirector.gd</code> (what actually sets them off in play). Anything this page could not confirm is marked as such rather than guessed.</p>
+  <p>Three things to hand back to the build lane rather than decide by ear: the "shhh" over the wrapper never plays, the win sting never plays, and the creaky floorboard and the slow door creak are the same four recordings in two different lists.</p>
+</footer>
+
+</div>
+
+<script>
+(function () {
+  var blocks = document.querySelectorAll('.pool-rate[data-basepitch]');
+  for (var i = 0; i < blocks.length; i++) {
+    (function (block) {
+      var rate = parseFloat(block.getAttribute('data-basepitch'));
+      var btn = block.querySelector('button.rate');
+      var players = block.querySelectorAll('audio');
+      var inGame = true;
+      function apply() {
+        for (var j = 0; j < players.length; j++) {
+          var a = players[j];
+          a.preservesPitch = false;
+          a.mozPreservesPitch = false;
+          a.webkitPreservesPitch = false;
+          a.playbackRate = inGame ? rate : 1;
+        }
+        btn.textContent = inGame
+          ? 'Playing at ' + rate + 'x, the way the game plays it — click to hear the raw recording'
+          : 'Playing the raw recording at normal speed — click to hear it at the in-game ' + rate + 'x';
+      }
+      for (var k = 0; k < players.length; k++) {
+        players[k].addEventListener('play', apply);
+      }
+      btn.addEventListener('click', function () { inGame = !inGame; apply(); });
+      apply();
+    })(blocks[i]);
+  }
+})();
+</script>
+
+<style>
+  /* Feedback layer (added 2026-07-25 at the director's request). */
+  .clip { flex-wrap: wrap; }
+  .clip.flagged { border-left: 3px solid var(--warn); padding-left: 11px; margin-left: -14px; }
+  .clip.flagged-cut { border-left-color: var(--dead); }
+  .fb { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; }
+  .fb button {
+    background: var(--panel-2); color: var(--dim); border: 1px solid #45455a;
+    border-radius: 999px; padding: 2px 11px; font-size: 12px; cursor: pointer;
+    font-family: inherit; white-space: nowrap;
+  }
+  .fb button:hover { color: var(--text); border-color: var(--accent); }
+  .fb button.on { color: #131316; font-weight: 600; }
+  .fb button.cut.on { background: var(--dead); border-color: var(--dead); }
+  .fb button.move.on { background: var(--warn); border-color: var(--warn); }
+  .fb input {
+    flex: 1 1 150px; min-width: 110px; max-width: 260px;
+    background: #16161b; color: var(--text); border: 1px solid var(--line);
+    border-radius: 7px; padding: 4px 9px; font: inherit; font-size: 12.5px;
+  }
+  .fb input:focus { outline: none; border-color: var(--accent); }
+  .fb input.has { border-color: var(--warn); }
+  #fbbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    background: rgba(19,19,22,0.96); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line); padding: 12px 28px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  #fbbar .count { font-size: 14px; color: var(--dim); flex: 0 0 auto; }
+  #fbbar .count b { color: var(--text); }
+  #fbbar textarea {
+    flex: 1 1 260px; min-height: 34px; height: 34px; resize: vertical;
+    background: #16161b; color: var(--text); border: 1px solid var(--line);
+    border-radius: 7px; padding: 6px 10px; font: inherit; font-size: 13px;
+  }
+  #fbbar textarea:focus { outline: none; border-color: var(--accent); }
+  #fbbar button {
+    background: var(--accent); color: #10131a; border: none; font-weight: 600;
+    border-radius: 8px; padding: 8px 16px; font: inherit; font-size: 13.5px; cursor: pointer;
+  }
+  #fbbar button.ghost { background: transparent; color: var(--dim); border: 1px solid var(--line); font-weight: 400; }
+  #fbbar button.ghost:hover { color: var(--text); }
+  .wrap { padding-bottom: 200px; }
+</style>
+
+<div id="fbbar">
+  <span class="count">Nothing flagged yet</span>
+  <textarea id="fboverall" placeholder="Overall notes — anything not tied to one clip…"></textarea>
+  <button id="fbcopy">Copy notes for Claude</button>
+  <button id="fbclear" class="ghost">Clear</button>
+</div>
+
+<script>
+/* Per-clip feedback: flag, note, persist, export. Notes survive reloads via
+   localStorage, so an accidental refresh mid-listen costs nothing. */
+(function () {
+  var KEY = 'sed-audio-feedback-v1';
+  var data = {};
+  try { data = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { data = {}; }
+
+  var bar = document.getElementById('fbbar');
+  var countEl = bar.querySelector('.count');
+  var overallEl = document.getElementById('fboverall');
+
+  function entry(id) {
+    if (!data[id]) { data[id] = { cut: false, move: false, note: '' }; }
+    return data[id];
+  }
+
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
+    refreshCount();
+  }
+
+  function flaggedIds() {
+    var out = [];
+    for (var id in data) {
+      if (id === '__overall') { continue; }
+      var e = data[id];
+      if (e && (e.cut || e.move || (e.note || '').trim())) { out.push(id); }
+    }
+    return out;
+  }
+
+  function refreshCount() {
+    var n = flaggedIds().length;
+    countEl.innerHTML = n === 0
+      ? 'Nothing flagged yet'
+      : '<b>' + n + '</b> clip' + (n === 1 ? '' : 's') + ' flagged';
+  }
+
+  function contextFor(clip) {
+    var sec = clip.closest('section');
+    var pool = clip.closest('.pool');
+    var h2 = sec ? sec.querySelector('h2.moment') : null;
+    var h3 = pool ? pool.querySelector('h3') : null;
+    return {
+      moment: h2 ? h2.textContent.trim() : 'Unsorted',
+      pool: h3 ? h3.textContent.trim() : ''
+    };
+  }
+
+  var clips = document.querySelectorAll('.clip');
+  for (var i = 0; i < clips.length; i++) {
+    (function (clip) {
+      var audio = clip.querySelector('audio');
+      if (!audio) { return; }
+      var id = audio.getAttribute('src');
+      var state = entry(id);
+
+      var box = document.createElement('div');
+      box.className = 'fb';
+
+      var cut = document.createElement('button');
+      cut.className = 'cut';
+      cut.type = 'button';
+      cut.textContent = 'Cut';
+      cut.title = 'Delete this clip from the game';
+
+      var move = document.createElement('button');
+      move.className = 'move';
+      move.type = 'button';
+      move.textContent = 'Wrong spot';
+      move.title = 'Keep it, but it belongs at a different moment';
+
+      var note = document.createElement('input');
+      note.type = 'text';
+      note.placeholder = 'note…';
+      note.value = state.note || '';
+
+      function paint() {
+        cut.classList.toggle('on', !!state.cut);
+        move.classList.toggle('on', !!state.move);
+        note.classList.toggle('has', !!(state.note || '').trim());
+        var any = state.cut || state.move || (state.note || '').trim();
+        clip.classList.toggle('flagged', !!any);
+        clip.classList.toggle('flagged-cut', !!state.cut);
+      }
+
+      cut.addEventListener('click', function () {
+        state.cut = !state.cut;
+        if (state.cut) { state.move = false; }
+        paint(); persist();
+      });
+      move.addEventListener('click', function () {
+        state.move = !state.move;
+        if (state.move) { state.cut = false; }
+        paint(); persist();
+      });
+      note.addEventListener('input', function () {
+        state.note = note.value;
+        paint(); persist();
+      });
+
+      box.appendChild(cut);
+      box.appendChild(move);
+      box.appendChild(note);
+      clip.appendChild(box);
+      paint();
+    })(clips[i]);
+  }
+
+  overallEl.value = data.__overall || '';
+  overallEl.addEventListener('input', function () {
+    data.__overall = overallEl.value;
+    persist();
+  });
+
+  function buildReport() {
+    var groups = {};
+    var order = [];
+    var all = document.querySelectorAll('.clip');
+    for (var i = 0; i < all.length; i++) {
+      var clip = all[i];
+      var audio = clip.querySelector('audio');
+      if (!audio) { continue; }
+      var id = audio.getAttribute('src');
+      var e = data[id];
+      if (!e || (!e.cut && !e.move && !(e.note || '').trim())) { continue; }
+      var ctx = contextFor(clip);
+      var head = ctx.moment + (ctx.pool ? '  —  ' + ctx.pool : '');
+      if (!groups[head]) { groups[head] = []; order.push(head); }
+      var file = (id.split('/').pop() || id);
+      var tag = e.cut ? 'CUT ' : (e.move ? 'MOVE' : 'NOTE');
+      groups[head].push('- ' + tag + '  ' + file + ((e.note || '').trim() ? '  — ' + e.note.trim() : ''));
+    }
+    var lines = ['AUDIO REVIEW — Shoulda Eaten Dinner', ''];
+    if (!order.length) { lines.push('(no clips flagged)', ''); }
+    for (var j = 0; j < order.length; j++) {
+      lines.push('## ' + order[j]);
+      lines = lines.concat(groups[order[j]]);
+      lines.push('');
+    }
+    if ((data.__overall || '').trim()) {
+      lines.push('## Overall notes', data.__overall.trim(), '');
+    }
+    return lines.join('\n');
+  }
+
+  document.getElementById('fbcopy').addEventListener('click', function () {
+    var text = buildReport();
+    var btn = this;
+    function done(ok) {
+      btn.textContent = ok ? 'Copied — paste it to Claude' : 'Copy failed, see the box';
+      setTimeout(function () { btn.textContent = 'Copy notes for Claude'; }, 2600);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, function () { fallback(); });
+    } else { fallback(); }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.top = '10%';
+      ta.style.left = '10%';
+      ta.style.width = '80%';
+      ta.style.height = '60%';
+      ta.style.zIndex = '999';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      if (ok) { document.body.removeChild(ta); }
+      done(ok);
+    }
+  });
+
+  document.getElementById('fbclear').addEventListener('click', function () {
+    if (!window.confirm('Clear every flag and note on this page?')) { return; }
+    data = {};
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    window.location.reload();
+  });
+
+  refreshCount();
+})();
+</script>
+
+</body>
+</html>

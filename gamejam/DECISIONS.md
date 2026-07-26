@@ -1574,3 +1574,271 @@ Record decisions another session or tool would otherwise have to rediscover.
 - **Evidence / handoff:** `LevelBuilder.gd` `_add_pantry_shelf()` (called
   from `_build_props()`), nodes prefixed `PantryShelf*` under
   `PantryShelfUnit` at (13.1, 0, 6.09).
+
+## 2026-07-25 — Release look locked; debug keys gated (pre-submission gate)
+
+- **Decision:** The steady storybook halftone (retro_dither style 2, the
+  director's twice-stated favourite) ships as the DEFAULT look:
+  RetroFilter visible at load, `shader_parameter/style = 2` on the scene
+  material, DebugTools `_retro_style` initialised to 2. Both loose keys
+  are now debug-only via a single `OS.is_debug_build()` gate at the top
+  of `_unhandled_input`: G (style cycler — editor tuning only now) and B
+  (collision inspector — reveals hidden traps, must never ship). The
+  redundant mid-function debug check was removed. Headless verifies run
+  in debug builds, so any gate exercising these keys still passes;
+  release web exports exclude both.
+- **Why:** Two logged pre-submission gates resolved with the director's
+  known preference (repeated-favourite rule); captures for the itch page
+  need the shipped look on by default and must never show wireframes.
+- **Rejected / cut:** Leaving G player-facing in release (accidental
+  presses land on hatch/VHS and misrepresent the game); shipping filter
+  off (halftone IS the game's look).
+- **Owner:** Claude (implementation), Noah (veto on next F5 if the
+  default look reads wrong in motion).
+- **Revisit when:** F5/battery flags a gate asserting the filter hidden
+  (flip that expectation, B19 precedent), or the director vetoes.
+- **Evidence / handoff:** Main.tscn RetroFilter/ShaderMaterial_dither,
+  DebugTools.gd `_unhandled_input` gate.
+
+## 2026-07-25 — Itch page system (research + design pass)
+
+- **Decision:** Page adopts the title-card system. Theme colors (sampled
+  from the actual paper photos): page background `#6268B0`, content
+  column `#F2EFE9`, text `#221F1C`, links `#B8334A`, button `#F29945`
+  with DARK text (white fails contrast). Rules: sampled paper colours
+  darken one step when used as small text; orange appears exactly once
+  per surface (snack in game, play button on page). Banner ships only as
+  a ~1920×560 top-strip crop (full 1080 pushes the embed below the
+  fold); cover ships as an ANIMATED title-card loop at 630×500 (current
+  cover.png reads as a blank blue rectangle at thumbnail size; fallback
+  = title stamped on the photo). Capture rules: everything captured at
+  the shipped default look, never with debug overlays. Asset priority:
+  cover GIF → beats 3 ("countdown walks") and 4 ("busted") as body GIFs
+  → sidebar PNGs → banner crop last. Jam-rule compliance: GMTK 2026 bans
+  generative-AI art/audio for game AND page (we are clean — original
+  photography/foley, OFL font, CC0 packs); external audio MUST be
+  credited on the page — the CC0 source list does not exist yet and
+  Codex is reconstructing it (it fetched the packs). Deadline: 2026-07-26
+  17:00 BST (noon ET).
+- **Why:** Research across 8 GMTK winner/top pages: animated cover is
+  the top-leverage asset, twist-first copy and explicit theme naming are
+  universal, custom theming is not where winners spend effort (ours is
+  cheap so we apply it), and the AI/credit rules are
+  disqualification-level.
+- **Rejected / cut:** Full-height banner header; static cover as-is;
+  custom background images; emoji-heavy copy.
+- **Owner:** Noah (form + captures), Codex (GIF pipeline, crops, CC0
+  list), Claude (copy, merge).
+- **Revisit when:** The cover GIF exceeds ~3 MB (trim the loop), or the
+  CC0 list can't be reconstructed (then swap those pools to family
+  recordings before submission).
+- **Evidence / handoff:** Research + design agent reports in the
+  director's session; final page copy in the director's chat.
+
+## 2026-07-25 — The 31 "extracted clips" never existed; pools parked
+
+- **Decision:** `audio/family/toys/clips/` does not exist and never did —
+  Codex searched the repo, git history, /tmp, Documents, and its
+  worktrees and found no `toy_squeak_*.ogg` or `dog_*.ogg` anywhere. The
+  earlier "31 clips extracted" report was wrong. This is the root cause
+  of the scene refusing to load: `AudioCasting.gd` preloaded 31
+  non-existent files, which is a compile error, which takes down every
+  script that touches the casting table. Both pools are PARKED on their
+  placeholder streams (single-entry `streams` + same fallback) with
+  restore instructions in-line; the rest of the wiring (pet_bark
+  channel, toys footstep branch, both origin allowlists) stays, since it
+  is correct and inert. Re-extraction runs from the raw recordings,
+  which are safe at `gamejam/recordings/raw/` (Codex moved the 10 raw
+  WAVs out of the project and deleted their failing .import sidecars —
+  they are compressed WAVs Godot cannot import but ffmpeg reads fine).
+- **Why:** Deadline is noon ET tomorrow; a bootable game beats missing
+  audio, and the director cannot record capture footage until it loads.
+- **Rejected / cut:** Diagnosing encoding formats (there was nothing to
+  diagnose); reverting the whole audio pass (the wiring is sound).
+- **Owner:** Claude (park + restore), Codex (re-extract with evidence),
+  Noah (F5, capture).
+- **Revisit when:** Codex delivers real files WITH a directory listing —
+  then swap the two parked entries back to the real preloads using the
+  actual filenames and count, not assumed ones.
+- **Evidence / handoff:** `AudioCasting.gd` `toy_squeak` / `pet_bark`
+  entries carry TEMP comments with restore instructions.
+- **RESOLVED same evening:** Codex re-extracted from the raws and proved
+  it with a real `ls -la`: 68 clips, all OGG Vorbis 44.1 kHz, durations
+  0.206–2.424 s — but the split is **66 toy squeaks + only 2 dog takes**,
+  not the fictional 24 + 7. Both pools now wired to the true filenames
+  (`toy_squeak_01..66`, `dog_01..02`); pet_bark jitter raised 0.04 → 0.07
+  because two takes alone read as a loop. Pruning = delete preload lines;
+  no gate asserts either pool's size.
+- **Naming caveat (director, same evening):** the `dog_*.ogg` takes are
+  NOT a real dog — they are a toy that plays a dog sound. Filenames stay
+  as-is (renaming on submission eve buys nothing), but the credits must
+  not claim a real animal, and the takes are deliberately kept OUT of the
+  `toy_squeak` pool despite literally being a toy: the player has to be
+  able to tell "I stepped on something" from "the dog noticed me," and
+  one sound cannot mean both in a stealth game.
+
+## 2026-07-25 — LESSON: a binary-read error does not prove a file exists
+
+- **Decision:** Never treat "cannot read binary file" from the Read tool
+  as evidence that a file EXISTS. The tool rejects known-binary
+  extensions (.ogg/.wav/.png) on extension alone, BEFORE checking
+  existence, so a missing `foo.ogg` and a present `foo.ogg` return the
+  identical error. Only text-extension paths return a true
+  "File does not exist". To prove a binary asset exists from a
+  no-shell instance: check for its sibling `.import` file (a real text
+  file), look for it in the export/scan log, or have a shell-capable
+  tool run `ls` and paste the listing.
+- **Why:** This exact false test cost the project an evening on
+  submission eve. Claude invented the test, wrote it into an engineer
+  subagent's brief as gospit ("a binary/cannot-display error means the
+  file EXISTS"), and the subagent dutifully applied it to 31 phantom
+  files and reported all 31 present. Claude then repeated the same probe
+  itself and drew the same wrong conclusion.
+- **Rejected / cut:** Trusting any subagent's existence claim that rests
+  on a probe method rather than a directory listing.
+- **Owner:** Claude.
+- **Revisit when:** Never — bake it into every future asset brief:
+  demand the listing, not the claim.
+- **Evidence / handoff:** The engineer's STEP 0 report vs Codex's
+  filesystem search.
+
+## 2026-07-25 — Family toy squeaks and dog barks wired as sanctioned pools
+
+- **Decision:** The 31 Codex-extracted clips (all probed present on disk)
+  become two A15-style pools in `AudioCasting.gd`: `toy_squeak` (24 takes,
+  channel `player_footsteps`, jitter 0.05) replaces the placeholder squeak
+  in `_play_player_footstep`'s toys branch, and `pet_bark` (7 takes, new
+  `pet_bark` channel case in `_play_pool`, jitter 0.04) replaces the
+  placeholder "seagull" in `_on_pet_bark_started` and the PetBark seed in
+  `_wire_streams_and_tuning`. Both placeholders stay wired as pool
+  fallbacks. Volumes ride the untouched existing exports
+  (`toy_squeak_volume_db` -3, `pet_bark_volume_db` -3) — perceived level
+  matched to the placeholders conservatively; the director tunes by ear.
+  The clips directory is sanctioned in BOTH origin gates
+  (`AudioDirector.verify_configuration` and the Main.gd a18 sweep) via the
+  door_creak_ pattern: ban roots extended to `res://audio/family/` with a
+  `res://audio/family/toys/clips/` carve-out, so the raw session WAVs
+  beside the clips stay banned. Neither pool's size is asserted anywhere,
+  so the director can prune takes by deleting preload lines without gate
+  edits. Gameplay noise (Player toys 4.0 / creaky 3.2 floors, Pet bark
+  emission) untouched.
+- **Why:** Director casting call; the recorded family sounds are the
+  game's identity layer and the bark placeholder read as a seagull.
+- **Rejected / cut:** Dropping the placeholders from the pools (fallback
+  keeps the every-pool pattern at zero cost); deleting the now-unused
+  `TOY_SQUEAK_STREAM`/`PET_BARK_STREAM` consts (no shell in this instance
+  to prove them unreferenced project-wide — shell-side cleanup candidate);
+  the placeholder's ±8% jitter (real-take pools supply variety; lower
+  jitter avoids pitch artifacts on voice-like recordings); any
+  volume_offset_db trim (no ears here — flat match to the export is the
+  conservative baseline).
+- **Owner:** Noah (ear pass + pruning), Claude engineer (wiring),
+  operator (import + battery).
+- **Revisit when:** The ear pass finds levels hot/quiet (tune the two
+  exports), a take lands badly (prune its preload line), or the chirp
+  placeholder (`PET_CHIRP_STREAM`, deliberately untouched) wants the same
+  treatment.
+- **Evidence / handoff:** `AudioCasting.gd` toy_squeak/pet_bark pools;
+  `AudioDirector.gd` toys branch, pet_bark channel, bark handler, PetBark
+  seeding, verify_configuration allowlist; `Main.gd` a18 sweep allowlist.
+  NOT imported yet: one editor focus is mandatory before any headless
+  gate runs, else every verify fails at AudioCasting preload. Not
+  committed; operator commits after the battery.
+
+## 2026-07-25 — Teleported bodies must land outside aggregate prop colliders
+
+- **Decision:** `Parent.crib_player_offset` moves from `(0.0, 0.65, 0.0)` to
+  `(-1.55, 0.15, 0.0)`. Rule behind it: any code path that assigns
+  `global_position` directly on the player (carry deposit, drop, respawn) must
+  land the capsule OUTSIDE the A19 visual-bounds prop colliders, because there
+  is no physics step to arbitrate the overlap — `move_and_slide` recovers along
+  the SHORTEST penetration axis, and for a body sitting near the top of a waist
+  height prop that axis is straight up. The deposit is therefore specified by
+  four constraints, not by a look: 0.34 m (capsule radius) clear of the prop
+  box, inside `Crib/WinArea`, inside `post_deposit_crib_safe_radius`, and clear
+  of the neighbouring prop.
+- **Why:** The director's "the kid can climb over the wall into the bathroom".
+  The old offset dropped the player at the crib's exact centre, 0.68 m inside
+  CribBlock's solid 1.1 m collider; recovery ejected it onto the crib roof, and
+  the crib roof (1.1 m) is one 0.10 m step across a 0.215 m gap from the
+  KidBathDivider wall top (1.2 m). Every wall in the house is 1.2 m, so one
+  capture put the player on the whole wall network. Lane C had already met the
+  same aggregate collider ("a centre teleport resolves outward") and worked
+  around it in `qa_runner.gd` instead of routing it back to lane B — the
+  workaround hid the production bug.
+- **Rejected / cut:** The open-end offset `(0.0, 0.15, 1.95)` that A6 and lane C
+  use as the canonical in-crib spot (1.95 m > the 1.75 m
+  `post_deposit_crib_safe_radius`, so it would also force an AI-predicate change
+  on freeze night — revisit post-submission if the west-rail read is wrong);
+  hollowing the crib collider (it is `nav_source`, so it re-bakes the pinned
+  164-polygon navmesh); tightening Player's floor snap (the player never
+  climbed — it was placed).
+- **Owner:** Noah (director), Claude engineer (fix)
+- **Revisit when:** Post-submission, if the west-rail deposit reads worse than
+  the open end; or if any new teleport target is added.
+- **Evidence / handoff:** `game/scripts/Parent.gd` `_finish_carry` +
+  `crib_player_offset`; CribBlock world box x -9.81..-7.59, y 0..1.1,
+  z -6.15..-3.25 from `LevelBuilder._add_crib` +
+  `_add_visual_bounds_box_collision`. Navmesh untouched (exported value only).
+
+## 2026-07-25 — Doors block until the swung panel leaves a kid-wide gap
+
+- **Decision:** Two separate mechanisms sit behind "kid or adult clipping
+  through doors"; the director has now flagged this twice, so both get the
+  shippable half of the fix and the structural half is booked as post-jam.
+  (1) PLAYER — APPLIED. Door panels are collisionless by the 2026-07-23/A10
+  rulings; gameplay collision is a stationary doorway slab switched off
+  wholesale at `Door.blocker_disable_openness`, which was 0.35 — where the
+  panel has swung only 31.5° and still covers 85% of the opening. Raised to
+  **0.55**, the principled minimum: the clear gap a swung panel leaves is
+  `width x (1 - cos(90 x openness))`, which first exceeds the 0.68 m player
+  capsule diameter at openness 0.50 on the 2.30 m bedroom door, 0.44 on the
+  2.95 m bathroom door and 0.40 on the 3.55 m pantry door. 0.55 clears the
+  narrowest by 0.13 m. **HARD CEILING 0.70**, re-verified: two parent states
+  stand and wait on `openness >= blocker_disable_openness` with NO timeout —
+  `_update_post_deposit_room_enter` (commands only
+  `post_deposit_room_entry_openness` = 0.70) and `_is_waiting_for_routine_door`
+  (commands `bathroom_door_open_openness` = 0.85). Above 0.70 the capture
+  epilogue soft-locks permanently.
+  (2) PARENT — SCOPED MITIGATION APPLIED, STRUCTURAL FIX DEFERRED POST-JAM.
+  `Parent` is a plain `Node3D` moved by direct `global_position` assignment, so
+  it has no collision at all, and the navmesh has no door data (blockers are
+  runtime children, never in `nav_source`). ROUTINE stages the doors it uses;
+  INVESTIGATE, HUNT, FOUND and CARRY never did. `_update_carry` now calls
+  `_open_bedroom_door_for_carry()`, which commands `open_to(1.0)` while the
+  blocker is still live. CARRY is the only state where this is cheap and safe:
+  `_on_noise_emitted` early-returns for the whole state so the creak cannot
+  feed back into the parent's own suspicion, the kid is attached and
+  input-locked, BedroomDoor provides no snack so no reveal can fire, and
+  POST_DEPOSIT_CLOSE_BEHIND re-closes the door immediately after — the authored
+  beat regardless. It is a mitigation, not a cure: the panel opens at 0.2/s, so
+  a short carry can still reach the doorway before the panel is clear.
+- **Why:** Standing rule — an issue flagged twice ships in the next deliverable
+  with a risk note rather than sitting behind an approval gate. The parent
+  walking through a shut door was visible on every catch after the first,
+  because the epilogue closes that door itself.
+- **DEFERRED POST-JAM (do not lose):** the parent still passes through closed
+  doors in INVESTIGATE, HUNT and FOUND — most visibly when it hunts the player
+  into the bathroom, whose door is shut for the first ~187 s of every run. The
+  same rootless-body problem produces the dining-table sighting:
+  `_move_directly_toward_player` clamps to `map_get_closest_point`, and the
+  aggregate A19 table collider bakes a walkable nav island on its 1.06 m top
+  that the clamp can snap onto. Real fixes are a collider on the parent or
+  door-aware pathing; both land in the most gate-covered file in the project
+  (B7/B8/B9/B13/B15/B18/B20/B21) and were explicitly held out of the jam build.
+- **Rejected / cut:** Collision on the rotating panel (outlawed 2026-07-23 and
+  A10 — it shoved the player); leading the panel's visual swing so it is open
+  by 0.35 (creak is rate-driven, so a motionless door would keep creaking); a
+  shrinking blocker (new geometry code, untestable from a no-shell instance);
+  door opening in INVESTIGATE/HUNT/FOUND (those states DO hear the creak, so it
+  would feed the parent its own noise and retarget the hunt).
+- **Owner:** Noah (feel verdict on the longer door hold), lane B (parent) post-jam
+- **Revisit when:** The extra door hold reads as annoying rather than weighty —
+  it is one exported value; or post-jam for the structural parent work.
+- **Evidence / handoff:** `Door.gd` `blocker_disable_openness`,
+  `_disable_visual_collision`, `_spawn_blocker`, `_update_blocker_collision`;
+  `Parent.gd` `_open_bedroom_door_for_carry`, `_move_along_path`,
+  `_move_directly_toward_player`; `Main.tscn` Parent node type. Expectation
+  edit: `Main.gd` a10 bathroom-door probe 0.4 -> 0.6. Navmesh untouched by both
+  changes (no geometry, no `nav_source` member, no collider size changed) — 164
+  polygons stand.

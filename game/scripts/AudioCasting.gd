@@ -279,17 +279,16 @@ const POOLS: Dictionary = {
 		"fallback": preload("res://audio/sfx/door_creak.ogg"),
 		"channel": &"door_creak",
 		"pitch_jitter": 0.08,
+		## Director 2026-07-25: eased-open doors should groan lower and longer.
+		"base_pitch": 0.85,
 	},
 	&"footstep_carpet_walk": {
 		"streams": [
+			# Director cut 05-08 on 2026-07-25: too loud and rough for a sneak.
 			preload("res://audio/cc0/footsteps/carpet_01.wav"),
 			preload("res://audio/cc0/footsteps/carpet_02.wav"),
 			preload("res://audio/cc0/footsteps/carpet_03.wav"),
 			preload("res://audio/cc0/footsteps/carpet_04.wav"),
-			preload("res://audio/cc0/footsteps/carpet_05.wav"),
-			preload("res://audio/cc0/footsteps/carpet_06.wav"),
-			preload("res://audio/cc0/footsteps/carpet_07.wav"),
-			preload("res://audio/cc0/footsteps/carpet_08.wav"),
 		],
 		"fallback": preload("res://audio/sfx/player_step_carpet.ogg"),
 		"channel": &"player_footsteps",
@@ -297,14 +296,11 @@ const POOLS: Dictionary = {
 	},
 	&"footstep_carpet_sprint": {
 		"streams": [
+			# Director cut 05-08 on 2026-07-25: too loud and rough for a sneak.
 			preload("res://audio/cc0/footsteps/carpet_01.wav"),
 			preload("res://audio/cc0/footsteps/carpet_02.wav"),
 			preload("res://audio/cc0/footsteps/carpet_03.wav"),
 			preload("res://audio/cc0/footsteps/carpet_04.wav"),
-			preload("res://audio/cc0/footsteps/carpet_05.wav"),
-			preload("res://audio/cc0/footsteps/carpet_06.wav"),
-			preload("res://audio/cc0/footsteps/carpet_07.wav"),
-			preload("res://audio/cc0/footsteps/carpet_08.wav"),
 		],
 		"fallback": preload("res://audio/sfx/player_step_carpet.ogg"),
 		"channel": &"player_footsteps",
@@ -339,13 +335,81 @@ const POOLS: Dictionary = {
 		"fallback": preload("res://audio/sfx/player_step_creak.ogg"),
 		"channel": &"player_footsteps",
 		"pitch_jitter": 0.07,
-		"base_pitch": 0.8,
+		## Director 2026-07-25: "needs to play even slower" — 0.8 -> 0.65.
+		"base_pitch": 0.65,
+	},
+	# Director 2026-07-25: the 24 extracted family toy-squeak takes replace
+	# the placeholder squeak tick on the same footstep voice at the same
+	# exported volume. Their clips/ directory is sanctioned by the family
+	# allowlists in AudioDirector.verify_configuration and the a18 sweep.
+	&"toy_squeak": {
+		## 66 family toy takes, re-extracted 2026-07-25 from the raw home
+		## recordings and verified as OGG Vorbis against a real directory
+		## listing. Prune by ear: delete any preload line below — no pool
+		## size is asserted by any gate.
+		## Director's listening pass 2026-07-25 cut 36 of the 66 takes; these
+		## 30 are the keepers.
+		"streams": [
+			preload("res://audio/family/toys/clips/toy_squeak_02.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_04.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_11.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_12.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_15.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_17.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_18.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_19.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_20.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_21.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_22.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_23.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_25.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_32.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_33.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_34.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_35.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_36.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_37.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_39.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_40.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_41.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_42.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_43.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_44.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_45.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_53.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_57.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_62.ogg"),
+			preload("res://audio/family/toys/clips/toy_squeak_63.ogg"),
+		],
+		"fallback": preload("res://audio/sfx/toy_squeak.ogg"),
+		"channel": &"player_footsteps",
+		"pitch_jitter": 0.05,
+	},
+	# Director 2026-07-25: the 7 extracted family dog takes replace the
+	# placeholder bark on the Pet's bark voice at the same exported volume.
+	&"pet_bark": {
+		## Only 2 usable dog takes survived re-extraction (the raw Dog.wav
+		## yielded two), so jitter runs a touch wider than the engineer's
+		## 0.04 to keep repeats from reading as a loop.
+		"streams": [
+			preload("res://audio/family/toys/clips/dog_02.ogg"),
+		],
+		"fallback": preload("res://audio/sfx/pet_bark.ogg"),
+		"channel": &"pet_bark",
+		"pitch_jitter": 0.07,
 	},
 	&"parent_footstep": {
+		## Director 2026-07-25: the parent walks on the same recordings the kid
+		## does — one house, one floor.
 		"streams": [
-			preload("res://audio/denoised/foley/footstep_wood_01.ogg"),
-			preload("res://audio/denoised/foley/footstep_wood_02.ogg"),
-			preload("res://audio/denoised/foley/footstep_wood_03.ogg"),
+			preload("res://audio/cc0/footsteps/wood_01.wav"),
+			preload("res://audio/cc0/footsteps/wood_02.wav"),
+			preload("res://audio/cc0/footsteps/wood_03.wav"),
+			preload("res://audio/cc0/footsteps/wood_04.wav"),
+			preload("res://audio/cc0/footsteps/wood_05.wav"),
+			preload("res://audio/cc0/footsteps/wood_06.wav"),
+			preload("res://audio/cc0/footsteps/wood_07.wav"),
+			preload("res://audio/cc0/footsteps/wood_08.wav"),
 		],
 		"fallback": preload("res://audio/sfx/parent_step.ogg"),
 		"channel": &"parent_footsteps",

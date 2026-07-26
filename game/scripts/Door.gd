@@ -44,7 +44,20 @@ enum DoorKind {
 @export var fridge_spill_energy_per_open_rate: float = 1.0
 
 @export_group("Doorway Blocker")
-@export_range(0.0, 1.0) var blocker_disable_openness: float = 0.35
+## The doorway slab is stationary and switches off wholesale, while the panel
+## it stands in for swings; below this openness the player was walking through
+## a visibly-closed door (2026-07-25 director report). The clear gap a swung
+## panel leaves is `width * (1 - cos(90 * openness))`, so it first exceeds the
+## 0.68 m player capsule diameter at openness 0.50 on the 2.30 m bedroom door,
+## 0.44 on the 2.95 m bathroom door and 0.40 on the 3.55 m pantry door; 0.55
+## clears the narrowest of those by 0.13 m.
+## HARD CEILING 0.70 — do not raise this above it. Two parent states stand and
+## wait on `openness >= blocker_disable_openness` with no timeout:
+## `_update_post_deposit_room_enter` (which only commands
+## `post_deposit_room_entry_openness` = 0.70) and `_is_waiting_for_routine_door`
+## (which commands `bathroom_door_open_openness` = 0.85). Exceeding 0.70
+## soft-locks the capture epilogue.
+@export_range(0.0, 1.0) var blocker_disable_openness: float = 0.55
 @export var bedroom_blocker_size: Vector3 = Vector3(2.3, 1.2, 0.25)
 @export var pantry_blocker_size: Vector3 = Vector3(3.55, 1.2, 0.25)
 @export var fridge_blocker_size: Vector3 = Vector3(2.4, 2.2, 0.12)

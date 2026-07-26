@@ -289,7 +289,24 @@ enum State {
 @export var carry_arrival_distance: float = 0.5
 @export var carry_hard_timeout: float = 20.0
 @export var carry_offset: Vector3 = Vector3(0.55, 0.35, 0.0)
-@export var crib_player_offset: Vector3 = Vector3(0.0, 0.65, 0.0)
+## Deposit spot beside the crib's west rail, feet on the carpet. It MUST stay
+## outside CribBlock's aggregate visual-bounds collider — world box
+## x -9.81..-7.59, y 0..1.1, z -6.15..-3.25 — because _finish_carry teleports
+## the player there with no physics step. The old (0.0, 0.65, 0.0) landed the
+## capsule 0.68 m inside that solid at the crib's centre; move_and_slide's
+## shortest-axis recovery then ejected it straight UP onto the crib roof at
+## y 1.1, which is a single 0.10 m step (across a 0.215 m gap) from the 1.2 m
+## KidBathDivider wall top — that is how the kid got onto the walls and over
+## into the bathroom (2026-07-25 playtest). Lane C hit the same aggregate
+## collider in tests/qa/qa_runner.gd and worked around it with an open-end
+## offset instead of a centre teleport.
+## Constraints this value has to keep satisfying:
+##   - >= 0.34 m (capsule radius) clear of the crib box: -10.25 leaves 0.10 m.
+##   - inside Crib/WinArea (x -10.3..-7.1) so the deposit still reads as "in bed".
+##   - within post_deposit_crib_safe_radius (1.75) of the crib so the epilogue
+##     peek takes the RECLOSE branch, not the escaped-child room check: 1.55 m.
+##   - clear of Nightstand (x -10.6..-9.8, z -6.0..-5.2): 0.16 m in z.
+@export var crib_player_offset: Vector3 = Vector3(-1.55, 0.15, 0.0)
 
 @export_group("Post Deposit")
 @export var post_deposit_exit_position: Vector3 = Vector3(-12.75, 0.7, -0.8)
@@ -1554,6 +1571,7 @@ func _update_hunt(delta: float) -> void:
 
 func _update_carry(delta: float) -> void:
 	_enforce_carry_empty_handed()
+	_open_bedroom_door_for_carry()
 	_carry_elapsed += delta
 	if _carry_elapsed >= carry_hard_timeout:
 		_finish_carry()
@@ -1577,6 +1595,28 @@ func _update_carry(delta: float) -> void:
 		or _navigation_agent.is_navigation_finished()
 	):
 		_finish_carry()
+
+
+## Parent is a bare Node3D moved by direct global_position assignment, and the
+## navmesh carries no door data, so it walks through shut panels. The epilogue
+## closes BedroomDoor behind itself, so every catch after the first carried the
+## kid through a closed door (2026-07-25 director report). CARRY is the one
+## state where commanding the door open is safe to do cheaply:
+## `_on_noise_emitted` early-returns for the whole of CARRY, so the creak
+## cannot feed back into the parent's own suspicion or retarget it; the kid is
+## attached and input-locked; BedroomDoor never provides a snack, so no reveal
+## can fire; and POST_DEPOSIT_CLOSE_BEHIND re-closes the door immediately after
+## the deposit, which is the authored beat anyway.
+## INVESTIGATE / HUNT / FOUND deliberately keep the old behaviour — the real
+## fix (a collider on the parent, or door-aware pathing) is deferred post-jam.
+## Mitigation, not a cure: the panel opens at 1/sneak_open_duration = 0.2/s, so
+## a short carry can still reach the doorway before the panel is fully clear.
+func _open_bedroom_door_for_carry() -> void:
+	if _bedroom_door == null:
+		return
+	if _bedroom_door.openness >= _bedroom_door.blocker_disable_openness:
+		return
+	_bedroom_door.open_to(1.0)
 
 
 func _update_post_deposit_exit(delta: float) -> void:

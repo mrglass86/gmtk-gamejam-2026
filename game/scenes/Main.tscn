@@ -135,6 +135,7 @@ size = Vector3(3.2, 1.6, 3.8)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dither"]
 shader = ExtResource("20_dither")
+shader_parameter/style = 2
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
@@ -478,7 +479,6 @@ text = "Brightness: --"
 
 [node name="RetroFilter" type="CanvasLayer" parent="."]
 layer = 15
-visible = false
 
 [node name="DitherRect" type="ColorRect" parent="RetroFilter"]
 material = SubResource("ShaderMaterial_dither")

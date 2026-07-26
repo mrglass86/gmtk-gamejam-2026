@@ -1412,7 +1412,10 @@ func _verify_a10_presentation() -> void:
 		"Bathroom visual panel still has physical collision."
 	)
 	assert(not bathroom_blocker.disabled)
-	bathroom_door.openness = 0.4
+	# Probe raised 0.4 -> 0.6 with Door.blocker_disable_openness 0.35 -> 0.55
+	# (2026-07-25 clipping fix). This still tests the disable transition, just
+	# above the new threshold.
+	bathroom_door.openness = 0.6
 	bathroom_door.call("_apply_visual")
 	bathroom_door.call("_update_blocker_collision")
 	await get_tree().physics_frame
@@ -2390,10 +2393,21 @@ func _verify_a18_polish_pack() -> void:
 					"res://audio/original/foley/door_creak_"
 				)
 			)
+			# Director 2026-07-25: the extracted toy/dog clips are the
+			# sanctioned family source; raw session takes stay banned.
+			var is_sanctioned_family_clip: bool = (
+				stream.resource_path.begins_with(
+					"res://audio/family/toys/clips/"
+				)
+			)
 			assert(
-				not stream.resource_path.begins_with("res://audio/original/")
+				(
+					not stream.resource_path.begins_with("res://audio/original/")
+					and not stream.resource_path.begins_with("res://audio/family/")
+				)
 				or is_a23_short_reaction_override
-				or is_sanctioned_door_creak,
+				or is_sanctioned_door_creak
+				or is_sanctioned_family_clip,
 				"Runtime family pool still references an original: %s."
 				% stream.resource_path
 			)
