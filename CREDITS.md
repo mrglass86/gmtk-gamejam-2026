@@ -24,13 +24,13 @@ untouched runtime copy.
 
 ## Kenney packs
 
-- [UI Audio](https://www.kenney.nl/assets/ui-audio), CC0 — TV click-off,
+- [UI Audio by Kenney](https://www.kenney.nl/assets/ui-audio), CC0 — TV click-off,
   light-switch click, and toy squeak.
-- [Impact Sounds](https://www.kenney.nl/assets/impact-sounds), CC0 — carpet,
+- [Impact Sounds by Kenney](https://www.kenney.nl/assets/impact-sounds), CC0 — carpet,
   hardwood, and parent footsteps; soft snack-drop thud.
-- [RPG Audio](https://www.kenney.nl/assets/rpg-audio), CC0 — creaky-floor step
+- [RPG Audio by Kenney](https://www.kenney.nl/assets/rpg-audio), CC0 — creaky-floor step
   and held-door creak; snack pickup.
-- [Music Jingles](https://www.kenney.nl/assets/music-jingles), CC0 — win and
+- [Music Jingles by Kenney](https://www.kenney.nl/assets/music-jingles), CC0 — win and
   caught/lose stings.
 
 ## Freesound sources

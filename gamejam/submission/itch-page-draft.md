@@ -83,5 +83,24 @@ the screenshot.
 - Built with Godot 4.7.1 for GMTK Game Jam 2026
 - Development assistance: AI agents (Claude + Codex) under human direction —
   [align wording with the jam's AI disclosure policy]
-- Audio: CC0 sound packs by Kenney (kenney.nl) and freesound.org artists —
-  full clip list in CREDITS.md in the repository
+- Original family voices and household foley were recorded for this project and
+  are used with permission; no performer names are listed.
+- External audio is CC0:
+  - Kenney:
+    [UI Audio](https://www.kenney.nl/assets/ui-audio),
+    [Impact Sounds](https://www.kenney.nl/assets/impact-sounds),
+    [RPG Audio](https://www.kenney.nl/assets/rpg-audio), and
+    [Music Jingles](https://www.kenney.nl/assets/music-jingles).
+  - Freesound:
+    [Unintelligible Radio Chatter Loop by unfa](https://freesound.org/people/unfa/sounds/245761/);
+    [Ambient Lofi Melody Loop 75 BPM by holizna](https://freesound.org/people/holizna/sounds/629149/);
+    [Fridge hum 2 by FOSSarts](https://freesound.org/people/FOSSarts/sounds/740089/);
+    [Loopable Ticking Clock by OwlStorm](https://freesound.org/people/OwlStorm/sounds/212181/);
+    [Chihuahua Puppy Whine by AustinXYZ](https://freesound.org/people/AustinXYZ/sounds/350593/);
+    [Single Dog Bark (King Charles Spaniel) by JovianSounds](https://freesound.org/people/JovianSounds/sounds/502655/);
+    [Footsteps_Carpet.wav by mlsulli](https://freesound.org/people/mlsulli/sounds/234855/);
+    and
+    [Footsteps on wood floor by IENBA](https://freesound.org/people/IENBA/sounds/485421/).
+  - License:
+    [Creative Commons CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).
+- Detailed cue-to-source mapping: `CREDITS.md` in the repository.

@@ -178,6 +178,8 @@ a journal.
 - Freeze/export/upload from the consolidated main head. A22, A23, A24, and B21
   are integrated and verified; only director in-motion presentation verdicts
   remain before export.
+- CC0 provenance is submission-ready: every external audio creator/source page
+  and the CC0 license are linked in both `CREDITS.md` and the itch-page draft.
 
 ## Known blockers or risks
 

@@ -258,7 +258,9 @@ Acceptance tests live in `gamejam/VALIDATION.md` (S-numbers).
 - [ ] One outside playtester, watched silently; fixes prioritized by Claude via playtest-critic lens.
 - [ ] Tuning pass from the playtest — Noah verdicts, lanes apply.
 - [ ] Submission page: screenshots, GIF of a ring resolving, controls, the
-      theme-reading sentence — Claude drafts, Noah posts.
+      theme-reading sentence — Claude drafts, Noah posts. CC0 compliance
+      subtask complete: all creator/source and license links are embedded in
+      the page draft and mapped in `CREDITS.md`.
 
 ## Director's parallel art track (Noah's hands — costs the lanes nothing)
 
