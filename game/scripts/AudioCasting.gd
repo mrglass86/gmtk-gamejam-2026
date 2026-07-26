@@ -225,14 +225,11 @@ const POOLS: Dictionary = {
 		"priority": 4,
 		"pitch_jitter": 0.05,
 	},
-	&"wrapper_shush": {
-		"streams": [
-			preload("res://audio/denoised/voice/wrapper_shush_01.ogg"),
-		],
-		"channel": &"voice",
-		"priority": 1,
-		"pitch_jitter": 0.06,
-	},
+	# Director 2026-07-25: wrapper_shush_01.ogg is CUT. It had no live trigger
+	# either — the only step that referenced it lived on the wrapper_noise
+	# event, which nothing plays (AudioDirector drives wrapper audio straight
+	# from _update_wrapper_audio). Removed so the audition page and the code
+	# agree.
 	&"snack_drop_voice": {
 		"streams": [
 			preload("res://audio/denoised/voice/snack_drop_voice_01.ogg"),
@@ -338,10 +335,11 @@ const POOLS: Dictionary = {
 		## Director 2026-07-25: "needs to play even slower" — 0.8 -> 0.65.
 		"base_pitch": 0.65,
 	},
-	# Director 2026-07-25: the 24 extracted family toy-squeak takes replace
-	# the placeholder squeak tick on the same footstep voice at the same
+	# Director 2026-07-25: the extracted family toy-squeak takes replace the
+	# placeholder squeak tick on the same footstep voice at the same
 	# exported volume. Their clips/ directory is sanctioned by the family
 	# allowlists in AudioDirector.verify_configuration and the a18 sweep.
+	# The listening pass kept 30 of the 66 re-extracted takes.
 	&"toy_squeak": {
 		## 66 family toy takes, re-extracted 2026-07-25 from the raw home
 		## recordings and verified as OGG Vorbis against a real directory
@@ -385,15 +383,13 @@ const POOLS: Dictionary = {
 		"channel": &"player_footsteps",
 		"pitch_jitter": 0.05,
 	},
-	# Director 2026-07-25: the 7 extracted family dog takes replace the
-	# placeholder bark on the Pet's bark voice at the same exported volume.
+	# Director's listening pass 2026-07-25 reversed the dog routing: dog_02.ogg
+	# moves to the Pet's notice cue ("the only dog noise except for the bark"),
+	# and the bark that pulls the parent in is the CC0 pet_bark take again
+	# ("this should be the sound when the dog is alerted"). Empty streams fall
+	# through to the fallback — the same idiom the sting and hum pools use.
 	&"pet_bark": {
-		## Only 2 usable dog takes survived re-extraction (the raw Dog.wav
-		## yielded two), so jitter runs a touch wider than the engineer's
-		## 0.04 to keep repeats from reading as a loop.
-		"streams": [
-			preload("res://audio/family/toys/clips/dog_02.ogg"),
-		],
+		"streams": [],
 		"fallback": preload("res://audio/sfx/pet_bark.ogg"),
 		"channel": &"pet_bark",
 		"pitch_jitter": 0.07,
@@ -519,11 +515,13 @@ const EVENTS: Dictionary = {
 		"group": &"result",
 		"steps": [{"pool": &"deposit_sniffle", "delay_ms": 0}],
 	},
+	## Unplayed: AudioDirector drives carried-snack foley straight from
+	## _update_wrapper_audio, not through this event. Kept as the declared
+	## wrapper group; its cut shush step went with wrapper_shush.
 	&"wrapper_noise": {
 		"group": &"wrapper",
 		"steps": [
 			{"pool": &"wrapper_crinkle", "delay_ms": 0},
-			{"pool": &"wrapper_shush", "delay_ms": 350, "chance": 0.22},
 		],
 	},
 	&"bathroom_visit": {

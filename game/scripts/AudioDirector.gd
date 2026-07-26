@@ -13,7 +13,14 @@ const PLAYER_STEP_CREAK_STREAM: AudioStream = preload(
 	"res://audio/sfx/player_step_creak.ogg"
 )
 const TOY_SQUEAK_STREAM: AudioStream = preload("res://audio/sfx/toy_squeak.ogg")
-const PET_CHIRP_STREAM: AudioStream = preload("res://audio/sfx/pet_chirp.ogg")
+## Director 2026-07-25: pet_chirp.ogg is CUT. The dog's notice cue (the Pet's
+## alert_started telegraph) now plays the family take dog_02.ogg — "the only
+## dog noise except for the bark". This is a direct stream, not a pool, so a
+## pool volume_offset_db would be ignored; the level lives on
+## pet_chirp_volume_db below.
+const PET_CHIRP_STREAM: AudioStream = preload(
+	"res://audio/family/toys/clips/dog_02.ogg"
+)
 const PET_BARK_STREAM: AudioStream = preload("res://audio/sfx/pet_bark.ogg")
 const TV_MURMUR_STREAM: AudioStream = preload("res://audio/ambience/tv_murmur.ogg")
 const SPEAKER_MUSIC_STREAM: AudioStream = preload(
@@ -68,7 +75,9 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 @export var parent_step_max_distance: float = 12.0
 
 @export_group("Pet and Results")
-@export var pet_chirp_volume_db: float = -7.0
+## Director 2026-07-25: "can this be louder?" about dog_02.ogg, which now
+## carries this channel. Raised 4 dB (-7.0 -> -3.0), matching the bark level.
+@export var pet_chirp_volume_db: float = -3.0
 @export var pet_bark_volume_db: float = -3.0
 @export var pet_max_distance: float = 12.0
 @export var sting_volume_db: float = -4.0
@@ -149,6 +158,9 @@ const SNACK_DROP_STREAM: AudioStream = preload("res://audio/sfx/snack_drop.ogg")
 
 var _doors: Array[DinnerDoor] = []
 var _door_previous_openness: Dictionary = {}
+## Latched from the pool whose take is actually on the DoorCreak player, so the
+## per-frame rate-driven pitch below cannot discard the pool's base_pitch.
+var _door_creak_base_pitch: float = 1.0
 var _game_active: bool = false
 var _current_phase: int = 0
 var _last_parent_position: Vector3
@@ -491,10 +503,16 @@ func begin_audio_verification() -> void:
 	_update_door_creak(1.0 / 60.0)
 	assert(_door_creak.playing)
 	assert(_pool_contains_stream(&"door_creak_slow", _door_creak.stream))
+	# Expectation edit (director 2026-07-25): the played pitch is now the
+	# product of the door's rate-driven scale and the playing pool's
+	# base_pitch, so the slow pool's 0.85 actually reaches the speaker.
+	var slow_creak_base_pitch: float = float(
+		CASTING.POOLS[&"door_creak_slow"].get("base_pitch", 1.0)
+	)
 	assert(
 		is_equal_approx(
 			_door_creak.pitch_scale,
-			verification_door.get_creak_pitch_scale()
+			verification_door.get_creak_pitch_scale() * slow_creak_base_pitch
 		)
 	)
 	assert(
@@ -506,10 +524,13 @@ func begin_audio_verification() -> void:
 	verification_door.openness_rate = verification_door.creak_fast_rate
 	verification_door.openness += 0.02
 	_update_door_creak(1.0 / 60.0)
+	# Still the slow take: the player never stopped, so _update_door_creak did
+	# not re-pick a pool and the latched slow base_pitch still applies even
+	# though the door's rate now reads fast.
 	assert(
 		is_equal_approx(
 			_door_creak.pitch_scale,
-			verification_door.get_creak_pitch_scale()
+			verification_door.get_creak_pitch_scale() * slow_creak_base_pitch
 		)
 	)
 	assert(
@@ -955,12 +976,22 @@ func _update_door_creak(delta: float) -> void:
 	_door_creak.global_position = _get_door_hinge_position(moving_door)
 	var rush_weight: float = moving_door.get_creak_rate_weight()
 	if not _door_creak.playing:
-		_play_pool(
+		var creak_pool: StringName = (
 			&"door_creak_fast"
 			if rush_weight >= 0.5
 			else &"door_creak_slow"
 		)
-	_door_creak.pitch_scale = moving_door.get_creak_pitch_scale()
+		_play_pool(creak_pool)
+		# Director 2026-07-25: the pool's base_pitch has to survive the
+		# rate-driven assignment below, or an eased-open door never groans
+		# lower. Latched to the take that is actually playing, so a door that
+		# speeds up mid-swing does not jump pitch under its own stream.
+		_door_creak_base_pitch = float(
+			CASTING.POOLS[creak_pool].get("base_pitch", 1.0)
+		)
+	_door_creak.pitch_scale = (
+		moving_door.get_creak_pitch_scale() * _door_creak_base_pitch
+	)
 	_door_creak.volume_db = moving_door.get_creak_volume_db()
 
 

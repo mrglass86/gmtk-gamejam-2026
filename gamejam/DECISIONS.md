@@ -1842,3 +1842,101 @@ Record decisions another session or tool would otherwise have to rediscover.
   edit: `Main.gd` a10 bathroom-door probe 0.4 -> 0.6. Navmesh untouched by both
   changes (no geometry, no `nav_source` member, no collider size changed) — 164
   polygons stand.
+
+## 2026-07-25 — Director listening pass: dog routing reversed, gates reconciled
+
+Supersedes the pool sizes and the dog casting in "Family toy squeaks and dog
+barks wired as sanctioned pools" (same day, above). Everything else there stands.
+
+- **Decision (dog routing, applied):** The two dog cues swap sources. The Pet's
+  *notice* cue — `alert_started`, the 1 s ears-up freeze, no gameplay noise —
+  now plays the family take `dog_02.ogg` instead of the cut `sfx/pet_chirp.ogg`
+  (`AudioDirector.PET_CHIRP_STREAM` retargeted). The *bark* — `bark_started`,
+  which emits the 5.0 house-alarm noise and fires `dog_attention` — goes back to
+  `sfx/pet_bark.ogg`, via the `pet_bark` pool's existing fallback with `streams`
+  emptied (the same empty-streams idiom the sting/hum pools use, so
+  `_select_pool_stream` still returns a non-null stream).
+- **Decision (dog level, applied):** `pet_chirp_volume_db` -7.0 -> **-3.0**
+  (+4 dB), matching the bark. That export is the only lever that works here:
+  the chirp channel is a direct `AudioStreamPlayer3D`, never routed through
+  `_play_pool`, so a pool `volume_offset_db` is ignored — and the `pet_bark`
+  channel case in `_play_pool` does not read `volume_offset_db` either. Neither
+  dog export is asserted by any gate, and `Main.tscn`'s AudioDirector node
+  carries no property overrides, so the script default is authoritative.
+- **Decision (gate reconciliation, applied):** Two A17 expectations reconciled
+  to the director's cuts. Carpet footstep minimum 8 -> 4 (carpet_05..08 cut),
+  expressed as a per-pool minimum dictionary so wood stays pinned at 8.
+  `parent_footstep` origin prefix `res://audio/denoised/foley/` ->
+  `res://audio/cc0/footsteps/` ("use the same sounds as footsteps of the
+  child"). A17's printed `footsteps=%d carpet/%d wood` self-corrects to 4/8.
+- **Decision (silence over substitution, PARTIAL):** `wrapper_shush` removed —
+  provably dead (its only reference was a step on the `wrapper_noise` event,
+  which nothing plays; carried-snack foley runs straight from
+  `_update_wrapper_audio`). The other four cut stand-ins are NOT removed; see
+  the escalation below.
+- **Why:** Director's full listening pass. His words on the dog: `dog_02.ogg`
+  "should be the only dog noise except for the bark"; `pet_bark.ogg` "should be
+  the sound when the dog is alerted".
+- **AMBIGUITY FLAGGED, ONE LINE TO CORRECT:** the code's signal for "dog
+  notices you" is literally named `alert_started`, so "the sound when the dog is
+  alerted" reads word-for-word as the *notice* cue — the opposite of what
+  shipped. The implemented mapping is the only one consistent with "the only dog
+  noise except for the bark", so it is what is wired. If the director meant the
+  literal reading, swap `PET_CHIRP_STREAM` and the `pet_bark` fallback.
+- **Decision (door creak pitch, applied — was inert, now real):** The new
+  `"base_pitch": 0.85` never reached the speaker: `_update_door_creak` called
+  `_play_pool` (which applies base_pitch) and then unconditionally overwrote
+  `_door_creak.pitch_scale = moving_door.get_creak_pitch_scale()` on the very
+  next line, every frame. Fixed by latching the chosen pool's base_pitch into a
+  new `_door_creak_base_pitch` at the moment playback starts, and multiplying it
+  into that per-frame assignment. Latched rather than recomputed per frame on
+  purpose: the pool is only re-picked when the player is stopped, so a door that
+  speeds up mid-swing would otherwise jump 0.85 -> 1.0 underneath a still-playing
+  slow take. Matching expectation edit in `begin_audio_verification`: both door
+  pitch asserts become
+  `pitch_scale == door.get_creak_pitch_scale() * slow_creak_base_pitch`, reading
+  the multiplier from `CASTING.POOLS[&"door_creak_slow"]` so the assert checks
+  the product rather than restating the runtime.
+- **COMPOUNDING TO WATCH — the door already had this exact lever.**
+  `Door.get_creak_pitch_scale()` lerps `creak_slow_pitch_scale` **0.85** to
+  `creak_fast_pitch_scale` 1.15 by rate weight, so a genuinely eased-open door
+  was already pitched to 0.85. The pool's 0.85 now multiplies on top: a slow
+  open lands at **0.85 x 0.85 = 0.7225**, a 28% drop from nominal, and the deep
+  end of "lower and longer". If that reads as too far, the one-value fix is the
+  pool's `base_pitch`, and the simpler equivalent lever the director may have
+  actually wanted is `Door.creak_slow_pitch_scale` on its own.
+  `floor_creak_step`'s 0.65 base_pitch was never affected by any of this
+  (nothing overwrites the footstep channel's pitch) and no gate pins it.
+- **DEFERRED BY RULING — the four remaining cut stand-ins stay wired.**
+  `sfx/snack_pickup.ogg`, `sfx/snack_drop.ogg`, `sfx/caught_sting.ogg` and
+  `sfx/win_sting.ogg` are NOT removed. Ten assertions across four gates plus two
+  crash traps plus an unproven silent-stub workaround is not a last-night trade
+  for three minor SFX. Their premise is load-bearing, not cosmetic:
+  `verify_configuration` asserts all **19** audio players hold a non-null
+  stream, and those four files are the only stream five of those players ever
+  get at wiring time. Removing them also falsifies five behavioural asserts that
+  encode "this moment makes a sound" (`_caught_sting.playing`,
+  `_snack_pickup.playing`, `_snack_drop.playing`, `_fridge_pop.playing`, and the
+  A20 pickup-skin `_pool_contains_stream` pair), across four gates
+  (`--verify-audio`, `--verify-a20`, `--verify-a7`, `--verify-a8`). Two further
+  traps: cutting `caught_sting` from `EVENTS[&"catch"]` makes
+  `catch_steps[1]` an out-of-range index (a runtime error, not an assert), and
+  `_pool_contains_stream` returns TRUE for a null stream against a
+  fallback-less pool (`null == null`), inverting A20's "not a scoop" assert.
+- **Recommended mechanism if the director holds the line:** keep every pool key
+  and every player wired, and point the four cut fallbacks at one silent stub —
+  a hand-written `AudioStreamGenerator` `.tres` (two properties, no binary, no
+  import step) which plays as real silence. That keeps all 19 streams non-null
+  and all `.playing` asserts honest with zero expectation edits. Unproven from
+  a no-shell instance: it needs one live run before it ships.
+- **Owner:** Noah (director — the dog ambiguity and the silence call), Claude
+  engineer (wiring + expectation edits), operator (import + battery).
+- **Revisit when:** The director rules on the four remaining stand-ins, on the
+  dog-cue ambiguity, or on the inert door creak pitch.
+- **Evidence / handoff:** `game/scripts/AudioCasting.gd` `pet_bark` pool,
+  `wrapper_shush` removal, `wrapper_noise` event;
+  `game/scripts/AudioDirector.gd` `PET_CHIRP_STREAM`, `pet_chirp_volume_db`;
+  `game/scripts/Main.gd` `_verify_a17_acceptance_fixes` footstep expectations.
+  A18's `denoised_stream_count >= 60` recounted by hand at **66** after all
+  cuts (was 70; -3 parent_footstep, -1 wrapper_shush). `POOLS.size() >= 30`
+  holds at 40. No geometry touched — navmesh stands at 164.

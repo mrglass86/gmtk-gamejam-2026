@@ -2134,26 +2134,33 @@ func _verify_a17_acceptance_fixes() -> void:
 		assert(is_equal_approx(light.omni_attenuation, 1.45))
 		assert(light.light_energy >= 4.4)
 
-	for pool_id: StringName in [
-		&"footstep_carpet_walk",
-		&"footstep_carpet_sprint",
-		&"footstep_wood",
-	]:
+	# Expectation edit (director listening pass 2026-07-25): carpet_05..08 were
+	# cut as too loud and rough for a sneak, so both carpet banks now hold four
+	# takes. The wood bank is untouched at eight.
+	var footstep_pool_minimums: Dictionary = {
+		&"footstep_carpet_walk": 4,
+		&"footstep_carpet_sprint": 4,
+		&"footstep_wood": 8,
+	}
+	for pool_id: StringName in footstep_pool_minimums:
 		var pool: Dictionary = DinnerAudioCasting.POOLS[pool_id] as Dictionary
 		var streams: Array = pool["streams"] as Array
-		assert(streams.size() >= 8)
+		assert(streams.size() >= int(footstep_pool_minimums[pool_id]))
 		for stream: AudioStream in streams:
 			assert(
 				stream.resource_path.begins_with(
 					"res://audio/cc0/footsteps/"
 				)
 			)
+	# Expectation edit (director 2026-07-25): "use the same sounds as footsteps
+	# of the child" — the parent now walks the CC0 wood bank instead of the
+	# three denoised foley takes. One house, one floor.
 	var parent_pool: Dictionary = (
 		DinnerAudioCasting.POOLS[&"parent_footstep"] as Dictionary
 	)
 	assert(
 		(parent_pool["streams"] as Array)[0].resource_path.begins_with(
-			"res://audio/denoised/foley/"
+			"res://audio/cc0/footsteps/"
 		)
 	)
 
